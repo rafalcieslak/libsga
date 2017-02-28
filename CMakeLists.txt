@@ -8,7 +8,7 @@ ENDIF()
 
 # Version information
 execute_process(
-  COMMAND git describe --tags --always
+  COMMAND git describe --tags --always --abbrev=0
   OUTPUT_VARIABLE PROJECT_VERSION_SHORT
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
@@ -32,3 +32,4 @@ project(
   LANGUAGES CXX C
   )
 
+add_subdirectory(src)

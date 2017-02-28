@@ -23,4 +23,5 @@ configure_file(
 include_directories(./include)
 include_directories(SYSTEM ../include)
 
-add_executable(libsga_test ${LIBSGA_SOURCES})
+add_library(sga SHARED ${LIBSGA_SOURCES})
+set_target_properties(sga PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})

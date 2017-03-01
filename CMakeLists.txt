@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.0)
+# Version 3.5 is required for CMAKE_EXPORT_COMPILE_COMMANDS
+cmake_minimum_required(VERSION 3.5)
 
 IF(DEFINED CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
@@ -9,11 +10,13 @@ ENDIF()
 # Version information
 execute_process(
   COMMAND git describe --tags --always --abbrev=0
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   OUTPUT_VARIABLE PROJECT_VERSION_SHORT
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 execute_process(
   COMMAND git describe --tags --long --dirty --always
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   OUTPUT_VARIABLE PROJECT_VERSION_LONG
   OUTPUT_STRIP_TRAILING_WHITESPACE
   )

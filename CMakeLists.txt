@@ -25,6 +25,19 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
 message(STATUS "Build mode: ${CMAKE_BUILD_TYPE}, version: ${PROJECT_VERSION_LONG}")
 
+
+find_package(Doxygen)
+
+
+# Global definitions
+if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
+  add_definitions( -O3 )
+  # add_definitions( -flto )
+  # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
+  # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
+  # set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
+endif()
+
 # Project init
 project(
   libsga
@@ -33,4 +46,5 @@ project(
   )
 
 add_subdirectory(src)
+add_subdirectory(doc)
 add_subdirectory(examples)

@@ -25,9 +25,22 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
 message(STATUS "Build mode: ${CMAKE_BUILD_TYPE}, version: ${PROJECT_VERSION_LONG}")
 
+# Project init
+project(
+  libsga
+  VERSION "${PROJECT_VERSION_VERYSHORT}"
+  LANGUAGES CXX C
+  )
+
+# Import custom cmake modules
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 find_package(Doxygen)
+find_package(Vulkan)
 
+if(NOT Vulkan_FOUND)
+  message(SEND_ERROR "Unable to find Vulkan installed on this system.")
+endif()
 
 # Global definitions
 if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
@@ -37,13 +50,6 @@ if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
   # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
   # set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
 endif()
-
-# Project init
-project(
-  libsga
-  VERSION "${PROJECT_VERSION_VERYSHORT}"
-  LANGUAGES CXX C
-  )
 
 add_subdirectory(src)
 add_subdirectory(doc)

@@ -46,12 +46,13 @@ if(NOT Vulkan_FOUND)
 endif()
 
 # Global definitions
+add_definitions(--std=c++14)
+
 if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
   add_definitions( -O3 )
-  # add_definitions( -flto )
-  # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
-  # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
-  # set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto")
+endif()
+if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+  add_definitions( -Wall -Wextra -Werror -g)
 endif()
 
 add_subdirectory(src)

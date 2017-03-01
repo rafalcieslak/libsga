@@ -1,16 +1,3 @@
-add_definitions(
-  --std=c++14
-  )
-
-
-if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-  add_definitions(
-    -Wall -Wextra
-	-Werror
-	-g
-	)
-endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-
 file(GLOB LIBSGA_SOURCES
   ./*.cpp
   )

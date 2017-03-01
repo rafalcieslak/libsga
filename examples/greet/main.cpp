@@ -1,5 +1,8 @@
 #include <sga.hpp>
 
 int main(){
-  sga::greet();
+  sga::info();
+  sga::init(sga::VerbosityLevel::Debug);
+  sga::init(sga::VerbosityLevel::Debug);
+  sga::info();
 }

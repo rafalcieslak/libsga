@@ -1,3 +1,5 @@
+This branch contains VkHLF modified for use with libsga.
+
 # Vulkan High Level Framework
 
 VkHLF is an experimental high level abstraction library on top of Vulkan. It adds features like transparent suballocation,

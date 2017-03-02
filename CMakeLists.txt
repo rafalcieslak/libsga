@@ -45,6 +45,10 @@ if(NOT Vulkan_FOUND)
   message(SEND_ERROR "Unable to find Vulkan installed on this system.")
 endif()
 
+# This subdirectory must be processed before others, as it sets various
+# variables for building with external libraries.
+add_subdirectory(external)
+
 # Global definitions
 add_definitions(--std=c++14)
 

@@ -127,13 +127,30 @@ source_group(headers FILES ${PUBLIC_HEADERS})
 source_group(private FILES ${PRIVATE})
 
 #target
-add_library( VkHLF SHARED
+add_library( VkHLF-shared SHARED
   ${SOURCES}
   ${PUBLIC_HEADERS}
   ${PRIVATE}
+  )
+add_library( VkHLF-static STATIC
+  ${SOURCES}
+  ${PUBLIC_HEADERS}
+  ${PRIVATE}
+  )
+
+SET_TARGET_PROPERTIES(VkHLF-static PROPERTIES OUTPUT_NAME VkHLF CLEAN_DIRECT_OUTPUT 1)
+SET_TARGET_PROPERTIES(VkHLF-shared PROPERTIES OUTPUT_NAME VkHLF CLEAN_DIRECT_OUTPUT 1)
+
+target_include_directories(VkHLF-static
+  PUBLIC    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private>
+  PUBLIC    "$ENV{VK_SDK_PATH}/include"
+  PUBLIC    "${CMAKE_SOURCE_DIR}/3rdparty"
+  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private>
+  INTERFACE "$ENV{VK_SDK_PATH}/include"
+  INTERFACE  "${PROJECT_SOURCE_DIR}"
 )
 
-target_include_directories(VkHLF
+target_include_directories(VkHLF-shared
   PUBLIC    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/private>
   PUBLIC    "$ENV{VK_SDK_PATH}/include"
   PUBLIC    "${CMAKE_SOURCE_DIR}/3rdparty"
@@ -143,7 +160,7 @@ target_include_directories(VkHLF
 )
 
 
-target_link_libraries( VkHLF
+target_link_libraries( VkHLF-static
   ${OPENGL_gl_LIBRARY}
   vulkan
   glslang
@@ -152,3 +169,16 @@ target_link_libraries( VkHLF
   HLSL
   SPIRV
 )
+
+
+target_link_libraries( VkHLF-shared
+  ${OPENGL_gl_LIBRARY}
+  vulkan
+  glslang
+  OGLCompiler
+  OSDependent
+  HLSL
+  SPIRV
+)
+
+set_property(TARGET VkHLF-static PROPERTY POSITION_INDEPENDENT_CODE 1)

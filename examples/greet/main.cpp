@@ -6,5 +6,7 @@ int main(){
   sga::init(sga::VerbosityLevel::Debug);
   sga::info();
 
+  sga::Image(200,400);
+  
   sga::cleanup();
 }

@@ -1,3 +1,5 @@
+#include <sga/utils.hpp>
+
 #include <iostream>
 #include <cassert>
 #include <vector>
@@ -5,8 +7,6 @@
 
 #include <vulkan/vulkan.h>
 #include <vkhlf/vkhlf.h>
-
-#include <sga/utils.hpp>
 
 #include "version.hpp"
 #include "global.hpp"
@@ -183,6 +183,8 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   unsigned int queueFamilyIndex = indices[0];
 
   impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(queueFamilyIndex, 1.0f), nullptr, enabledExtensions);
+
+  impl_global::queue = impl_global::device->getQueue(queueFamilyIndex, 0);
 
   std::cout << "Logical device created." << std::endl;
   

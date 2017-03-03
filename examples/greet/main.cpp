@@ -3,10 +3,12 @@
 int main(){
   sga::info();
   sga::init(sga::VerbosityLevel::Debug);
-  sga::init(sga::VerbosityLevel::Debug);
-  sga::info();
 
-  sga::Image(200,400);
+  sga::Image image(10,10);
+  image.fillWithPink();
+  image.testContents();
+
+  sga::info();
   
   sga::cleanup();
 }

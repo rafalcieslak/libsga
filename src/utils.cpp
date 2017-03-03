@@ -10,6 +10,7 @@
 
 #include "version.hpp"
 #include "global.hpp"
+#include "utils.hpp"
 
 namespace sga{
 void info(){
@@ -180,13 +181,19 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     throw std::runtime_error("InvalidPhysDevice");
   }
   // Pick a queue family.
-  unsigned int queueFamilyIndex = indices[0];
+  impl_global::queueFamilyIndex = indices[0];
 
-  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(queueFamilyIndex, 1.0f), nullptr, enabledExtensions);
+  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(impl_global::queueFamilyIndex, 1.0f), nullptr, enabledExtensions);
 
-  impl_global::queue = impl_global::device->getQueue(queueFamilyIndex, 0);
+  impl_global::queue = impl_global::device->getQueue(impl_global::queueFamilyIndex, 0);
 
   std::cout << "Logical device created." << std::endl;
+
+  // TODO: Prepare memory allocators??
+  // eg.
+  // m_deviceMemoryAllocatorImage.reset(new vkhlf::DeviceMemoryAllocator(getDevice(), 128 * 1024, nullptr));
+
+  impl_global::commandPool = impl_global::device->createCommandPool(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, impl_global::queueFamilyIndex);
   
   impl_global::initialized = true;
   std::cout << "SGA initialized successfully." << std::endl;
@@ -200,6 +207,16 @@ void cleanup(){
     std::cout << "SGA successfully deinitialized." << std::endl;
   impl_global::instance = nullptr;
   impl_global::initialized = false;
+}
+
+void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)> record_commands){
+  auto commandBuffer = impl_global::commandPool->allocateCommandBuffer();
+  commandBuffer->begin();
+
+  record_commands(commandBuffer);
+
+  commandBuffer->end();
+  vkhlf::submitAndWait(impl_global::queue, commandBuffer);
 }
 
 }

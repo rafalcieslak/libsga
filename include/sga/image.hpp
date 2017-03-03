@@ -10,7 +10,8 @@ public:
   class Impl;
   Image(int width, int height);
   ~Image();
-  void FillWithPink();
+  void fillWithPink();
+  void testContents();
 
 private:
   std::unique_ptr<Impl> impl;

@@ -7,6 +7,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vkhlf/vkhlf.h>
+#include <GLFW/glfw3.h>
 
 #include "version.hpp"
 #include "global.hpp"
@@ -104,6 +105,11 @@ static bool pickPhysicalDevice(){
 void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   if(impl_global::initialized){
     std::cout << "SGA was already initialized!" << std::endl;
+    return;
+  }
+
+  if(!glfwInit()){
+    std::cout << "Failed to initialize GLFW!" << std::endl;
     return;
   }
 
@@ -217,6 +223,9 @@ void terminate(){
     std::cout << "Could it be that the user program still keeps some live SGA objects?" << std::endl;
   }
   impl_global::instance = nullptr;
+
+  glfwTerminate();
+  
   impl_global::initialized = false;
 }
 

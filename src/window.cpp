@@ -10,7 +10,9 @@ namespace sga{
 class Window::Impl{
 public:
   Impl(unsigned int width, unsigned int height, std::string title){
-    
+    // Do not create OpenGL context
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
   }
 private:
   GLFWwindow* window;

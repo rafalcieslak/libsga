@@ -21,7 +21,8 @@ target_link_libraries(sga
   PRIVATE -Wl,--no-as-needed # This forces a runtime link dependency to libvulkan.so
   PUBLIC ${Vulkan_LIBRARIES}
   # Following libraries are static, so these get embedded into libsga.
-  PRIVATE ${VkHLF_LIBRARIES}
-  PRIVATE ${glfw_LIBRARIES}
-  PRIVATE -Wl,--whole-archive ${glslang_LIBRARIES} -Wl,--no-whole-archive
+  PRIVATE ${VkHLF_LIBRARIES} # static
+  PRIVATE ${glfw_LIBRARIES}  # static
+  PRIVATE Xrandr X11 Xcursor Xxf86vm Xinerama # dynamic
+  PRIVATE -Wl,--whole-archive ${glslang_LIBRARIES} -Wl,--no-whole-archive # static
   )

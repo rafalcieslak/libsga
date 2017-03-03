@@ -16,6 +16,7 @@ public:
 
   static std::shared_ptr<vkhlf::Instance> instance;
   static std::shared_ptr<vkhlf::PhysicalDevice> physicalDevice;
+  static std::shared_ptr<vkhlf::Device> device;
   
   // We keep a reference to the debug report callback so that it stays alive with the instance!
   static std::shared_ptr<vkhlf::DebugReportCallback> debugReportCallback;

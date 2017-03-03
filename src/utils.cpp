@@ -23,6 +23,35 @@ void info(){
   }
 }
 
+
+static VkBool32 debugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t, const char*, const char* pMessage, void*)
+  {
+    switch (flags)
+    {
+      case VK_DEBUG_REPORT_INFORMATION_BIT_EXT :
+        std::cout << "INFORMATION: " << pMessage << std::endl;
+        return VK_FALSE;
+      case VK_DEBUG_REPORT_WARNING_BIT_EXT :
+        std::cerr << "WARNING: ";
+        break;
+      case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
+        std::cerr << "PERFORMANCE WARNING: ";
+        break;
+      case VK_DEBUG_REPORT_ERROR_BIT_EXT:
+        std::cerr << "ERROR: ";
+        break;
+      case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
+        std::cout << "DEBUG: " << pMessage << std::endl;
+        return VK_FALSE;
+      default:
+        std::cerr << "unknown flag (" << flags << "): ";
+        break;
+    }
+    if(pMessage)
+      std::cerr << pMessage << std::endl;
+    return VK_TRUE;
+}
+
 static std::map<vk::PhysicalDeviceType, int> deviceTypeScores{
   {vk::PhysicalDeviceType::eDiscreteGpu, 1000},
   {vk::PhysicalDeviceType::eIntegratedGpu, 200},
@@ -90,7 +119,10 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   std::vector<std::string> requiredExtensions, requiredLayers;
   std::vector<std::string> desiredExtensions, desiredLayers;
   std::vector<std::string> enabledExtensions, enabledLayers;
-  
+
+  /*
+    Enable debug validation layers when running the program via command-line.
+
   desiredLayers.insert( desiredLayers.end(), {
       "VK_LAYER_LUNARG_core_validation",
         "VK_LAYER_LUNARG_image",
@@ -100,7 +132,8 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
         "VK_LAYER_GOOGLE_threading",
         "VK_LAYER_GOOGLE_unique_objects"
         });
-  
+  */
+
   // Check layer availability.
   for(auto& layer : requiredLayers){
     auto it = std::find_if(layerProperties.begin(), layerProperties.end(), [&](vk::LayerProperties lp){return lp.layerName == layer;});
@@ -122,7 +155,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   }
   
   impl_global::instance = vkhlf::Instance::create("libSGA", 1, enabledLayers, enabledExtensions);
-
+  
   // Register validation layers debug output.
   // TODO: Only do this when verbosity is set to debug!
   vk::DebugReportFlagsEXT flags(vk::DebugReportFlagBitsEXT::eWarning |
@@ -130,9 +163,28 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
                                 vk::DebugReportFlagBitsEXT::eError |
                                 vk::DebugReportFlagBitsEXT::eDebug
     );
-  impl_global::debugReportCallback = impl_global::instance->createDebugReportCallback(flags, &vkhlf::debugReportCallback);
+  impl_global::debugReportCallback = impl_global::instance->createDebugReportCallback(flags, &debugReportCallback);
 
-  pickPhysicalDevice();
+  // Choose a physical device.
+  if(!pickPhysicalDevice()){
+    throw std::runtime_error("NoDeviceAvailable");
+  }
+
+  std::vector<vk::QueueFamilyProperties> props = impl_global::physicalDevice->getQueueFamilyProperties();
+  std::vector<unsigned int> indices;
+  for (size_t i = 0; i < props.size(); i++)
+    if (props[i].queueFlags & vk::QueueFlagBits::eGraphics)
+      indices.push_back(vkhlf::checked_cast<uint32_t>(i));
+  if(indices.empty()){
+    std::cout << "No queue families on the picked physical device support graphic ops?" << std::endl;
+    throw std::runtime_error("InvalidPhysDevice");
+  }
+  // Pick a queue family.
+  unsigned int queueFamilyIndex = indices[0];
+
+  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(queueFamilyIndex, 1.0f), nullptr, enabledExtensions);
+
+  std::cout << "Logical device created." << std::endl;
   
   impl_global::initialized = true;
   std::cout << "SGA initialized successfully." << std::endl;

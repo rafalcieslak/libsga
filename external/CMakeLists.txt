@@ -11,6 +11,7 @@ ExternalProject_Add( glslang
   GIT_REPOSITORY https://github.com/rafalcieslak/glslang
   GIT_TAG libsga
   DOWNLOAD_COMMAND rm -rf glslang && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/glslang
+  UPDATE_COMMAND true
   )
 
 ExternalProject_Get_Property(glslang INSTALL_DIR)
@@ -24,6 +25,7 @@ ExternalProject_Add( VkHLF
   GIT_TAG libsga
   GIT_SUBMODULES "3rdparty"
   DOWNLOAD_COMMAND rm -rf VkHLF && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/VkHLF
+  UPDATE_COMMAND true
   CMAKE_ARGS -DBUILD_VKCPP_SAMPLES=OFF -DBUILD_SUBMODULES=OFF -DEXTRA_INCLUDE_DIRS=${glslang_INCLUDE_DIR}
   INSTALL_COMMAND
     ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/vkhlf/src/VkHLF/vkhlf ${CMAKE_CURRENT_BINARY_DIR}/install/include/vkhlf &&

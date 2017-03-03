@@ -56,7 +56,7 @@ if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
   add_definitions( -O3 )
 endif()
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-  add_definitions( -Wall -Wextra -Werror -g)
+  add_definitions( -Wall -Wextra -g)
 endif()
 
 add_subdirectory(src)

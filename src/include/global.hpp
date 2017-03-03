@@ -1,6 +1,8 @@
 #ifndef __GLOBAL_HPP__
 #define __GLOBAL_HPP__
 
+#include <vkhlf/vkhlf.h>
+
 #include <sga/utils.hpp>
 
 namespace sga{
@@ -11,6 +13,12 @@ public:
   static ErrorStrategy error_strategy;
   static VerbosityLevel verbosity;
   static bool initialized;
+
+  static std::shared_ptr<vkhlf::Instance> instance;
+  static std::shared_ptr<vkhlf::PhysicalDevice> physicalDevice;
+  
+  // We keep a reference to the debug report callback so that it stays alive with the instance!
+  static std::shared_ptr<vkhlf::DebugReportCallback> debugReportCallback;
 };
 
 } // namespace sga

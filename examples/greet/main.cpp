@@ -5,4 +5,6 @@ int main(){
   sga::init(sga::VerbosityLevel::Debug);
   sga::init(sga::VerbosityLevel::Debug);
   sga::info();
+
+  sga::cleanup();
 }

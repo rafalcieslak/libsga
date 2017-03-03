@@ -26,6 +26,11 @@ enum class ErrorStrategy{
     You may choose the verbosity level SGA will use, default is Quiet. */
 void init(VerbosityLevel level = VerbosityLevel::Quiet, ErrorStrategy stragety = ErrorStrategy::Fail);
 
+/** Deinitializes SGA. Gracefully closes all handles SGA used. After cleanup,
+    you may call init() again. You do NOT have to call this function before
+    your aplication closes. */
+void cleanup();
+
 } // namespace sga
 
 #endif // __SGA_UTILS_HPP__

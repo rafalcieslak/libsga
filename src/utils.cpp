@@ -200,11 +200,22 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   
 }
 
-void cleanup(){
+void terminate(){
+  if(!impl_global::initialized)
+    return;
+  std::cout << "Terminate start." << std::endl;
   impl_global::physicalDevice = nullptr;
+  impl_global::device = nullptr;
+  impl_global::queue = nullptr;
+  impl_global::commandPool = nullptr;
   impl_global::debugReportCallback = nullptr;
-  if(impl_global::instance.use_count() == 1)
-    std::cout << "SGA successfully deinitialized." << std::endl;
+  
+  if(impl_global::instance.use_count() == 1){
+    std::cout << "SGA successfully terminated." << std::endl;
+  }else{
+    std::cout << "Dead reference to global instance!" << std::endl;
+    std::cout << "Could it be that the user program still keeps some live SGA objects?" << std::endl;
+  }
   impl_global::instance = nullptr;
   impl_global::initialized = false;
 }

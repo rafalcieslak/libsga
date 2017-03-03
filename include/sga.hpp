@@ -3,5 +3,6 @@
 
 #include <sga/utils.hpp>
 #include <sga/image.hpp>
+#include <sga/window.hpp>
 
 #endif // __SGA_HPP__

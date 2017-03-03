@@ -18,3 +18,5 @@ macro(add_test NAME)
 endmacro(add_test)
 
 add_test(greet)
+add_test(image)
+add_test(window)

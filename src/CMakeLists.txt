@@ -10,6 +10,7 @@ configure_file(
 include_directories(./include)
 include_directories(SYSTEM ../include)
 include_directories(SYSTEM ${Vulkan_INCLUDE_DIRS})
+include_directories(SYSTEM ${glfw_INCLUDE_DIRS})
 include_directories(SYSTEM ${VkHLF_INCLUDE_DIRS})
 
 add_library(sga SHARED ${LIBSGA_SOURCES})
@@ -21,5 +22,6 @@ target_link_libraries(sga
   PUBLIC ${Vulkan_LIBRARIES}
   # Following libraries are static, so these get embedded into libsga.
   PRIVATE ${VkHLF_LIBRARIES}
+  PRIVATE ${glfw_LIBRARIES}
   PRIVATE -Wl,--whole-archive ${glslang_LIBRARIES} -Wl,--no-whole-archive
   )

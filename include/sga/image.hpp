@@ -7,13 +7,13 @@ namespace sga{
 
 class Image{
 public:
-  class Impl;
   Image(int width, int height);
   ~Image();
   void fillWithPink();
   void testContents();
 
 private:
+  class Impl;
   std::unique_ptr<Impl> impl;
 };
 

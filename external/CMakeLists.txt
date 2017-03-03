@@ -6,6 +6,20 @@ find_package(Git)
 # Note: As of current CMake release, there is no way to ask GIT_SUBMODULES to
 # update NO submodules. Therefore we use a custom git download command to
 # clone VkHLF without initializing submodules we won't even use.
+ExternalProject_Add( glfw
+  PREFIX glfw
+  GIT_REPOSITORY https://github.com/rafalcieslak/glfw
+  GIT_TAG libsga
+  DOWNLOAD_COMMAND rm -rf glfw && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/glfw
+  UPDATE_COMMAND true
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/install
+  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/install
+  )
+
+ExternalProject_Get_Property(glfw INSTALL_DIR)
+set(glfw_INCLUDE_DIR ${INSTALL_DIR}/include PARENT_SCOPE)
+set(glfw_LIBRARIES ${INSTALL_DIR}/lib/libglfw3.a PARENT_SCOPE)
+
 ExternalProject_Add( glslang
   PREFIX glslang
   GIT_REPOSITORY https://github.com/rafalcieslak/glslang

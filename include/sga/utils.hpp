@@ -22,14 +22,14 @@ enum class ErrorStrategy{
   Ignore 
 };
 
-/** Prepares SGA. Chooses a device to use and prepares it for rendering.
-    You may choose the verbosity level SGA will use, default is Quiet. */
+/** Prepares SGA. Chooses a device to use and prepares it for rendering.  You
+    may choose the verbosity level SGA will use, default is Quiet. If you call
+    init(), you must call terminate() before your application closes! */
 void init(VerbosityLevel level = VerbosityLevel::Quiet, ErrorStrategy stragety = ErrorStrategy::Fail);
 
-/** Deinitializes SGA. Gracefully closes all handles SGA used. After cleanup,
-    you may call init() again. You do NOT have to call this function before
-    your aplication closes. */
-void cleanup();
+/** Deinitializes SGA. You MUST call terminate() before your application exits,
+ * if you called init() before. */
+void terminate();
 
 } // namespace sga
 

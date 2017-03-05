@@ -17,8 +17,7 @@ namespace sga{
 
 class Window::Impl{
 public:
-  Impl(unsigned int width, unsigned int height, std::string title) :
-    width(width), height(height) {
+  Impl(unsigned int width, unsigned int height, std::string title){
     // Do not create OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
@@ -70,6 +69,11 @@ public:
   }
   
   void do_resize(unsigned int w, unsigned int h){
+    if (w == 0 || h == 0) return;
+    int w2, h2;
+    glfwGetFramebufferSize(window, &w2, &h2); w = w2; h = h2;
+    if (w == width && h == height) return;
+    
     // Before creating the new framebuffer stapchain, the old one must be destroyed.
     framebufferSwapchain.reset();
     
@@ -81,7 +85,11 @@ public:
         depthFormat,
         renderPass)
       );
-    assert(framebufferSwapchain->getExtent() == vk::Extent2D(w, h));
+    frameno = 0;
+    //std::cout << framebufferSwapchain->getExtent().width << " " << framebufferSwapchain->getExtent().height << std::endl;
+    //std::cout << w << " " << h << std::endl;
+    //std::cout << width << " " << height << std::endl;
+    //std::cout << "===" << std::endl;
 
     width = w;
     height = h;
@@ -98,6 +106,8 @@ public:
       if(!currentFrameRendered){
         std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
 
+        // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
+        
         // TODO: Use pink to indicate unrendered frames?
         std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
             
@@ -113,9 +123,7 @@ public:
         auto fence = impl_global::device->createFence(false);
         impl_global::queue->submit(
           vkhlf::SubmitInfo{
-            { framebufferSwapchain->getPresentSemaphore() },
-            { vk::PipelineStageFlagBits::eColorAttachmentOutput },
-             cmdBuffer, {} },
+            {},{}, cmdBuffer, {} },
           fence
           );
         fence->wait(UINT64_MAX);
@@ -128,7 +136,7 @@ public:
     
     std::cout << "ACQUIRING" << std::endl;
     auto fence = impl_global::device->createFence(false);
-    framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence);
+    framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
     fence->wait(UINT64_MAX);
 
     frameno++;

@@ -12,6 +12,7 @@ public:
   ~Window();
   void nextFrame();
   bool getShouldClose();
+  void limitFPS(double fps);
 private:
   class Impl;
   std::unique_ptr<Impl> impl;

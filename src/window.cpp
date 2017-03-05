@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <cassert>
+#include <chrono>
+#include <thread>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -135,12 +137,26 @@ public:
     fence->wait(UINT64_MAX);
 
     frameno++;
+
+    glfwPollEvents();
   }
 
   bool getShouldClose() {
-    bool x = glfwWindowShouldClose(window);
-    std::cout << (x?"SHOULD CLOSE":"NO NEED TO CLOSE") << std::endl;
+    glfwPollEvents();
     return glfwWindowShouldClose(window);
+  }
+
+  void limitFPS(double fps){
+    if(fps <= 0) return;
+    double prev = limitFPS_lastTime;
+    double now  = glfwGetTime();
+    double timeSinceLastFrame = now - prev;
+    double desiredTime = 1.0/fps;
+    double time_left = desiredTime - timeSinceLastFrame;
+    if(time_left > 0.0){
+      std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
+    }
+    limitFPS_lastTime = glfwGetTime();
   }
   
   static void resizeCallback(GLFWwindow *window, int width, int height){
@@ -162,6 +178,8 @@ private:
   unsigned int frameno = 0;
   // This gets flipped to true when there is data for current frame available for presentation.
   bool currentFrameRendered = false;
+
+  double limitFPS_lastTime = 0.0;
 };
 
 Window::Window(unsigned int width, unsigned int height, std::string title) :
@@ -170,5 +188,6 @@ Window::~Window() = default;
 
 void Window::nextFrame() {impl->nextFrame();}
 bool Window::getShouldClose() {return impl->getShouldClose();}
+void Window::limitFPS(double fps) {return impl->limitFPS(fps);}
 
 } // namespace sga

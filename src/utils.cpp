@@ -116,6 +116,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     std::cout << "Failed to initialize GLFW!" << std::endl;
     return;
   }
+  glfwSetTime(0.0);
 
   impl_global::verbosity = verbosity;
   impl_global::error_strategy = strategy;

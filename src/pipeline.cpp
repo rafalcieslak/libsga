@@ -32,6 +32,7 @@ public:
     if(cooked) return;
 
     // Prepare vkPipeline etc.
+    std::cout << "Cooking a pipeline." << std::endl;
     
     cooked = true;
   }

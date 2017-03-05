@@ -14,7 +14,10 @@ public:
 
   void setTarget(std::shared_ptr<Window> target);
   void drawTestTriangle();
-  
+
+  static std::shared_ptr<Pipeline> create(){
+    return std::make_shared<Pipeline>();
+  }
 private:
   class Impl;
   std::unique_ptr<Impl> impl;

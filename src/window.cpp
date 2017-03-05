@@ -107,11 +107,6 @@ public:
                                    vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
                                    { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
                                    vk::SubpassContents::eInline);
-        cmdBuffer->setViewport(0, vk::Viewport(0.0f, 0.0f,
-                                               (float)framebufferSwapchain->getExtent().width,
-                                               (float)framebufferSwapchain->getExtent().height,
-                                               0.0f, 1.0f));
-        cmdBuffer->setScissor(0, vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()));
         cmdBuffer->endRenderPass();
         cmdBuffer->end();
         

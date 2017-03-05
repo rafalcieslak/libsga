@@ -18,6 +18,7 @@ Pipeline::~Pipeline() = default;
 
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
 void Pipeline::drawTestTriangle() {impl->drawTestTriangle();}
+void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 
 // ====== IMPL ======
 
@@ -82,8 +83,6 @@ void Pipeline::Impl::drawTestTriangle(){
     vk::Extent2D extent;
     std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
     
-    // TODO: Configurable clear color
-    std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
     
     auto cmdBuffer = impl_global::commandPool->allocateCommandBuffer();
     cmdBuffer->begin();
@@ -110,6 +109,10 @@ void Pipeline::Impl::drawTestTriangle(){
     if(target_is_window){
       targetWindow->impl->currentFrameRendered = true;
     }
+}
+
+void Pipeline::Impl::setClearColor(float r, float g, float b){
+  clear_color = {r,g,b};
 }
 
 void Pipeline::Impl::cook(){

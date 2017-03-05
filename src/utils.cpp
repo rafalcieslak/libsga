@@ -106,6 +106,10 @@ static bool pickPhysicalDevice(){
   return true;
 }
 
+double getTime(){
+  return glfwGetTime();
+}
+
 void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   if(impl_global::initialized){
     std::cout << "SGA was already initialized!" << std::endl;

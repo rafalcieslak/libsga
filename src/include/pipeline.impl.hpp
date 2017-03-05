@@ -12,6 +12,7 @@ public:
   Impl();
   void setTarget(std::shared_ptr<Window> tgt);
   void drawTestTriangle();
+  void setClearColor(float r, float g, float b);
 
   void cook();
 private:
@@ -23,6 +24,8 @@ private:
   std::shared_ptr<vkhlf::Pipeline> c_pipeline;
   std::shared_ptr<vkhlf::RenderPass> c_renderPass;
   std::shared_ptr<vkhlf::Buffer> c_vertexBuffer;
+
+std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f}};
 };
 
 } // namespace sga

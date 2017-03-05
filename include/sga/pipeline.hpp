@@ -14,6 +14,7 @@ public:
 
   void setTarget(std::shared_ptr<Window> target);
   void drawTestTriangle();
+  void setClearColor(float r, float g, float b);
 
   static std::shared_ptr<Pipeline> create(){
     return std::make_shared<Pipeline>();

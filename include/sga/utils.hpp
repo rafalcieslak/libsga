@@ -6,6 +6,8 @@ namespace sga{
 /** Displays some basic info about libSGA to the standard output. */
 void info();
 
+double getTime();
+
 enum class VerbosityLevel{
   Quiet,
   Verbose,

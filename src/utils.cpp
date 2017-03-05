@@ -67,6 +67,10 @@ static int rateDevice(std::shared_ptr<vkhlf::PhysicalDevice> dev){
   auto properties = dev->getProperties();
   // auto features = dev->getFeatures();
 
+  // Discard devices that are not sutable for presentation
+  if(!glfwGetPhysicalDevicePresentationSupport(static_cast<vk::Instance>(*impl_global::instance), static_cast<vk::PhysicalDevice>(*dev), 0))
+    return 0;
+
   // Geometry shader is not really required, but it's a good example of how rateDevice may inspect devices.
   // if(!features.geometryShader) return 0;
   
@@ -123,23 +127,8 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   std::vector<vk::LayerProperties> layerProperties = vk::enumerateInstanceLayerProperties();
   std::cout << "Found " << layerProperties.size() << " instance layers." << std::endl;
 
-  std::vector<std::string> requiredExtensions, requiredLayers;
-  std::vector<std::string> desiredExtensions, desiredLayers;
-  std::vector<std::string> enabledExtensions, enabledLayers;
-
-  /*
-    Enable debug validation layers when running the program via command-line.
-
-  desiredLayers.insert( desiredLayers.end(), {
-      "VK_LAYER_LUNARG_core_validation",
-        "VK_LAYER_LUNARG_image",
-        "VK_LAYER_LUNARG_object_tracker",
-        "VK_LAYER_LUNARG_parameter_validation",
-        "VK_LAYER_LUNARG_swapchain",
-        "VK_LAYER_GOOGLE_threading",
-        "VK_LAYER_GOOGLE_unique_objects"
-        });
-  */
+  std::vector<std::string> requiredLayers, desiredLayers, enabledLayers;
+  std::vector<std::string> enabledInstanceExtensions, enabledDeviceExtensions;
 
   // Check layer availability.
   for(auto& layer : requiredLayers){
@@ -160,8 +149,21 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     }
     enabledLayers.push_back(layer);
   }
+
+  // Gather glfw extensions.
+  uint32_t count;
+  const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+  std::copy(extensions, extensions + count, std::back_inserter(enabledInstanceExtensions));
+
+  for(auto i : enabledInstanceExtensions){
+    std::cout << i << " ";
+  } std::cout << std::endl;
+
+  enabledDeviceExtensions.push_back("VK_KHR_swapchain");
   
-  impl_global::instance = vkhlf::Instance::create("libSGA", 1, enabledLayers, enabledExtensions);
+  // TODO: Check if enabledInstanceExtensions are available.
+  
+  impl_global::instance = vkhlf::Instance::create("libSGA", 1, enabledLayers, enabledInstanceExtensions);
   
   // Register validation layers debug output.
   // TODO: Only do this when verbosity is set to debug!
@@ -189,11 +191,10 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   // Pick a queue family.
   impl_global::queueFamilyIndex = indices[0];
 
-  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(impl_global::queueFamilyIndex, 1.0f), nullptr, enabledExtensions);
+  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(impl_global::queueFamilyIndex, 1.0f), nullptr, enabledDeviceExtensions);
+  std::cout << "Logical device created." << std::endl;
 
   impl_global::queue = impl_global::device->getQueue(impl_global::queueFamilyIndex, 0);
-
-  std::cout << "Logical device created." << std::endl;
 
   // TODO: Prepare memory allocators??
   // eg.
@@ -237,6 +238,26 @@ void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuf
 
   commandBuffer->end();
   vkhlf::submitAndWait(impl_global::queue, commandBuffer);
+}
+
+void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface){
+
+  typedef VkResult (*vkGetPhysicalDeviceSurfaceSupportKHR_funtype)(
+    VkPhysicalDevice,
+    uint32_t,
+    VkSurfaceKHR,
+    VkBool32*);
+  // Satisfy validation layers by checking whether the physical device supports this sufrace.
+  // This is pretty much bullshit, because we only choose physical devices that support presentation.
+  // However, validation layer insists that not checking per-surface is a STRICT ERROR, and refuses
+  // to continue the application. See https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/818
+  vkGetPhysicalDeviceSurfaceSupportKHR_funtype gpdsshkr = (vkGetPhysicalDeviceSurfaceSupportKHR_funtype)impl_global::instance->getProcAddress("vkGetPhysicalDeviceSurfaceSupportKHR");
+  VkBool32 surfaceSupported;
+  gpdsshkr((vk::PhysicalDevice)*impl_global::physicalDevice, impl_global::queueFamilyIndex, (vk::SurfaceKHR)*surface, &surfaceSupported);
+  if(!surfaceSupported){
+    std::cout << "Internal error: Created sufrace is not supported by the physical device." << std::endl;
+    throw std::runtime_error("SurfaceNotSupported");
+  }
 }
 
 }

@@ -10,6 +10,8 @@ class Window{
 public:
   Window(unsigned int width, unsigned int height, std::string title);
   ~Window();
+  void nextFrame();
+  bool getShouldClose();
 private:
   class Impl;
   std::unique_ptr<Impl> impl;

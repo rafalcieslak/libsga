@@ -8,6 +8,7 @@
 namespace sga{
 
 void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)>);
+void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface);
 
 } // namespace sga
 

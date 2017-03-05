@@ -91,10 +91,55 @@ public:
     //   \/ semaphore?
     // Acquire next swapchain framebuffer. Wait until it's done.
     //   \/ fence?
+
+    if(frameno > 0){
+      if(!currentFrameRendered){
+        std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
+
+        // TODO: Use pink to indicate unrendered frames?
+        std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
+            
+        auto cmdBuffer = impl_global::commandPool->allocateCommandBuffer();
+        cmdBuffer->begin();
+        cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
+                                   vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
+                                   { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
+                                   vk::SubpassContents::eInline);
+        cmdBuffer->setViewport(0, vk::Viewport(0.0f, 0.0f,
+                                               (float)framebufferSwapchain->getExtent().width,
+                                               (float)framebufferSwapchain->getExtent().height,
+                                               0.0f, 1.0f));
+        cmdBuffer->setScissor(0, vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()));
+        cmdBuffer->endRenderPass();
+        cmdBuffer->end();
+        
+        auto fence = impl_global::device->createFence(false);
+        impl_global::queue->submit(
+          vkhlf::SubmitInfo{
+            { framebufferSwapchain->getPresentSemaphore() },
+            { vk::PipelineStageFlagBits::eColorAttachmentOutput },
+             cmdBuffer, {} },
+          fence
+          );
+        fence->wait(UINT64_MAX);
+      }
+      
+      std::cout << "PRESENTING" << std::endl;
+      framebufferSwapchain->present(impl_global::queue);
+      impl_global::queue->waitIdle();
+    }
     
+    std::cout << "ACQUIRING" << std::endl;
+    auto fence = impl_global::device->createFence(false);
+    framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence);
+    fence->wait(UINT64_MAX);
+
+    frameno++;
   }
 
   bool getShouldClose() {
+    bool x = glfwWindowShouldClose(window);
+    std::cout << (x?"SHOULD CLOSE":"NO NEED TO CLOSE") << std::endl;
     return glfwWindowShouldClose(window);
   }
   
@@ -114,6 +159,9 @@ private:
   std::shared_ptr<vkhlf::RenderPass> renderPass;
   std::unique_ptr<vkhlf::FramebufferSwapchain> framebufferSwapchain;
 
+  unsigned int frameno = 0;
+  // This gets flipped to true when there is data for current frame available for presentation.
+  bool currentFrameRendered = false;
 };
 
 Window::Window(unsigned int width, unsigned int height, std::string title) :

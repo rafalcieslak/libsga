@@ -42,7 +42,7 @@ namespace vkhlf
                        std::shared_ptr<Swapchain> const& oldSwapchain, std::shared_ptr<Allocator> const& allocator);
       VKHLF_API virtual ~Swapchain();
 
-      VKHLF_API uint32_t acquireNextImage(uint64_t timeout = UINT64_MAX, std::shared_ptr<Fence> const& fence = {});
+      VKHLF_API uint32_t acquireNextImage(uint64_t timeout = UINT64_MAX, std::shared_ptr<Fence> const& fence = {}, bool no_semaphore = false);
 
       VKHLF_API std::vector<std::shared_ptr<vkhlf::Image>> const& getImages() const;
       VKHLF_API std::vector<std::shared_ptr<vkhlf::Semaphore>> const& getPresentCompleteSemaphores() const { return m_presentCompleteSemaphores; }

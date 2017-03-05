@@ -65,9 +65,9 @@ namespace vkhlf
     static_cast<vk::Device>(*get<Device>()).destroySwapchainKHR(m_swapchain, *get<Allocator>());
   }
 
-  uint32_t Swapchain::acquireNextImage(uint64_t timeout, std::shared_ptr<Fence> const& fence)
+uint32_t Swapchain::acquireNextImage(uint64_t timeout, std::shared_ptr<Fence> const& fence, bool no_semaphore)
   {
-    vk::ResultValue<uint32_t> result = static_cast<vk::Device>(*get<Device>()).acquireNextImageKHR(m_swapchain, timeout, *m_freeSemaphore, fence ? static_cast<vk::Fence>(*fence) : nullptr);
+    vk::ResultValue<uint32_t> result = static_cast<vk::Device>(*get<Device>()).acquireNextImageKHR(m_swapchain, timeout, no_semaphore ? (vk::Semaphore)nullptr : *m_freeSemaphore, fence ? static_cast<vk::Fence>(*fence) : nullptr);
     assert(result.result == vk::Result::eSuccess);  // need to handle timeout, not ready, and suboptimal
     // put the semaphore at the correct index and use the semaphore from the new index as next free semaphore
     std::swap(m_freeSemaphore, m_presentCompleteSemaphores[result.value]);

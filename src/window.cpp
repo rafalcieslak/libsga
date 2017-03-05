@@ -104,7 +104,7 @@ public:
 
     if(frameno > 0){
       if(!currentFrameRendered){
-        std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
+        //std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
 
         // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
         
@@ -129,12 +129,12 @@ public:
         fence->wait(UINT64_MAX);
       }
       
-      std::cout << "PRESENTING" << std::endl;
+      //std::cout << "PRESENTING" << std::endl;
       framebufferSwapchain->present(impl_global::queue);
       impl_global::queue->waitIdle();
     }
     
-    std::cout << "ACQUIRING" << std::endl;
+    //std::cout << "ACQUIRING" << std::endl;
     auto fence = impl_global::device->createFence(false);
     framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
     fence->wait(UINT64_MAX);

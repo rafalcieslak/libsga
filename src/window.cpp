@@ -1,23 +1,27 @@
 #include <sga/window.hpp>
+#include "window.impl.hpp"
 
 #include <iostream>
 #include <cassert>
 #include <chrono>
 #include <thread>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#include <vkhlf/vkhlf.h>
-
 #include "global.hpp"
 #include "utils.hpp"
 
 namespace sga{
 
+Window::Window(unsigned int width, unsigned int height, std::string title) :
+  impl(std::make_unique<Window::Impl>(width, height, title)) {}
+Window::~Window() = default;
 
-class Window::Impl{
-public:
-  Impl(unsigned int width, unsigned int height, std::string title){
+void Window::nextFrame() {impl->nextFrame();}
+bool Window::getShouldClose() {return impl->getShouldClose();}
+void Window::limitFPS(double fps) {return impl->limitFPS(fps);}
+
+// ====== IMPL ======
+
+Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     // Do not create OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
@@ -66,9 +70,9 @@ public:
 
     // Hook some glfw callbacks.
     glfwSetFramebufferSizeCallback(window, Window::Impl::resizeCallback);
-  }
+}
   
-  void do_resize(unsigned int w, unsigned int h){
+void Window::Impl::do_resize(unsigned int w, unsigned int h){
     if (w == 0 || h == 0) return;
     int w2, h2;
     glfwGetFramebufferSize(window, &w2, &h2); w = w2; h = h2;
@@ -96,7 +100,7 @@ public:
     // TODO: Call user handler for resize.
   }
 
-  void nextFrame() {
+void Window::Impl::nextFrame() {
     // Present current framebuffer. Wait until it's done.
     //   \/ semaphore?
     // Acquire next swapchain framebuffer. Wait until it's done.
@@ -104,13 +108,13 @@ public:
 
     if(frameno > 0){
       if(!currentFrameRendered){
-        //std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
+        std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
 
         // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
         
         // TODO: Use pink to indicate unrendered frames?
         std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
-            
+        
         auto cmdBuffer = impl_global::commandPool->allocateCommandBuffer();
         cmdBuffer->begin();
         cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
@@ -142,14 +146,14 @@ public:
     frameno++;
 
     glfwPollEvents();
-  }
+}
 
-  bool getShouldClose() {
+bool Window::Impl::getShouldClose() {
     glfwPollEvents();
     return glfwWindowShouldClose(window);
-  }
+}
 
-  void limitFPS(double fps){
+void Window::Impl::limitFPS(double fps){
     if(fps <= 0) return;
     double prev = limitFPS_lastTime;
     double now  = glfwGetTime();
@@ -160,37 +164,11 @@ public:
       std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
     }
     limitFPS_lastTime = glfwGetTime();
-  }
+}
   
-  static void resizeCallback(GLFWwindow *window, int width, int height){
+void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){
     Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
     wd->do_resize(width, height);
-  }
-
-private:
-  GLFWwindow* window;
-  unsigned int width, height;
-  
-  vk::Format colorFormat;
-  vk::Format depthFormat;
-  
-  std::shared_ptr<vkhlf::Surface> surface;
-  std::shared_ptr<vkhlf::RenderPass> renderPass;
-  std::unique_ptr<vkhlf::FramebufferSwapchain> framebufferSwapchain;
-
-  unsigned int frameno = 0;
-  // This gets flipped to true when there is data for current frame available for presentation.
-  bool currentFrameRendered = false;
-
-  double limitFPS_lastTime = 0.0;
-};
-
-Window::Window(unsigned int width, unsigned int height, std::string title) :
-  impl(std::make_unique<Window::Impl>(width, height, title)) {}
-Window::~Window() = default;
-
-void Window::nextFrame() {impl->nextFrame();}
-bool Window::getShouldClose() {return impl->getShouldClose();}
-void Window::limitFPS(double fps) {return impl->limitFPS(fps);}
+}
 
 } // namespace sga

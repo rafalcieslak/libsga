@@ -4,5 +4,6 @@
 #include <sga/utils.hpp>
 #include <sga/image.hpp>
 #include <sga/window.hpp>
+#include <sga/pipeline.hpp>
 
 #endif // __SGA_HPP__

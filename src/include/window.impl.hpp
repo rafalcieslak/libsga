@@ -15,8 +15,8 @@ public:
   
   void do_resize(unsigned int w, unsigned int h);
   void nextFrame();
-  bool getShouldClose();
-  void limitFPS(double fps);
+  bool isOpen();
+  void setFPSLimit(double fps);
   static void resizeCallback(GLFWwindow *window, int width, int height);
   
 private:
@@ -46,7 +46,8 @@ private:
   
 private:
   unsigned int frameno = 0;
-
+  
+  double fpsLimit = 60;
   double limitFPS_lastTime = 0.0;
 };
 

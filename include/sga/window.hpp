@@ -11,8 +11,8 @@ public:
   Window(unsigned int width, unsigned int height, std::string title);
   ~Window();
   void nextFrame();
-  bool getShouldClose();
-  void limitFPS(double fps);
+  bool isOpen();
+  void setFPSLimit(double fps);
   static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
     return std::make_shared<Window>(width, height, title);
   }

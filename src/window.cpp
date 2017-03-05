@@ -16,8 +16,8 @@ Window::Window(unsigned int width, unsigned int height, std::string title) :
 Window::~Window() = default;
 
 void Window::nextFrame() {impl->nextFrame();}
-bool Window::getShouldClose() {return impl->getShouldClose();}
-void Window::limitFPS(double fps) {return impl->limitFPS(fps);}
+bool Window::isOpen() {return impl->isOpen();}
+void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
 
 // ====== IMPL ======
 
@@ -101,11 +101,20 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   }
 
 void Window::Impl::nextFrame() {
-    // Present current framebuffer. Wait until it's done.
-    //   \/ semaphore?
-    // Acquire next swapchain framebuffer. Wait until it's done.
-    //   \/ fence?
-
+  
+  // Wait with presentation for a while, if fpslimit is enabled.
+  if(frameno > 0 && fpsLimit > 0){
+    double prev = limitFPS_lastTime;
+    double now  = glfwGetTime();
+    double timeSinceLastFrame = now - prev;
+    double desiredTime = 1.0/fpsLimit;
+    double time_left = desiredTime - timeSinceLastFrame;
+    if(time_left > 0.0){
+      std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
+    }
+    limitFPS_lastTime = glfwGetTime();
+  }
+  
     if(frameno > 0){
       if(!currentFrameRendered){
         std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
@@ -148,22 +157,15 @@ void Window::Impl::nextFrame() {
     glfwPollEvents();
 }
 
-bool Window::Impl::getShouldClose() {
+bool Window::Impl::isOpen() {
     glfwPollEvents();
-    return glfwWindowShouldClose(window);
+    return !glfwWindowShouldClose(window);
 }
 
-void Window::Impl::limitFPS(double fps){
-    if(fps <= 0) return;
-    double prev = limitFPS_lastTime;
-    double now  = glfwGetTime();
-    double timeSinceLastFrame = now - prev;
-    double desiredTime = 1.0/fps;
-    double time_left = desiredTime - timeSinceLastFrame;
-    if(time_left > 0.0){
-      std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
-    }
-    limitFPS_lastTime = glfwGetTime();
+void Window::Impl::setFPSLimit(double fps){
+  // -1 for no limit
+  if(fps > 0.0 && fps < 1.0) fps = 1.0;
+  fpsLimit = fps;
 }
   
 void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){

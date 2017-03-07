@@ -19,7 +19,7 @@ int main(){
     double b = std::sin(q + 0.66 * M_PI * 2);
     pipeline->setClearColor(r, g, b);
   
-    pipeline->drawTestTriangle();
+    // pipeline->drawTestTriangle();
     window->nextFrame();
   }
   sga::terminate();

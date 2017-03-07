@@ -59,6 +59,7 @@ constexpr size_t getTotalDataTypeSize(DataType arg1, Ts... args){
 class DataLayout{
 public:
   ~DataLayout();
+  DataLayout() {}
   DataLayout(std::initializer_list<DataType> types);
   size_t size() const{
     // TODO: Don't use accumulate in order to strip <numeric> header dependency.
@@ -80,6 +81,9 @@ public:
   }
   bool operator !=(const DataLayout& other){
     return !(*this == other);
+  }
+  operator bool(){
+    return layout.size() > 0;
   }
 };
 

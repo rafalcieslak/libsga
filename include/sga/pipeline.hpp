@@ -8,6 +8,8 @@
 namespace sga{
 
 class VBOBase;
+class VertexShader;
+class FragmentShader;
 
 class Pipeline{
 public:
@@ -15,10 +17,12 @@ public:
   ~Pipeline();
 
   void setTarget(std::shared_ptr<Window> target);
-  void drawTestTriangle();
   void drawVBO(std::shared_ptr<VBOBase>);
   void setClearColor(float r, float g, float b);
 
+  void setVertexShader(std::shared_ptr<VertexShader>);
+  void setFragmentShader(std::shared_ptr<FragmentShader>);
+  
   static std::shared_ptr<Pipeline> create(){
     return std::make_shared<Pipeline>();
   }

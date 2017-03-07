@@ -6,5 +6,6 @@
 #include <sga/window.hpp>
 #include <sga/pipeline.hpp>
 #include <sga/vbo.hpp>
+#include <sga/shader.hpp>
 
 #endif // __SGA_HPP__

@@ -10,6 +10,7 @@
 #include "utils.hpp"
 #include "window.impl.hpp"
 #include "vbo.impl.hpp"
+#include "shader.impl.hpp"
 
 namespace sga{
 
@@ -18,97 +19,64 @@ Pipeline::~Pipeline() = default;
 
 
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
-void Pipeline::drawTestTriangle() {impl->drawTestTriangle();}
 void Pipeline::drawVBO(std::shared_ptr<VBOBase> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
+void Pipeline::setFragmentShader(std::shared_ptr<FragmentShader> shader) {impl->setFragmentShader(shader);}
+void Pipeline::setVertexShader(std::shared_ptr<VertexShader> shader) {impl->setVertexShader(shader);}
 
 // ====== IMPL ======
-
-// shaders
-static char const *testVertShaderText =
-R"(#version 430
-layout(location = 0) in vec2 inVertex;
-layout(location = 1) in vec4 inColor;
-layout(location = 0) out vec4 outColor;
-out gl_PerVertex
-{
-  vec4 gl_Position;
-};
-void main()
-{
-  outColor = inColor;
-  gl_Position = vec4(inVertex, 0, 1);
-}
-)";
-
-static char const *testFragShaderText = 
-R"(#version 430
-layout(location = 0) in vec4 inColor;
-layout(location = 0) out vec4 outColor;
-void main()
-{
-  outColor = inColor;
-}
-)";
-
 
 Pipeline::Impl::Impl(){
   
 }
   
 void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
-    cooked = false;
-    target_is_window = true;
-    targetWindow = tgt;
-    // TODO: Reset shared ptr to target image
+  cooked = false;
+  target_is_window = true;
+  targetWindow = tgt;
+  // TODO: Reset shared ptr to target image
 }
-void Pipeline::Impl::drawTestTriangle(){
-  // TODO: When drawin a test triangle, what data layout shall we use?
-  
-  // Prepare vertex buffer.
-  struct TestVertex
-  {
-    float   position[2];
-    uint8_t color[4];
-  };
-  
-  const std::vector<TestVertex> test_vertices =
-    {
-      { {  0.0f, -0.5f },{ 0xFF, 0x00, 0x00, 0xFF }, },
-      { {  0.5f,  0.5f },{ 0x00, 0x00, 0xFF, 0xFF }, },
-      { { -0.5f,  0.5f },{ 0x00, 0xFF, 0x00, 0xFF }, },
-    };
-  
-  auto vertexBuffer = impl_global::device->createBuffer(
-    test_vertices.size() * sizeof(TestVertex),
-    vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-    vk::SharingMode::eExclusive,
-    nullptr,
-    vk::MemoryPropertyFlagBits::eDeviceLocal,
-    nullptr);
-  
-  executeOneTimeCommands([&](auto cmdBuffer){
-      vertexBuffer->update<TestVertex>(
-        0,
-        { uint32_t(test_vertices.size()), test_vertices.data() },
-        cmdBuffer);
-    });
 
-  drawBuffer(vertexBuffer, test_vertices.size());
+void Pipeline::Impl::setVertexShader(std::shared_ptr<VertexShader> vs){
+  cooked = false;
+  vertexShader = vs;
 }
+void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
+  cooked = false;
+  fragmentShader = fs;
+}
+
 void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
-  if(vbo->getLayout() != vertexInputLayout){
+  if(!ensureValidity()) return;
+
+  // Extra VBO-specific validity check
+  if(vbo->getLayout() != vertexShader->impl->inputLayout){
     std::cout << "ERROR: VBO layout does not match pipeline input layout!" << std::endl;
-    // TODO: More verbose output?
     return;
   }
   
+  cook();
   drawBuffer(vbo->impl->buffer, vbo->size);
 }
 
-void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned int n){  
-  cook();
-  
+bool Pipeline::Impl::ensureValidity(){
+  // TODO: More verbose output?
+  if(!vertexShader){
+    std::cout << "Vertex shader not set." << std::endl; return false;
+  }
+  if(!fragmentShader){
+    std::cout << "Fragment shader not set." << std::endl; return false;
+  }
+  if(vertexShader->impl->outputLayout != fragmentShader->impl->inputLayout){
+    std::cout << "Vertex shader output layout does not match fragment shader input layout" << std::endl; return false;
+  }
+  if(!targetWindow){
+    std::cout << "Target window not set" << std::endl; return false;
+  }
+  return true;
+}
+
+void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned int n){
   std::shared_ptr<vkhlf::Framebuffer> framebuffer;
   vk::Extent2D extent;
   std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
@@ -158,12 +126,6 @@ void Pipeline::Impl::cook(){
     std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = impl_global::device->createDescriptorSetLayout({});
     // pipeline layout
     std::shared_ptr<vkhlf::PipelineLayout> pipelineLayout = impl_global::device->createPipelineLayout(descriptorSetLayout, nullptr);
-    
-    // init shaders
-    std::shared_ptr<vkhlf::ShaderModule> testVertexShader = impl_global::device->createShaderModule(
-      vkhlf::compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, testVertShaderText));
-    std::shared_ptr<vkhlf::ShaderModule> testFragmentShader = impl_global::device->createShaderModule(
-      vkhlf::compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, testFragShaderText));
 
     // Take renderpass and framebuffer
     if(target_is_window){
@@ -174,10 +136,12 @@ void Pipeline::Impl::cook(){
     
     // init pipeline
     std::shared_ptr<vkhlf::PipelineCache> pipelineCache = impl_global::device->createPipelineCache(0, nullptr);
+
+    // Use shaders
     vkhlf::PipelineShaderStageCreateInfo vertexStage(
-      vk::ShaderStageFlagBits::eVertex,   testVertexShader, "main");
+      vk::ShaderStageFlagBits::eVertex,   vertexShader->impl->shader, "main");
     vkhlf::PipelineShaderStageCreateInfo fragmentStage(
-      vk::ShaderStageFlagBits::eFragment, testFragmentShader, "main");
+      vk::ShaderStageFlagBits::eFragment, fragmentShader->impl->shader, "main");
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
@@ -204,7 +168,7 @@ void Pipeline::Impl::cook(){
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;
     size_t offset = 0, n = 0;
-    for(DataType dt : vertexInputLayout.layout){
+    for(DataType dt : vertexShader->impl->inputLayout.layout){
       attribs.push_back(vk::VertexInputAttributeDescription(
                           n, 0, dataTypeLayout[dt], offset));
       n++;

@@ -7,6 +7,8 @@
 
 namespace sga{
 
+class VBOBase;
+
 class Pipeline{
 public:
   Pipeline();
@@ -14,6 +16,7 @@ public:
 
   void setTarget(std::shared_ptr<Window> target);
   void drawTestTriangle();
+  void drawVBO(std::shared_ptr<VBOBase>);
   void setClearColor(float r, float g, float b);
 
   static std::shared_ptr<Pipeline> create(){

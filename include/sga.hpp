@@ -5,5 +5,6 @@
 #include <sga/image.hpp>
 #include <sga/window.hpp>
 #include <sga/pipeline.hpp>
+#include <sga/vbo.hpp>
 
 #endif // __SGA_HPP__

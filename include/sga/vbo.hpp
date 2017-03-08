@@ -31,8 +31,6 @@ protected:
 template<DataType... Layout>
 class VBO : public VBOBase{
 public:
-  VBO(unsigned int n) : VBOBase(getDataSize(), n) {}
-  
   // Non-Interleaving write.
   template <typename T>
   void write(std::vector<T> data){
@@ -65,8 +63,10 @@ public:
   }
 
   static std::shared_ptr<VBO<Layout...>> create(unsigned int size) {
-    return std::make_shared<VBO<Layout...>>(size);
+    return std::shared_ptr<VBO<Layout...>>(new VBO<Layout...>(size));
   }
+private:
+  VBO(unsigned int n) : VBOBase(getDataSize(), n) {}
 };
 
 } // namespace sga

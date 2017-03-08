@@ -8,17 +8,17 @@ namespace sga{
 
 class Window{
 public:
-  Window(unsigned int width, unsigned int height, std::string title);
   ~Window();
   void nextFrame();
   bool isOpen();
   void setFPSLimit(double fps);
   static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
-    return std::make_shared<Window>(width, height, title);
+    return std::shared_ptr<Window>(new Window(width, height, title));
   }
 
   friend class Pipeline;
 private:
+  Window(unsigned int width, unsigned int height, std::string title);
   class Impl;
   std::unique_ptr<Impl> impl;
 };

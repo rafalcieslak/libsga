@@ -13,7 +13,6 @@ class FragmentShader;
 
 class Pipeline{
 public:
-  Pipeline();
   ~Pipeline();
 
   void setTarget(std::shared_ptr<Window> target);
@@ -24,9 +23,10 @@ public:
   void setFragmentShader(std::shared_ptr<FragmentShader>);
   
   static std::shared_ptr<Pipeline> create(){
-    return std::make_shared<Pipeline>();
+    return std::shared_ptr<Pipeline>(new Pipeline());
   }
 private:
+  Pipeline();
   class Impl;
   std::unique_ptr<Impl> impl;
 };

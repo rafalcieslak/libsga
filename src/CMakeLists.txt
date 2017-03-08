@@ -11,6 +11,7 @@ include_directories(./include)
 include_directories(SYSTEM ../include)
 include_directories(SYSTEM ${Vulkan_INCLUDE_DIRS})
 include_directories(SYSTEM ${glfw_INCLUDE_DIRS})
+include_directories(SYSTEM ${glslang_INCLUDE_DIRS})
 include_directories(SYSTEM ${VkHLF_INCLUDE_DIRS})
 
 add_library(sga SHARED ${LIBSGA_SOURCES})

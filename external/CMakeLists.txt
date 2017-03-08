@@ -54,6 +54,7 @@ set(VkHLF_INCLUDE_DIRS ${INSTALL_DIR}/include PARENT_SCOPE)
 set(VkHLF_LIBRARIES ${INSTALL_DIR}/lib/libVkHLF.a PARENT_SCOPE)
 
 # Export glslang configuration
+set(glslang_INCLUDE_DIRS ${glslang_INCLUDE_DIR} PARENT_SCOPE)
 set(glslang_LIBRARIES
   ${glslang_LIBRARY_DIR}/libglslang.a
   ${glslang_LIBRARY_DIR}/libOGLCompiler.a

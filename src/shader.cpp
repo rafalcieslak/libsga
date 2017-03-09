@@ -24,6 +24,7 @@ void Shader::addOutput(DataType type, std::string name) {impl->addOutput(type, n
 void Shader::addOutput(std::pair<DataType, std::string> pair) {impl->addOutput(pair);}
 void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
 
+void Shader::addUniform(DataType type, std::string name) {impl->addUniform(type, name);}
 
 Shader::Impl::Impl() {}
 
@@ -31,6 +32,7 @@ std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source)
   auto p = std::make_shared<VertexShader>();
   p->impl->stage = vk::ShaderStageFlagBits::eVertex;
   p->impl->source = source;
+  p->impl->addStandardUniforms();
   return p;
 }
 
@@ -38,6 +40,7 @@ std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string sou
   auto p = std::make_shared<FragmentShader>();
   p->impl->stage = vk::ShaderStageFlagBits::eFragment;
   p->impl->source = source;
+  p->impl->addStandardUniforms();
   return p;
 }
 
@@ -68,6 +71,15 @@ void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
   compiled = false;
 }
 
+void Shader::Impl::addUniform(sga::DataType type, std::string name){
+  uniforms.push_back(std::make_pair(type,name));
+  compiled = false;
+}
+
+void Shader::Impl::addStandardUniforms(){
+  addUniform(DataType::Float, "sgaTime");
+}
+
 void Shader::Impl::compile(){
   // Prepare preamble.
   std::string preamble = "#version 420\n";
@@ -85,7 +97,15 @@ void Shader::Impl::compile(){
       getDataTypeGLSL(outputAttr[i].first) + " " + outputAttr[i].second + ";\n";
     outputLayout.extend(outputAttr[i].first);
   }
-        
+  // Gather uniforms
+  assert(uniforms.size() > 0);
+  unsigned int bindno = (stage == vk::ShaderStageFlagBits::eVertex) ? 0 : 1;
+  preamble += "layout(binding = "  + std::to_string(bindno) + ") uniform sga_uniforms {\n";
+  for(unsigned int i = 0; i < uniforms.size(); i++){
+    preamble += "  " + getDataTypeGLSL(uniforms[i].first) + " " + uniforms[i].second + ";\n";
+  }
+  preamble += "} u;\n";
+  
   auto module = compileGLSLToSPIRV(stage, preamble + source);
   shader = global::device->createShaderModule(module);
   compiled = true;
@@ -249,10 +269,6 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
       std::string infoDebugLog = shader.getInfoDebugLog();
       ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
-
-  // TODO: Check return val.
-  program.buildReflection();
-  program.dumpReflection();
   
   // TODO: Does this have a return value?
   std::vector<uint32_t> code;

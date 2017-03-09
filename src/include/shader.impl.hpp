@@ -22,10 +22,16 @@ public:
   void addOutput(DataType type, std::string name);
   void addOutput(std::pair<DataType, std::string>);
   void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
+  
+  void addUniform(DataType type, std::string name);
+  
   std::vector<std::pair<DataType, std::string>> inputAttr;
   std::vector<std::pair<DataType, std::string>> outputAttr;
+  std::vector<std::pair<DataType, std::string>> uniforms;
+
+  void addStandardUniforms();
   
-  void compile();  
+  void compile();
   bool compiled = false;
   
   std::shared_ptr<vkhlf::ShaderModule> shader;

@@ -26,6 +26,7 @@ int main(){
     void main()
     {
       outColor = inColor;
+      outColor.xyz += vec3(sin(u.time) * 0.4);
     }
   )");
 
@@ -35,6 +36,8 @@ int main(){
 
   fragShader->addInput(sga::DataType::Float4, "inColor");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
+
+  fragShader->addUniform(sga::DataType::Float, "time");
   
   vertShader->compile();
   fragShader->compile();
@@ -46,13 +49,13 @@ int main(){
   window->setFPSLimit(60);
 
   while(window->isOpen()){
-    double q = sga::getTime() * 3.0;
-    float x1 =  std::sin(q + 0.00 * M_PI * 2);
-    float x2 =  std::sin(q + 0.33 * M_PI * 2);
-    float x3 =  std::sin(q + 0.66 * M_PI * 2);
-    float y1 = -std::cos(q + 0.00 * M_PI * 2);
-    float y2 = -std::cos(q + 0.33 * M_PI * 2);
-    float y3 = -std::cos(q + 0.66 * M_PI * 2);
+    double q = sga::getTime() * 0.8;
+    float x1 =  std::sin(q + 0.0000 * M_PI * 2);
+    float x2 =  std::sin(q + 0.3333 * M_PI * 2);
+    float x3 =  std::sin(q + 0.6666 * M_PI * 2);
+    float y1 = -std::cos(q + 0.0000 * M_PI * 2);
+    float y2 = -std::cos(q + 0.3333 * M_PI * 2);
+    float y3 = -std::cos(q + 0.6666 * M_PI * 2);
     
     std::vector<CustomData> f = {
       { { x1, y1 },{ 1, 0, 0, 1 }, },
@@ -60,6 +63,8 @@ int main(){
       { { x3, y3 },{ 0, 0, 1, 1 }, },
     };
     vbo->write(f);
+
+    pipeline->setUniform("time", (float)sga::getTime());
   
     pipeline->drawVBO(vbo);
     window->nextFrame();

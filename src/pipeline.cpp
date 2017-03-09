@@ -12,6 +12,7 @@
 #include "window.impl.hpp"
 #include "vbo.impl.hpp"
 #include "shader.impl.hpp"
+#include "layout.hpp"
 
 namespace sga{
 
@@ -24,6 +25,34 @@ void Pipeline::drawVBO(std::shared_ptr<VBOBase> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 void Pipeline::setFragmentShader(std::shared_ptr<FragmentShader> shader) {impl->setFragmentShader(shader);}
 void Pipeline::setVertexShader(std::shared_ptr<VertexShader> shader) {impl->setVertexShader(shader);}
+
+
+void Pipeline::setUniform(std::string name, float value){
+  setUniform(DataType::Float, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, int value){
+  setUniform(DataType::Int, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, unsigned int value){
+  setUniform(DataType::UInt, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, std::array<float,2> value){
+  setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, std::array<float,3> value){
+  setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, std::array<float,4> value){
+  setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
+}
+void Pipeline::setUniform(std::string name, double value){
+  setUniform(DataType::Double, name, (char*)&value, sizeof(value));
+}
+
+void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t size){
+  impl->setUniform(dt, name, pData, size);
+}
+
 
 // ====== IMPL ======
 
@@ -47,6 +76,7 @@ void Pipeline::Impl::setVertexShader(std::shared_ptr<VertexShader> vs){
   vertexShader = vs->impl->shader;
   vsInputLayout = vs->impl->inputLayout;
   vsOutputLayout = vs->impl->outputLayout;
+  vsUniforms = vs->impl->uniforms;
 }
 void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
   cooked = false;
@@ -57,6 +87,50 @@ void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
   fragmentShader = fs->impl->shader;
   fsInputLayout = fs->impl->inputLayout;
   fsOutputLayout = fs->impl->outputLayout;
+  fsUniforms = fs->impl->uniforms;
+}
+
+
+void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
+  cook();
+  
+  if(size != getDataTypeSize(dt)){
+    // TODO: Name types in output?
+    DataFormatError("UniformSizeMismatch", "setUniform failed: Provided input has different size than declared data type!").raise();
+  }
+
+  // TODO: Check whether uniform with such name was found.
+  // TODO: Prevent setting values of standard uniforms when standard=false
+  (void)standard;
+
+  // Search in vertex shader uniforms.
+  size_t offset = 0;
+  for(const auto& p : vsUniforms){
+    if(p.second == name){
+      if(p.first != dt){
+        DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
+      }
+      memcpy(c_vsUniformArea + offset, pData, size);
+    }
+    offset += getDataTypeSize(p.first);
+  }
+  
+  // Search in fragment shader uniforms.
+  offset = 0;
+  for(const auto& p : fsUniforms){
+    if(p.second == name){
+      if(p.first != dt){
+        DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
+      }
+      memcpy(c_fsUniformArea + offset, pData, size);
+    }
+    offset += getDataTypeSize(p.first);
+  }
+}
+
+void Pipeline::Impl::updateStandardUniforms(){
+  float time = getTime();
+  setUniform(DataType::Float, "sgaTime", (char*)&time, sizeof(time), true);
 }
 
 void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
@@ -93,15 +167,45 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   std::shared_ptr<vkhlf::Framebuffer> framebuffer;
   vk::Extent2D extent;
   std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
-  
-  
+
   auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();
-  cmdBuffer->beginRenderPass(c_renderPass, framebuffer,
-                             vk::Rect2D({ 0, 0 }, extent),
-                             { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
-                             vk::SubpassContents::eInline);
+  
+  // Update uniform buffers.
+  std::shared_ptr<vkhlf::Buffer> unisbvs = global::device->createBuffer(
+    c_vsUniformSize,
+    vk::BufferUsageFlagBits::eTransferSrc,
+    vk::SharingMode::eExclusive,
+    nullptr,
+    vk::MemoryPropertyFlagBits::eHostVisible,
+    nullptr);
+  std::shared_ptr<vkhlf::Buffer> unisbfs = global::device->createBuffer(
+    c_fsUniformSize,
+    vk::BufferUsageFlagBits::eTransferSrc,
+    vk::SharingMode::eExclusive,
+    nullptr,
+    vk::MemoryPropertyFlagBits::eHostVisible,
+    nullptr);
+  auto sbvsdm = unisbvs->get<vkhlf::DeviceMemory>();
+  auto sbfsdm = unisbfs->get<vkhlf::DeviceMemory>();
+  void* pvsMapped = sbvsdm->map(0, c_vsUniformSize);
+  void* pfsMapped = sbfsdm->map(0, c_fsUniformSize);
+  memcpy(pvsMapped, c_vsUniformArea, c_vsUniformSize);
+  memcpy(pfsMapped, c_fsUniformArea, c_fsUniformSize);
+  sbvsdm->flush(0, c_vsUniformSize); sbvsdm->unmap();
+  sbfsdm->flush(0, c_fsUniformSize); sbfsdm->unmap();
+
+  cmdBuffer->copyBuffer(unisbvs, c_vsUniformBuffer, vk::BufferCopy(0, 0, c_vsUniformSize));
+  cmdBuffer->copyBuffer(unisbfs, c_fsUniformBuffer, vk::BufferCopy(0, 0, c_fsUniformSize));
+  
+  cmdBuffer->beginRenderPass(
+    c_renderPass, framebuffer,
+    vk::Rect2D({ 0, 0 }, extent),
+    { vk::ClearValue(clear_color),
+      vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
+    vk::SubpassContents::eInline);
   cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
+  cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {c_descriptorSet}, nullptr);
   cmdBuffer->bindVertexBuffer(0, buffer, 0);
   cmdBuffer->setViewport(0, vk::Viewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f));
   cmdBuffer->setScissor(0, vk::Rect2D({ 0, 0 }, extent));
@@ -132,13 +236,54 @@ void Pipeline::Impl::cook(){
     // Prepare vkPipeline etc.
     std::cout << "Cooking a pipeline." << std::endl;
 
-    // The following part is a complete mess, and currently assumes no customization can be done.
-    // It will be gradually cleaned up.
+    // Descriptor bindings
+    std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;
+    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, nullptr));
+    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, nullptr));
 
-    // descriptor set layout
-    std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout({});
+    // Descriptor set layout
+    std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
+
+    c_vsUniformSize = getAnnotatedDataLayoutSize(vsUniforms);
+    c_fsUniformSize = getAnnotatedDataLayoutSize(fsUniforms);
+    // Prepare uniform buffers.
+    c_vsUniformBuffer = global::device->createBuffer(
+      c_vsUniformSize,
+      vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
+      vk::SharingMode::eExclusive,
+      nullptr,
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
+    c_fsUniformBuffer = global::device->createBuffer(
+      c_fsUniformSize,
+      vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
+      vk::SharingMode::eExclusive,
+      nullptr,
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
+    if(c_vsUniformArea != nullptr) delete[] c_vsUniformArea;
+    if(c_fsUniformArea != nullptr) delete[] c_fsUniformArea;
+    c_vsUniformArea = new char[c_vsUniformSize];
+    c_fsUniformArea = new char[c_fsUniformSize];
+
+    // Set up descriptor sets
+    std::shared_ptr<vkhlf::DescriptorPool> descriptorPool = global::device->createDescriptorPool(
+      {}, 1,
+      {{vk::DescriptorType::eUniformBuffer, 1},
+       {vk::DescriptorType::eUniformBuffer, 1}});
+     
+    c_descriptorSet = global::device->allocateDescriptorSet(descriptorPool, descriptorSetLayout);
+    std::vector<vkhlf::WriteDescriptorSet> wdss;
+    wdss.push_back(vkhlf::WriteDescriptorSet(
+                     c_descriptorSet, 0, 0, 1,
+                     vk::DescriptorType::eUniformBuffer, nullptr,
+                     vkhlf::DescriptorBufferInfo(c_vsUniformBuffer, 0, c_vsUniformSize)));
+    wdss.push_back(vkhlf::WriteDescriptorSet(
+                     c_descriptorSet, 1, 0, 1,
+                     vk::DescriptorType::eUniformBuffer, nullptr,
+                     vkhlf::DescriptorBufferInfo(c_fsUniformBuffer, 0, c_fsUniformSize)));
+    global::device->updateDescriptorSets(wdss, nullptr);
+    
     // pipeline layout
-    std::shared_ptr<vkhlf::PipelineLayout> pipelineLayout = global::device->createPipelineLayout(descriptorSetLayout, nullptr);
+    c_pipelineLayout = global::device->createPipelineLayout(descriptorSetLayout, nullptr);
 
     // Take renderpass and framebuffer
     if(target_is_window){
@@ -164,6 +309,7 @@ void Pipeline::Impl::cook(){
       {DataType::Float2, vk::Format::eR32G32Sfloat},
       {DataType::Float3, vk::Format::eR32G32B32Sfloat},
       {DataType::Float4, vk::Format::eR32G32B32A32Sfloat},
+      {DataType::Double,  vk::Format::eR64Sfloat},
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;
     size_t offset = 0, n = 0;
@@ -214,7 +360,7 @@ void Pipeline::Impl::cook(){
       depthStencil,
       colorBlend,
       dynamic,
-      pipelineLayout,
+      c_pipelineLayout,
       c_renderPass);
   
     cooked = true;

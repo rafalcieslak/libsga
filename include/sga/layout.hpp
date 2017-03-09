@@ -11,7 +11,8 @@ namespace sga{
 enum class DataType{
   Int,
   UInt,
-  Float, Float2, Float3, Float4
+  Float, Float2, Float3, Float4,
+  Double
 };
 
 constexpr std::pair<DataType, size_t> map_data_sizes[] = {
@@ -21,6 +22,7 @@ constexpr std::pair<DataType, size_t> map_data_sizes[] = {
     {DataType::Float2, 8},
     {DataType::Float3, 12},
     {DataType::Float4, 16},
+    {DataType::Double, 8},
 };
 constexpr auto map_data_sizes_N = sizeof map_data_sizes/sizeof map_data_sizes[0];
 

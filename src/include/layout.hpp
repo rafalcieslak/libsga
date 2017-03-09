@@ -6,6 +6,7 @@
 namespace sga{
 
 std::string getDataTypeGLSL(DataType);
+size_t getAnnotatedDataLayoutSize(const std::vector<std::pair<DataType, std::string>>&);
 
 } // namespace sga
 

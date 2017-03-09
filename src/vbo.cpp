@@ -36,7 +36,7 @@ VBOBase::Impl::Impl(unsigned int ds, unsigned int s)
 void VBOBase::Impl::putData(uint8_t *pData, size_t n){
   size_t offset = 0, size = n;
   std::shared_ptr<vkhlf::Buffer> stagingBuffer = global::device->createBuffer(
-    n,
+    size,
     vk::BufferUsageFlagBits::eTransferSrc,
     vk::SharingMode::eExclusive,
     nullptr,

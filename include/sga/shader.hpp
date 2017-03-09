@@ -11,13 +11,18 @@ namespace sga{
 class Shader{
 public:
   ~Shader();
-  void compile();
+  
   void addInput(DataType type, std::string name);
   void addInput(std::pair<DataType, std::string>);
   void addInput(std::initializer_list<std::pair<DataType, std::string>>);
   void addOutput(DataType type, std::string name);
   void addOutput(std::pair<DataType, std::string>);
   void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
+
+  void addUniform(DataType type, std::string name);
+  
+  void compile();
+  
   friend class Pipeline;
 protected:
   Shader();

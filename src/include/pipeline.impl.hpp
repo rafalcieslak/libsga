@@ -28,8 +28,12 @@ private:
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
 
-  std::shared_ptr<VertexShader> vertexShader;
-  std::shared_ptr<FragmentShader> fragmentShader;
+  DataLayout vsInputLayout;
+  std::shared_ptr<vkhlf::ShaderModule> vertexShader;
+  DataLayout vsOutputLayout;
+  DataLayout fsInputLayout;
+  std::shared_ptr<vkhlf::ShaderModule> fragmentShader;
+  DataLayout fsOutputLayout;
   
   // These fields require cooking
   std::shared_ptr<vkhlf::Pipeline> c_pipeline;

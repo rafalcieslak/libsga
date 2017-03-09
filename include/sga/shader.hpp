@@ -11,6 +11,7 @@ namespace sga{
 class Shader{
 public:
   ~Shader();
+  void compile();
   friend class Pipeline;
 protected:
   Shader();

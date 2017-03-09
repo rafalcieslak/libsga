@@ -13,7 +13,13 @@ class Shader::Impl{
 public:
   Impl();
 
+  void compile();
+  std::string source;
+  vk::ShaderStageFlagBits stage;
+  
+  bool compiled = false;
   std::shared_ptr<vkhlf::ShaderModule> shader;
+  
   DataLayout inputLayout;
   DataLayout outputLayout;
 };

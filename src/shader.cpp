@@ -14,14 +14,14 @@ namespace sga{
 
 Shader::Shader() : impl(std::make_unique<Shader::Impl>()) {}
 Shader::~Shader() = default;
+void Shader::compile() {impl->compile();}
 
 Shader::Impl::Impl() {}
 
 std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source, DataLayout il, DataLayout ol){
   auto p = std::make_shared<VertexShader>();
-  // TODO: Write a custom compilation function which will collect errors etc.
-  auto module = compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, source);
-  p->impl->shader = global::device->createShaderModule(module);
+  p->impl->stage = vk::ShaderStageFlagBits::eVertex;
+  p->impl->source = source;
   p->impl->inputLayout = il;
   p->impl->outputLayout = ol;
   return p;
@@ -29,12 +29,17 @@ std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source,
 
 std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string source, DataLayout il, DataLayout ol){
   auto p = std::make_shared<FragmentShader>();
-  // TODO: Write a custom compilation function which will collect errors etc.
-  auto module = compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, source);
-  p->impl->shader = global::device->createShaderModule(module);
+  p->impl->stage = vk::ShaderStageFlagBits::eFragment;
+  p->impl->source = source;
   p->impl->inputLayout = il;
   p->impl->outputLayout = ol;
   return p;
+}
+
+void Shader::Impl::compile(){
+  auto module = compileGLSLToSPIRV(stage, source);
+  shader = global::device->createShaderModule(module);
+  compiled = true;
 }
 
 // === GLSL compiler interface to glslang. Mostly based on vkhlf. === 

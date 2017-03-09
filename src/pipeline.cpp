@@ -6,6 +6,7 @@
 
 #include <vkhlf/vkhlf.h>
 
+#include <sga/exceptions.hpp>
 #include "global.hpp"
 #include "utils.hpp"
 #include "window.impl.hpp"
@@ -39,18 +40,30 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
 
 void Pipeline::Impl::setVertexShader(std::shared_ptr<VertexShader> vs){
   cooked = false;
-  vertexShader = vs;
+  if(!vs->impl->compiled){
+    PipelineConfigError("ShaderNotCompiled", "The shader passed to the pipeline was not compiled.",
+                        "Any shader passed to a pipeline must be compiled first, using Shader::compile() method. If you modify shader parameters after it was compiled, you have to compile it again.").raise();
+  }
+  vertexShader = vs->impl->shader;
+  vsInputLayout = vs->impl->inputLayout;
+  vsOutputLayout = vs->impl->outputLayout;
 }
 void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
   cooked = false;
-  fragmentShader = fs;
+  if(!fs->impl->compiled){
+    PipelineConfigError("ShaderNotCompiled", "The shader passed to the pipeline was not compiled.",
+                        "Any shader passed to a pipeline must be compiled first, using Shader::compile() method. If you modify shader parameters after it was compiled, you have to compile it again.").raise();
+  }
+  fragmentShader = fs->impl->shader;
+  fsInputLayout = fs->impl->inputLayout;
+  fsOutputLayout = fs->impl->outputLayout;
 }
 
 void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
   if(!ensureValidity()) return;
 
   // Extra VBO-specific validity check
-  if(vbo->getLayout() != vertexShader->impl->inputLayout){
+  if(vbo->getLayout() != vsInputLayout){
     std::cout << "ERROR: VBO layout does not match pipeline input layout!" << std::endl;
     return;
   }
@@ -67,7 +80,7 @@ bool Pipeline::Impl::ensureValidity(){
   if(!fragmentShader){
     std::cout << "Fragment shader not set." << std::endl; return false;
   }
-  if(vertexShader->impl->outputLayout != fragmentShader->impl->inputLayout){
+  if(vsOutputLayout != fsInputLayout){
     std::cout << "Vertex shader output layout does not match fragment shader input layout" << std::endl; return false;
   }
   if(!targetWindow){
@@ -139,9 +152,9 @@ void Pipeline::Impl::cook(){
 
     // Use shaders
     vkhlf::PipelineShaderStageCreateInfo vertexStage(
-      vk::ShaderStageFlagBits::eVertex,   vertexShader->impl->shader, "main");
+      vk::ShaderStageFlagBits::eVertex,   vertexShader, "main");
     vkhlf::PipelineShaderStageCreateInfo fragmentStage(
-      vk::ShaderStageFlagBits::eFragment, fragmentShader->impl->shader, "main");
+      vk::ShaderStageFlagBits::eFragment, fragmentShader, "main");
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
@@ -168,7 +181,7 @@ void Pipeline::Impl::cook(){
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;
     size_t offset = 0, n = 0;
-    for(DataType dt : vertexShader->impl->inputLayout.layout){
+    for(DataType dt : vsInputLayout.layout){
       attribs.push_back(vk::VertexInputAttributeDescription(
                           n, 0, dataTypeLayout[dt], offset));
       n++;

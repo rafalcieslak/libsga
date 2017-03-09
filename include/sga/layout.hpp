@@ -9,30 +9,14 @@
 namespace sga{
 
 enum class DataType{
-  SByte, SByte2, SByte3, SByte4,
-  UByte, UByte2, UByte3, UByte4,
-  SInt, SInt2, SInt3, SInt4,
-  UInt, UInt2, UInt3, UInt4,
+  Int,
+  UInt,
   Float, Float2, Float3, Float4
 };
 
 constexpr std::pair<DataType, size_t> map_data_sizes[] = {
-    {DataType::SByte, 1},
-    {DataType::SByte2, 2},
-    {DataType::SByte3, 3},
-    {DataType::SByte4, 4},
-    {DataType::UByte, 1},
-    {DataType::UByte2, 2},
-    {DataType::UByte3, 3},
-    {DataType::UByte4, 4},
-    {DataType::SInt, 4},
-    {DataType::SInt2, 8},
-    {DataType::SInt3, 12},
-    {DataType::SInt4, 16},
+    {DataType::Int, 4},
     {DataType::UInt, 4},
-    {DataType::UInt2, 8},
-    {DataType::UInt3, 12},
-    {DataType::UInt4, 16},
     {DataType::Float, 4},
     {DataType::Float2, 8},
     {DataType::Float3, 12},
@@ -71,6 +55,10 @@ public:
       });
   }
   std::vector<DataType> layout;
+
+  DataLayout& extend(DataType dt){
+    layout.push_back(dt); return *this;
+  }
 
   bool operator ==(const DataLayout& other){
     if(layout.size() != other.layout.size()) return false;

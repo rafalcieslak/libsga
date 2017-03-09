@@ -12,6 +12,12 @@ class Shader{
 public:
   ~Shader();
   void compile();
+  void addInput(DataType type, std::string name);
+  void addInput(std::pair<DataType, std::string>);
+  void addInput(std::initializer_list<std::pair<DataType, std::string>>);
+  void addOutput(DataType type, std::string name);
+  void addOutput(std::pair<DataType, std::string>);
+  void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
   friend class Pipeline;
 protected:
   Shader();
@@ -21,12 +27,12 @@ protected:
 
 class VertexShader : public Shader{
 public:
-  static std::shared_ptr<VertexShader> createFromSource(std::string source, DataLayout il, DataLayout ol);
+  static std::shared_ptr<VertexShader> createFromSource(std::string source);
 };
 
 class FragmentShader : public Shader{
 public:
-  static std::shared_ptr<FragmentShader> createFromSource(std::string source, DataLayout il, DataLayout ol);
+  static std::shared_ptr<FragmentShader> createFromSource(std::string source);
 };
 
 

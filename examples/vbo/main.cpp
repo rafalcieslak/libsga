@@ -7,7 +7,7 @@ extern char const *testFragShaderText;
 
 struct __attribute__((packed)) CustomData{
   float position[2];
-  uint8_t color[4];
+  float color[4];
 };
 
 int main(){
@@ -16,17 +16,18 @@ int main(){
   auto pipeline = sga::Pipeline::create();
 
   auto vbo = sga::VBO<sga::DataType::Float2,
-                      sga::DataType::UByte4>::create(3);
+                      sga::DataType::Float4>::create(3);
 
-  auto vertShader = sga::VertexShader::createFromSource(
-    testVertShaderText,
-    {sga::DataType::Float2, sga::DataType::UByte4},
-    {sga::DataType::UByte4});
-  auto fragShader = sga::FragmentShader::createFromSource(
-    testFragShaderText,
-    {sga::DataType::UByte4},
-    {sga::DataType::UByte4});
+  auto vertShader = sga::VertexShader::createFromSource(testVertShaderText);
+  auto fragShader = sga::FragmentShader::createFromSource(testFragShaderText);
 
+  vertShader->addInput(sga::DataType::Float2, "inVertex");
+  vertShader->addInput(sga::DataType::Float4, "inColor");
+  vertShader->addOutput(sga::DataType::Float4, "outColor");
+
+  fragShader->addInput(sga::DataType::Float4, "inColor");
+  fragShader->addOutput(sga::DataType::Float4, "outColor");
+  
   vertShader->compile();
   fragShader->compile();
 
@@ -38,17 +39,17 @@ int main(){
 
   while(window->isOpen()){
     double q = sga::getTime() * 3.0;
-    double r = std::sin(q + 0.00 * M_PI * 2);
-    double g = std::sin(q + 0.33 * M_PI * 2);
-    double b = std::sin(q + 0.66 * M_PI * 2);
-    uint8_t R = std::max(0.0, std::pow(r, 0.8)*255);
-    uint8_t G = std::max(0.0, std::pow(g, 0.8)*255);
-    uint8_t B = std::max(0.0, std::pow(b, 0.8)*255);
+    float r = std::sin(q + 0.00 * M_PI * 2);
+    float g = std::sin(q + 0.33 * M_PI * 2);
+    float b = std::sin(q + 0.66 * M_PI * 2);
+    float R = std::max(0.0, std::pow(r, 0.8));
+    float G = std::max(0.0, std::pow(g, 0.8));
+    float B = std::max(0.0, std::pow(b, 0.8));
     
     std::vector<CustomData> f = {
-      { {  0.0f, -0.5f },{ R, G, B, 0xFF }, },
-      { {  0.5f,  0.5f },{ G, B, R, 0xFF }, },
-      { { -0.5f,  0.5f },{ B, R, G, 0xFF }, },
+      { {  0.0f, -0.5f },{ R, G, B, 1.0 }, },
+      { {  0.5f,  0.5f },{ G, B, R, 1.0 }, },
+      { { -0.5f,  0.5f },{ B, R, G, 1.0 }, },
     };
     vbo->write(f);
   
@@ -59,11 +60,7 @@ int main(){
 }
 
 
-char const *testVertShaderText =
-R"(#version 430
-layout(location = 0) in vec2 inVertex;
-layout(location = 1) in vec4 inColor;
-layout(location = 0) out vec4 outColor;
+char const *testVertShaderText = R"(
 void main()
 {
   outColor = inColor;
@@ -71,10 +68,7 @@ void main()
 }
 )";
 
-char const *testFragShaderText = 
-R"(#version 430
-layout(location = 0) in vec4 inColor;
-layout(location = 0) out vec4 outColor;
+char const *testFragShaderText = R"(
 void main()
 {
   outColor = inColor;

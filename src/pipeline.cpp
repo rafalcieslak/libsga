@@ -158,25 +158,11 @@ void Pipeline::Impl::cook(){
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
-      {DataType::SByte,  vk::Format::eR8G8B8A8Snorm},
-      {DataType::SByte2, vk::Format::eR8G8B8A8Snorm},
-      {DataType::SByte3, vk::Format::eR8G8B8A8Snorm},
-      {DataType::SByte4, vk::Format::eR8G8B8A8Snorm},
-      {DataType::UByte,  vk::Format::eR8G8B8A8Unorm},
-      {DataType::UByte2, vk::Format::eR8G8B8A8Unorm},
-      {DataType::UByte3, vk::Format::eR8G8B8A8Unorm},
-      {DataType::UByte4, vk::Format::eR8G8B8A8Unorm},
-      {DataType::SInt,  vk::Format::eR32G32B32A32Sint},
-      {DataType::SInt2, vk::Format::eR32G32B32A32Sint},
-      {DataType::SInt3, vk::Format::eR32G32B32A32Sint},
-      {DataType::SInt4, vk::Format::eR32G32B32A32Sint},
+      {DataType::Int,  vk::Format::eR32G32B32A32Sint},
       {DataType::UInt,  vk::Format::eR32G32B32A32Uint},
-      {DataType::UInt2, vk::Format::eR32G32B32A32Uint},
-      {DataType::UInt3, vk::Format::eR32G32B32A32Uint},
-      {DataType::UInt4, vk::Format::eR32G32B32A32Uint},
-      {DataType::Float,  vk::Format::eR32G32B32A32Sfloat},
-      {DataType::Float2, vk::Format::eR32G32B32A32Sfloat},
-      {DataType::Float3, vk::Format::eR32G32B32A32Sfloat},
+      {DataType::Float,  vk::Format::eR32Sfloat},
+      {DataType::Float2, vk::Format::eR32G32Sfloat},
+      {DataType::Float3, vk::Format::eR32G32B32Sfloat},
       {DataType::Float4, vk::Format::eR32G32B32A32Sfloat},
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;

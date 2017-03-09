@@ -13,11 +13,21 @@ class Shader::Impl{
 public:
   Impl();
 
-  void compile();
   std::string source;
   vk::ShaderStageFlagBits stage;
+
+  void addInput(DataType type, std::string name);
+  void addInput(std::pair<DataType, std::string>);
+  void addInput(std::initializer_list<std::pair<DataType, std::string>>);
+  void addOutput(DataType type, std::string name);
+  void addOutput(std::pair<DataType, std::string>);
+  void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
+  std::vector<std::pair<DataType, std::string>> inputAttr;
+  std::vector<std::pair<DataType, std::string>> outputAttr;
   
+  void compile();  
   bool compiled = false;
+  
   std::shared_ptr<vkhlf::ShaderModule> shader;
   
   DataLayout inputLayout;

@@ -8,6 +8,7 @@
 
 #include <sga/exceptions.hpp>
 #include "global.hpp"
+#include "layout.hpp"
 #include "utils.hpp"
 
 namespace sga{
@@ -16,28 +17,76 @@ Shader::Shader() : impl(std::make_unique<Shader::Impl>()) {}
 Shader::~Shader() = default;
 void Shader::compile() {impl->compile();}
 
+void Shader::addInput(DataType type, std::string name) {impl->addInput(type, name);}
+void Shader::addInput(std::pair<DataType, std::string> pair) {impl->addInput(pair);}
+void Shader::addInput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
+void Shader::addOutput(DataType type, std::string name) {impl->addOutput(type, name);}
+void Shader::addOutput(std::pair<DataType, std::string> pair) {impl->addOutput(pair);}
+void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
+
+
 Shader::Impl::Impl() {}
 
-std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source, DataLayout il, DataLayout ol){
+std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source){
   auto p = std::make_shared<VertexShader>();
   p->impl->stage = vk::ShaderStageFlagBits::eVertex;
   p->impl->source = source;
-  p->impl->inputLayout = il;
-  p->impl->outputLayout = ol;
   return p;
 }
 
-std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string source, DataLayout il, DataLayout ol){
+std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string source){
   auto p = std::make_shared<FragmentShader>();
   p->impl->stage = vk::ShaderStageFlagBits::eFragment;
   p->impl->source = source;
-  p->impl->inputLayout = il;
-  p->impl->outputLayout = ol;
   return p;
 }
 
+
+void Shader::Impl::addInput(DataType type, std::string name) {
+  addInput(std::make_pair(type,name));
+}
+void Shader::Impl::addInput(std::initializer_list<std::pair<DataType, std::string>> list) {
+  for(const auto &p : list)
+    addInput(p);
+}
+void Shader::Impl::addOutput(DataType type, std::string name) {
+  addOutput(std::make_pair(type,name));
+}
+void Shader::Impl::addOutput(std::initializer_list<std::pair<DataType, std::string>> list){
+  for(const auto &p : list)
+    addOutput(p);
+}
+
+void Shader::Impl::addInput(std::pair<DataType, std::string> pair) {
+  // TODO: check if name OK (e.g. no redefinition)
+  inputAttr.push_back(pair);
+  compiled = false;
+}
+void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
+  // TODO: check if name OK (e.g. no redefinition)
+  outputAttr.push_back(pair);
+  compiled = false;
+}
+
 void Shader::Impl::compile(){
-  auto module = compileGLSLToSPIRV(stage, source);
+  // Prepare preamble.
+  std::string preamble = "#version 420\n";
+
+  inputLayout = DataLayout();
+  // Gather input attributes.
+  for(unsigned int i = 0; i < inputAttr.size(); i++){
+    preamble += "layout(location = " + std::to_string(i) + ") in " +
+      getDataTypeGLSL(inputAttr[i].first) + " " + inputAttr[i].second + ";\n";
+    inputLayout.extend(inputAttr[i].first);
+  }
+  // Gather output attributes.
+  for(unsigned int i = 0; i < outputAttr.size(); i++){
+    preamble += "layout(location = " + std::to_string(i) + ") out " +
+      getDataTypeGLSL(outputAttr[i].first) + " " + outputAttr[i].second + ";\n";
+    outputLayout.extend(outputAttr[i].first);
+  }
+        
+  auto module = compileGLSLToSPIRV(stage, preamble + source);
   shader = global::device->createShaderModule(module);
   compiled = true;
 }

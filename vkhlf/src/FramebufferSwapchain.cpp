@@ -52,7 +52,7 @@ namespace vkhlf {
 
         std::vector<vk::PresentModeKHR> presentModes = device->get<PhysicalDevice>()->getSurfacePresentModes(surface);
 
-        static std::initializer_list<vk::PresentModeKHR> const presentModeOrder{ vk::PresentModeKHR::eMailbox, vk::PresentModeKHR::eFifo, vk::PresentModeKHR::eImmediate };
+        static std::initializer_list<vk::PresentModeKHR> const presentModeOrder{ vk::PresentModeKHR::eFifo, vk::PresentModeKHR::eImmediate };
         auto itPresentModeOrder = std::find_first_of(presentModeOrder.begin(), presentModeOrder.end(), presentModes.begin(), presentModes.end());
         if (itPresentModeOrder == presentModeOrder.end())
         {

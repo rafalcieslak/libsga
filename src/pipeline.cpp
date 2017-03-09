@@ -82,7 +82,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
   
   
-  auto cmdBuffer = impl_global::commandPool->allocateCommandBuffer();
+  auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();
   cmdBuffer->beginRenderPass(c_renderPass, framebuffer,
                              vk::Rect2D({ 0, 0 }, extent),
@@ -96,8 +96,8 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   cmdBuffer->endRenderPass();
   cmdBuffer->end();
   
-  auto fence = impl_global::device->createFence(false);
-  impl_global::queue->submit(
+  auto fence = global::device->createFence(false);
+  global::queue->submit(
     vkhlf::SubmitInfo{
       {},{}, cmdBuffer, {} },
     fence
@@ -123,9 +123,9 @@ void Pipeline::Impl::cook(){
     // It will be gradually cleaned up.
 
     // descriptor set layout
-    std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = impl_global::device->createDescriptorSetLayout({});
+    std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout({});
     // pipeline layout
-    std::shared_ptr<vkhlf::PipelineLayout> pipelineLayout = impl_global::device->createPipelineLayout(descriptorSetLayout, nullptr);
+    std::shared_ptr<vkhlf::PipelineLayout> pipelineLayout = global::device->createPipelineLayout(descriptorSetLayout, nullptr);
 
     // Take renderpass and framebuffer
     if(target_is_window){
@@ -135,7 +135,7 @@ void Pipeline::Impl::cook(){
     }
     
     // init pipeline
-    std::shared_ptr<vkhlf::PipelineCache> pipelineCache = impl_global::device->createPipelineCache(0, nullptr);
+    std::shared_ptr<vkhlf::PipelineCache> pipelineCache = global::device->createPipelineCache(0, nullptr);
 
     // Use shaders
     vkhlf::PipelineShaderStageCreateInfo vertexStage(
@@ -202,7 +202,7 @@ void Pipeline::Impl::cook(){
     vkhlf::PipelineDynamicStateCreateInfo dynamic(
       { vk::DynamicState::eViewport, vk::DynamicState::eScissor });
     
-    c_pipeline = impl_global::device->createGraphicsPipeline(
+    c_pipeline = global::device->createGraphicsPipeline(
       pipelineCache,
       {},
       { vertexStage, fragmentStage },

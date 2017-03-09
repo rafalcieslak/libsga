@@ -24,7 +24,7 @@ void VBOBase::putData(uint8_t* pData, size_t n){
 VBOBase::Impl::Impl(unsigned int ds, unsigned int s)
   : datasize(ds), size(s) {
 
-  buffer = impl_global::device->createBuffer(
+  buffer = global::device->createBuffer(
     datasize * size,
     vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
     vk::SharingMode::eExclusive,
@@ -35,7 +35,7 @@ VBOBase::Impl::Impl(unsigned int ds, unsigned int s)
 
 void VBOBase::Impl::putData(uint8_t *pData, size_t n){
   size_t offset = 0, size = n;
-  std::shared_ptr<vkhlf::Buffer> stagingBuffer = impl_global::device->createBuffer(
+  std::shared_ptr<vkhlf::Buffer> stagingBuffer = global::device->createBuffer(
     n,
     vk::BufferUsageFlagBits::eTransferSrc,
     vk::SharingMode::eExclusive,

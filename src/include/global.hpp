@@ -7,7 +7,8 @@
 
 namespace sga{
 
-class impl_global{
+// TODO: Instanceable?
+class global{
 public:
   //TODO: error strategy is very inconsistent, this settning is ignored!
   static ErrorStrategy error_strategy;

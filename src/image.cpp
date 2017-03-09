@@ -15,7 +15,7 @@ class Image::Impl{
 public:
   Impl(unsigned int width, unsigned int height) :
     width(width), height(height) {
-    if(!impl_global::initialized){
+    if(!global::initialized){
       std::cout << "libSGA was not initialized!" << std::endl;
       throw std::runtime_error("NotInitialized");
     }
@@ -25,7 +25,7 @@ private:
   unsigned int width, height;
   std::shared_ptr<vkhlf::Image> image;
   void prepareImage(){
-    image = impl_global::device->createImage(
+    image = global::device->createImage(
       vk::ImageCreateFlags(),
       vk::ImageType::e2D,
       vk::Format::eR8G8B8A8Unorm,

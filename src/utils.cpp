@@ -17,7 +17,7 @@ namespace sga{
 void info(){
   std::cout << "libSGA " << LIBSGA_VERSION_LONG;
 
-  if(!impl_global::initialized){
+  if(!global::initialized){
     std::cout << ", not initialized." << std::endl;
   }else{
     std::cout << ", initialized." << std::endl;
@@ -68,7 +68,7 @@ static int rateDevice(std::shared_ptr<vkhlf::PhysicalDevice> dev){
   // auto features = dev->getFeatures();
 
   // Discard devices that are not sutable for presentation
-  if(!glfwGetPhysicalDevicePresentationSupport(static_cast<vk::Instance>(*impl_global::instance), static_cast<vk::PhysicalDevice>(*dev), 0))
+  if(!glfwGetPhysicalDevicePresentationSupport(static_cast<vk::Instance>(*global::instance), static_cast<vk::PhysicalDevice>(*dev), 0))
     return 0;
 
   // Geometry shader is not really required, but it's a good example of how rateDevice may inspect devices.
@@ -79,7 +79,7 @@ static int rateDevice(std::shared_ptr<vkhlf::PhysicalDevice> dev){
 }
 
 static bool pickPhysicalDevice(){
-  unsigned int device_count = impl_global::instance->getPhysicalDeviceCount();
+  unsigned int device_count = global::instance->getPhysicalDeviceCount();
   std::cout << "Found " << device_count << " physical devices." << std::endl;
   if(device_count == 0){
     std::cout << "No vulkan-supporting devices found!" << std::endl;
@@ -87,7 +87,7 @@ static bool pickPhysicalDevice(){
   }
   std::vector<int> scores(device_count);
   for(unsigned int i = 0; i < device_count; i++){
-    std::shared_ptr<vkhlf::PhysicalDevice> device = impl_global::instance->getPhysicalDevice(i);
+    std::shared_ptr<vkhlf::PhysicalDevice> device = global::instance->getPhysicalDevice(i);
     scores[i] = rateDevice(device);
   }
 
@@ -97,12 +97,12 @@ static bool pickPhysicalDevice(){
     return false;
   }
   unsigned int best_device = argmax_it - scores.begin();
-  auto pDev = impl_global::instance->getPhysicalDevice(best_device);
+  auto pDev = global::instance->getPhysicalDevice(best_device);
 
   std::string devName = pDev->getProperties().deviceName;
   std::cout << "Picked device: " << devName << std::endl;
 
-  impl_global::physicalDevice = pDev;
+  global::physicalDevice = pDev;
   return true;
 }
 
@@ -111,7 +111,7 @@ double getTime(){
 }
 
 void init(VerbosityLevel verbosity, ErrorStrategy strategy){
-  if(impl_global::initialized){
+  if(global::initialized){
     std::cout << "SGA was already initialized!" << std::endl;
     return;
   }
@@ -122,8 +122,8 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   }
   glfwSetTime(0.0);
 
-  impl_global::verbosity = verbosity;
-  impl_global::error_strategy = strategy;
+  global::verbosity = verbosity;
+  global::error_strategy = strategy;
 
   // create vulkan instance, set up validation layers and optional debug
   // features, pick a physical device, set up the logical device, querry
@@ -168,7 +168,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   
   // TODO: Check if enabledInstanceExtensions are available.
   
-  impl_global::instance = vkhlf::Instance::create("libSGA", 1, enabledLayers, enabledInstanceExtensions);
+  global::instance = vkhlf::Instance::create("libSGA", 1, enabledLayers, enabledInstanceExtensions);
   
   // Register validation layers debug output.
   // TODO: Only do this when verbosity is set to debug!
@@ -177,14 +177,14 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
                                 vk::DebugReportFlagBitsEXT::eError |
                                 vk::DebugReportFlagBitsEXT::eDebug
     );
-  impl_global::debugReportCallback = impl_global::instance->createDebugReportCallback(flags, &debugReportCallback);
+  global::debugReportCallback = global::instance->createDebugReportCallback(flags, &debugReportCallback);
 
   // Choose a physical device.
   if(!pickPhysicalDevice()){
     throw std::runtime_error("NoDeviceAvailable");
   }
 
-  std::vector<vk::QueueFamilyProperties> props = impl_global::physicalDevice->getQueueFamilyProperties();
+  std::vector<vk::QueueFamilyProperties> props = global::physicalDevice->getQueueFamilyProperties();
   std::vector<unsigned int> indices;
   for (size_t i = 0; i < props.size(); i++)
     if (props[i].queueFlags & vk::QueueFlagBits::eGraphics)
@@ -194,55 +194,55 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     throw std::runtime_error("InvalidPhysDevice");
   }
   // Pick a queue family.
-  impl_global::queueFamilyIndex = indices[0];
+  global::queueFamilyIndex = indices[0];
 
-  impl_global::device = impl_global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(impl_global::queueFamilyIndex, 1.0f), nullptr, enabledDeviceExtensions);
+  global::device = global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(global::queueFamilyIndex, 1.0f), nullptr, enabledDeviceExtensions);
   std::cout << "Logical device created." << std::endl;
 
-  impl_global::queue = impl_global::device->getQueue(impl_global::queueFamilyIndex, 0);
+  global::queue = global::device->getQueue(global::queueFamilyIndex, 0);
 
   // TODO: Prepare memory allocators??
   // eg.
   // m_deviceMemoryAllocatorImage.reset(new vkhlf::DeviceMemoryAllocator(getDevice(), 128 * 1024, nullptr));
 
-  impl_global::commandPool = impl_global::device->createCommandPool(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, impl_global::queueFamilyIndex);
+  global::commandPool = global::device->createCommandPool(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, global::queueFamilyIndex);
   
-  impl_global::initialized = true;
+  global::initialized = true;
   std::cout << "SGA initialized successfully." << std::endl;
   
 }
 
 void terminate(){
-  if(!impl_global::initialized)
+  if(!global::initialized)
     return;
   std::cout << "Terminate start." << std::endl;
-  impl_global::physicalDevice = nullptr;
-  impl_global::device = nullptr;
-  impl_global::queue = nullptr;
-  impl_global::commandPool = nullptr;
-  impl_global::debugReportCallback = nullptr;
+  global::physicalDevice = nullptr;
+  global::device = nullptr;
+  global::queue = nullptr;
+  global::commandPool = nullptr;
+  global::debugReportCallback = nullptr;
   
-  if(impl_global::instance.use_count() == 1){
+  if(global::instance.use_count() == 1){
     std::cout << "SGA successfully terminated." << std::endl;
   }else{
     std::cout << "Dead reference to global instance!" << std::endl;
     std::cout << "Could it be that the user program still keeps some live SGA objects?" << std::endl;
   }
-  impl_global::instance = nullptr;
+  global::instance = nullptr;
 
   glfwTerminate();
   
-  impl_global::initialized = false;
+  global::initialized = false;
 }
 
 void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)> record_commands){
-  auto commandBuffer = impl_global::commandPool->allocateCommandBuffer();
+  auto commandBuffer = global::commandPool->allocateCommandBuffer();
   commandBuffer->begin();
 
   record_commands(commandBuffer);
 
   commandBuffer->end();
-  vkhlf::submitAndWait(impl_global::queue, commandBuffer);
+  vkhlf::submitAndWait(global::queue, commandBuffer);
 }
 
 void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface){
@@ -256,9 +256,9 @@ void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface)
   // This is pretty much bullshit, because we only choose physical devices that support presentation.
   // However, validation layer insists that not checking per-surface is a STRICT ERROR, and refuses
   // to continue the application. See https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/818
-  vkGetPhysicalDeviceSurfaceSupportKHR_funtype gpdsshkr = (vkGetPhysicalDeviceSurfaceSupportKHR_funtype)impl_global::instance->getProcAddress("vkGetPhysicalDeviceSurfaceSupportKHR");
+  vkGetPhysicalDeviceSurfaceSupportKHR_funtype gpdsshkr = (vkGetPhysicalDeviceSurfaceSupportKHR_funtype)global::instance->getProcAddress("vkGetPhysicalDeviceSurfaceSupportKHR");
   VkBool32 surfaceSupported;
-  gpdsshkr((vk::PhysicalDevice)*impl_global::physicalDevice, impl_global::queueFamilyIndex, (vk::SurfaceKHR)*surface, &surfaceSupported);
+  gpdsshkr((vk::PhysicalDevice)*global::physicalDevice, global::queueFamilyIndex, (vk::SurfaceKHR)*surface, &surfaceSupported);
   if(!surfaceSupported){
     std::cout << "Internal error: Created sufrace is not supported by the physical device." << std::endl;
     throw std::runtime_error("SurfaceNotSupported");

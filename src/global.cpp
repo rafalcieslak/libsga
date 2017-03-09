@@ -2,18 +2,18 @@
 
 namespace sga{
 
-VerbosityLevel impl_global::verbosity;
-ErrorStrategy impl_global::error_strategy;
-bool impl_global::initialized = false;
+VerbosityLevel global::verbosity;
+ErrorStrategy global::error_strategy;
+bool global::initialized = false;
 
-std::shared_ptr<vkhlf::Instance> impl_global::instance;
-std::shared_ptr<vkhlf::PhysicalDevice> impl_global::physicalDevice;
-std::shared_ptr<vkhlf::Device> impl_global::device;
-std::shared_ptr<vkhlf::Queue> impl_global::queue;
-std::shared_ptr<vkhlf::CommandPool> impl_global::commandPool;
+std::shared_ptr<vkhlf::Instance> global::instance;
+std::shared_ptr<vkhlf::PhysicalDevice> global::physicalDevice;
+std::shared_ptr<vkhlf::Device> global::device;
+std::shared_ptr<vkhlf::Queue> global::queue;
+std::shared_ptr<vkhlf::CommandPool> global::commandPool;
 
-unsigned int impl_global::queueFamilyIndex;
+unsigned int global::queueFamilyIndex;
 
-std::shared_ptr<vkhlf::DebugReportCallback> impl_global::debugReportCallback;
+std::shared_ptr<vkhlf::DebugReportCallback> global::debugReportCallback;
 
 } // namespace sga

@@ -27,11 +27,11 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
     glfwSetWindowUserPointer(window, this);
     
-    surface = impl_global::instance->createSurface(window);
+    surface = global::instance->createSurface(window);
     ensurePhysicalDeviceSurfaceSupport(surface);
     
     // Query supported surface formats.
-    std::vector<vk::SurfaceFormatKHR> surfaceFormats = impl_global::physicalDevice->getSurfaceFormats(surface);
+    std::vector<vk::SurfaceFormatKHR> surfaceFormats = global::physicalDevice->getSurfaceFormats(surface);
     
     // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
     // there is no preferered format, so we assume VK_FORMAT_B8G8R8A8_UNORM
@@ -46,7 +46,7 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     
     vk::AttachmentReference colorReference(0, vk::ImageLayout::eColorAttachmentOptimal);
     vk::AttachmentReference depthReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);  
-    renderPass = impl_global::device->createRenderPass(
+    renderPass = global::device->createRenderPass(
       { vk::AttachmentDescription( // attachment 0
           {}, colorFormat, vk::SampleCountFlagBits::e1,
           vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // color
@@ -83,7 +83,7 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
     
     framebufferSwapchain.reset(
       new vkhlf::FramebufferSwapchain(
-        impl_global::device,
+        global::device,
         surface,
         colorFormat, 
         depthFormat,
@@ -124,7 +124,7 @@ void Window::Impl::nextFrame() {
         // TODO: Use pink to indicate unrendered frames?
         std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
         
-        auto cmdBuffer = impl_global::commandPool->allocateCommandBuffer();
+        auto cmdBuffer = global::commandPool->allocateCommandBuffer();
         cmdBuffer->begin();
         cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
                                    vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
@@ -133,8 +133,8 @@ void Window::Impl::nextFrame() {
         cmdBuffer->endRenderPass();
         cmdBuffer->end();
         
-        auto fence = impl_global::device->createFence(false);
-        impl_global::queue->submit(
+        auto fence = global::device->createFence(false);
+        global::queue->submit(
           vkhlf::SubmitInfo{
             {},{}, cmdBuffer, {} },
           fence
@@ -143,12 +143,12 @@ void Window::Impl::nextFrame() {
       }
       
       //std::cout << "PRESENTING" << std::endl;
-      framebufferSwapchain->present(impl_global::queue);
-      impl_global::queue->waitIdle();
+      framebufferSwapchain->present(global::queue);
+      global::queue->waitIdle();
     }
     
     //std::cout << "ACQUIRING" << std::endl;
-    auto fence = impl_global::device->createFence(false);
+    auto fence = global::device->createFence(false);
     framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
     fence->wait(UINT64_MAX);
 

@@ -20,7 +20,7 @@ std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source,
   auto p = std::make_shared<VertexShader>();
   // TODO: Write a custom compilation function which will collect errors etc.
   auto module = compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, source);
-  p->impl->shader = impl_global::device->createShaderModule(module);
+  p->impl->shader = global::device->createShaderModule(module);
   p->impl->inputLayout = il;
   p->impl->outputLayout = ol;
   return p;
@@ -30,7 +30,7 @@ std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string sou
   auto p = std::make_shared<FragmentShader>();
   // TODO: Write a custom compilation function which will collect errors etc.
   auto module = compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, source);
-  p->impl->shader = impl_global::device->createShaderModule(module);
+  p->impl->shader = global::device->createShaderModule(module);
   p->impl->inputLayout = il;
   p->impl->outputLayout = ol;
   return p;

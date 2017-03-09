@@ -14,23 +14,31 @@ enum class VerbosityLevel{
   Debug
 };
 
+// TODO: Bitfield?
 enum class ErrorStrategy{
-  /// SGA will always throw exceptions when errors happen.
-  Fail, 
-  /// In many cases (thogh not all) SGA will ignore errors and continue. Crashes
-  /// and undefined behavior are pretty much guaranteed if you use this option,
-  /// but it will suppress most exceptions. Only use this option if you are
-  /// certain what you are doing!
-  Ignore 
+  None, /// SGA will ignore all errors. Do not use this option unless you are
+        /// certain what you are doing! This strategy will lead to internal
+        /// crashes.
+  Message, /// SGA will print out diagnostic information about the encoutered
+           /// exception, but will continue execution. This will cause internal
+           /// crashes!
+  Throw, /// On errors, SGA will throw exceptions.
+  MessageThrow, /// SGA will print out a diagnostic mesasge and throw an
+                /// appropriate exception. This is the default and recommended
+                /// behavior.
+  Abort, /// SGA will simply abort current process when problems happen.
+  MessageAbort, /// SGA will print out a diagnostic message and abort current
+                /// process.
 };
 
 /** Prepares SGA. Chooses a device to use and prepares it for rendering.  You
     may choose the verbosity level SGA will use, default is Quiet. If you call
     init(), you must call terminate() before your application closes! */
-void init(VerbosityLevel level = VerbosityLevel::Quiet, ErrorStrategy stragety = ErrorStrategy::Fail);
+void init(VerbosityLevel level = VerbosityLevel::Quiet,
+          ErrorStrategy stragety = ErrorStrategy::MessageThrow);
 
 /** Deinitializes SGA. You MUST call terminate() before your application exits,
- * if you called init() before. */
+    if you called init() before. */
 void terminate();
 
 } // namespace sga

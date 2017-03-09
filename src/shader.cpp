@@ -6,6 +6,7 @@
 #include <vkhlf/vkhlf.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
 
+#include <sga/exceptions.hpp>
 #include "global.hpp"
 #include "utils.hpp"
 
@@ -179,12 +180,10 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
 
   if (!shader.parse(&m_resource, 100, false, messages))
     {
+      // TODO: Parse error details?
       std::string infoLog = shader.getInfoLog();
       std::string infoDebugLog = shader.getInfoDebugLog();
-      std::cout << "Shader parsing error." << std::endl;
-      std::cout << infoLog << std::endl;
-      std::cout << infoDebugLog << std::endl;
-      throw ShaderParsingError(infoLog, infoDebugLog);
+      ShaderParsingError(infoLog, infoDebugLog).raise();
     }
 
   glslang::TProgram program;
@@ -194,10 +193,7 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
     {
       std::string infoLog = shader.getInfoLog();
       std::string infoDebugLog = shader.getInfoDebugLog();
-      std::cout << "Shader linking error." << std::endl;
-      std::cout << infoLog << std::endl;
-      std::cout << infoDebugLog << std::endl;
-      throw ShaderLinkingError(infoLog, infoDebugLog);
+      ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
 
   // TODO: Check return val.

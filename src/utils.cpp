@@ -28,30 +28,31 @@ void info(){
 
 static VkBool32 debugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t, const char*, const char* pMessage, void*)
   {
+    VkBool32 critical = VK_FALSE;
     switch (flags)
     {
       case VK_DEBUG_REPORT_INFORMATION_BIT_EXT :
-        std::cout << "INFORMATION: " << pMessage << std::endl;
-        return VK_FALSE;
+        std::cerr << "Vulkan validation layer INFORMATION: ";
+        break;
       case VK_DEBUG_REPORT_WARNING_BIT_EXT :
-        std::cerr << "WARNING: ";
+        std::cerr << "Vulkan validation layer WARNING: ";
         break;
       case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
-        std::cerr << "PERFORMANCE WARNING: ";
+        std::cerr << "Vulkan validation layer PERFORMANCE WARNING: ";
         break;
       case VK_DEBUG_REPORT_ERROR_BIT_EXT:
-        std::cerr << "ERROR: ";
+        std::cerr << "Vulkan validation layer ERROR: ";
+        critical = VK_TRUE;
         break;
       case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
-        std::cout << "DEBUG: " << pMessage << std::endl;
-        return VK_FALSE;
+        std::cout << "Vulkan validation layer DEBUG: ";
+        break;
       default:
-        std::cerr << "unknown flag (" << flags << "): ";
         break;
     }
     if(pMessage)
       std::cerr << pMessage << std::endl;
-    return VK_TRUE;
+    return critical;
 }
 
 static std::map<vk::PhysicalDeviceType, int> deviceTypeScores{
@@ -265,4 +266,33 @@ void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface)
   }
 }
 
+void out_msg(std::string text, std::string terminator){
+  if(global::verbosity < VerbosityLevel::Verbose) return;
+  std::cerr << "SGA: " << text << terminator;
+  std::cerr.flush();
 }
+void out_dbg(std::string text, std::string terminator){
+  if(global::verbosity < VerbosityLevel::Debug) return;
+  std::cerr << "SGA DEBUG: " << text << terminator;
+  std::cerr.flush();
+}
+
+void SGAException::raise(){
+  if(global::error_strategy == ErrorStrategy::Message ||
+     global::error_strategy == ErrorStrategy::MessageThrow ||
+     global::error_strategy == ErrorStrategy::MessageAbort){
+    std::cerr << "SGA ERROR: " << name << std::endl;
+    std::cerr << info << std::endl;
+    if(desc != "") std::cerr << desc << std::endl;
+  }
+  if(global::error_strategy == ErrorStrategy::Abort ||
+     global::error_strategy == ErrorStrategy::MessageAbort){
+    abort();
+  }
+  if(global::error_strategy == ErrorStrategy::Throw ||
+     global::error_strategy == ErrorStrategy::MessageThrow){
+    this->raise_this();
+  }
+}
+
+} // namespace sga

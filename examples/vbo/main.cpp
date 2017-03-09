@@ -59,7 +59,7 @@ int main(){
 char const *testVertShaderText =
 R"(#version 430
 layout(location = 0) in vec2 inVertex;
-layout(location = 1) in vec4 inColor;
+layout(location = 0) in vec4 inColor;
 layout(location = 0) out vec4 outColor;
 void main()
 {

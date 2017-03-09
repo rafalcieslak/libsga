@@ -7,5 +7,6 @@
 #include <sga/pipeline.hpp>
 #include <sga/vbo.hpp>
 #include <sga/shader.hpp>
+#include <sga/exceptions.hpp>
 
 #endif // __SGA_HPP__

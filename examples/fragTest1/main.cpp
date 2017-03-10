@@ -4,13 +4,12 @@
 
 struct __attribute__((packed)) CustomData{
   float position[2];
-  float fragPos[2];
 };
 
 std::vector<CustomData> vertices = {
-  { {-1, -1 }, { 0, 0 }, },
-  { { 3, -1 }, { 2, 0 }, },
-  { {-1,  3 }, { 0, 2 }, },
+  { {-1, -1 } },
+  { { 3, -1 } },
+  { {-1,  3 } },
 };
 
 int main(){
@@ -19,8 +18,7 @@ int main(){
   auto pipeline = sga::Pipeline::create();
 
   auto vbo = sga::VBO::create(
-    {sga::DataType::Float2,
-     sga::DataType::Float2}, 3);
+    {sga::DataType::Float2}, 3);
   
   vbo->write(vertices);
   
@@ -28,14 +26,13 @@ int main(){
     void main()
     {
       gl_Position = vec4(inVertex, 0, 1);
-      outFragPos = inFragPos;
     }
   )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      outColor = vec4(inFragPos, 0, 1);
-      vec2 screenPos = inFragPos * u.sgaResolution;
+      outColor = vec4(gl_FragCoord.xy / u.sgaResolution, 0, 1);
+      vec2 screenPos = gl_FragCoord.xy;
       if( int(screenPos.x) % 50 < 3 ){
         outColor.rg = vec2(0);
         outColor.b += 0.5;
@@ -48,10 +45,7 @@ int main(){
   )");
 
   vertShader->addInput(sga::DataType::Float2, "inVertex");
-  vertShader->addInput(sga::DataType::Float2, "inFragPos");
-  vertShader->addOutput(sga::DataType::Float2, "outFragPos");
 
-  fragShader->addInput(sga::DataType::Float2, "inFragPos");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
   vertShader->compile();

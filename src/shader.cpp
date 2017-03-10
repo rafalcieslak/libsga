@@ -131,8 +131,7 @@ std::string FragmentShader::importShaderToyShader(std::string source){
   source += R"(
 void main()
 {
-  vec2 pos = vec2(inFragPos.x, 1.0-inFragPos.y) * u.sgaResolution.xy;
-  mainImage(outColor, pos);
+  mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
 }
 )";
   return source;

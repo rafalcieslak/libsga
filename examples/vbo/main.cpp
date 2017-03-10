@@ -7,6 +7,12 @@ struct __attribute__((packed)) CustomData{
   float color[4];
 };
 
+std::vector<CustomData> vertices = {
+  { { 0.0,         -1.0 }, { 1, 0, 0, 1 }, },
+  { { 0.8660254037, 0.5 }, { 0, 1, 0, 1 }, },
+  { {-0.8660254037, 0.5 }, { 0, 0, 1, 1 }, },
+};
+
 int main(){
   sga::init();
   auto window = sga::Window::create(500, 500, "Example window");
@@ -14,19 +20,23 @@ int main(){
 
   auto vbo = sga::VBO<sga::DataType::Float2,
                       sga::DataType::Float4>::create(3);
-
+  
+  vbo->write(vertices);
+  
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main()
     {
+      mat2 rotate = mat2( cos(u.angle), sin(u.angle), 
+                         -sin(u.angle), cos(u.angle));
+      vec2 pos = rotate * inVertex;
+      gl_Position = vec4(pos, 0, 1);
       outColor = inColor;
-      gl_Position = vec4(inVertex, 0, 1);
     }
   )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
       outColor = inColor;
-      outColor.xyz += vec3(sin(u.time) * 0.4);
     }
   )");
 
@@ -37,7 +47,7 @@ int main(){
   fragShader->addInput(sga::DataType::Float4, "inColor");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
-  fragShader->addUniform(sga::DataType::Float, "time");
+  vertShader->addUniform(sga::DataType::Float, "angle");
   
   vertShader->compile();
   fragShader->compile();
@@ -49,22 +59,8 @@ int main(){
   window->setFPSLimit(60);
 
   while(window->isOpen()){
-    double q = sga::getTime() * 0.8;
-    float x1 =  std::sin(q + 0.0000 * M_PI * 2);
-    float x2 =  std::sin(q + 0.3333 * M_PI * 2);
-    float x3 =  std::sin(q + 0.6666 * M_PI * 2);
-    float y1 = -std::cos(q + 0.0000 * M_PI * 2);
-    float y2 = -std::cos(q + 0.3333 * M_PI * 2);
-    float y3 = -std::cos(q + 0.6666 * M_PI * 2);
-    
-    std::vector<CustomData> f = {
-      { { x1, y1 },{ 1, 0, 0, 1 }, },
-      { { x2, y2 },{ 0, 1, 0, 1 }, },
-      { { x3, y3 },{ 0, 0, 1, 1 }, },
-    };
-    vbo->write(f);
-
-    pipeline->setUniform("time", (float)sga::getTime());
+    float angle = sga::getTime() * 0.4;
+    pipeline->setUniform("angle", angle);
   
     pipeline->drawVBO(vbo);
     window->nextFrame();

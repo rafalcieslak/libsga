@@ -14,22 +14,28 @@ DataLayout::DataLayout(std::initializer_list<DataType> l) :
 }
 DataLayout::~DataLayout() = default;
 
-VBOBase::VBOBase(unsigned int ds, unsigned int n)
-  : impl(std::make_unique<VBOBase::Impl>(ds, n)),
-    size(n) {}
-VBOBase::~VBOBase() = default;
-void VBOBase::putData(uint8_t* pData, size_t n){
+VBO::VBO(DataLayout layout, unsigned int n)
+  : impl(std::make_unique<VBO::Impl>(layout, n))
+{}
+VBO::~VBO() = default;
+void VBO::putData(uint8_t* pData, size_t n){
   impl->putData(pData, n);
 }
-void VBOBase::putData(uint8_t* pData, size_t n_elem, size_t elem_size){
+void VBO::putData(uint8_t* pData, size_t n_elem, size_t elem_size){
   impl->putData(pData, n_elem, elem_size);
 }
+DataLayout VBO::getLayout() const{
+  return impl->layout;
+}
+size_t VBO::getDataSize() const{
+  return impl->layout.size();
+}
 
-VBOBase::Impl::Impl(unsigned int ds, unsigned int s)
-  : datasize(ds), size(s) {
+VBO::Impl::Impl(DataLayout layout, unsigned int s)
+  : layout(layout), size(s) {
 
   buffer = global::device->createBuffer(
-    datasize * size,
+    layout.size() * size,
     vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
     vk::SharingMode::eExclusive,
     nullptr,
@@ -37,8 +43,8 @@ VBOBase::Impl::Impl(unsigned int ds, unsigned int s)
     nullptr);
 }
 
-void VBOBase::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){
-  if(elem_size != datasize){
+void VBO::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){
+  if(elem_size != layout.size()){
     DataFormatError("VBODataFormatMismatch", "The size of data element used to write into a VBO does not match the element size of the VBO").raise();
   };
   
@@ -49,7 +55,7 @@ void VBOBase::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){
   putData(pData, n_elem * elem_size);
 }
 
-void VBOBase::Impl::putData(uint8_t *pData, size_t n){
+void VBO::Impl::putData(uint8_t *pData, size_t n){
   size_t offset = 0, size = n;
   std::shared_ptr<vkhlf::Buffer> stagingBuffer = global::device->createBuffer(
     size,

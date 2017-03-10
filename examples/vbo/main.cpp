@@ -24,8 +24,9 @@ int main(){
   auto window = sga::Window::create(500, 500, "Example window");
   auto pipeline = sga::Pipeline::create();
 
-  auto vbo = sga::VBO<sga::DataType::Float3,
-                      sga::DataType::Float4>::create(6);
+  auto vbo = sga::VBO::create(
+    {sga::DataType::Float3,
+     sga::DataType::Float4}, 6);
   
   vbo->write(vertices);
   

@@ -21,7 +21,7 @@ Pipeline::~Pipeline() = default;
 
 
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
-void Pipeline::drawVBO(std::shared_ptr<VBOBase> vbo) {impl->drawVBO(vbo);}
+void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 void Pipeline::setFragmentShader(std::shared_ptr<FragmentShader> shader) {impl->setFragmentShader(shader);}
 void Pipeline::setVertexShader(std::shared_ptr<VertexShader> shader) {impl->setVertexShader(shader);}
@@ -90,7 +90,6 @@ void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
   fsUniforms = fs->impl->uniforms;
 }
 
-
 void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
   cook();
   
@@ -103,9 +102,12 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   // TODO: Prevent setting values of standard uniforms when standard=false
   (void)standard;
 
+  // TODO: Offsets cache.
+
   // Search in vertex shader uniforms.
   size_t offset = 0;
   for(const auto& p : vsUniforms){
+    offset = align(offset, getDataTypeGLSLstd140Alignment(p.first));
     if(p.second == name){
       if(p.first != dt){
         DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
@@ -114,10 +116,11 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
     }
     offset += getDataTypeSize(p.first);
   }
-  
+
   // Search in fragment shader uniforms.
   offset = 0;
   for(const auto& p : fsUniforms){
+    offset = align(offset, getDataTypeGLSLstd140Alignment(p.first));
     if(p.second == name){
       if(p.first != dt){
         DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
@@ -131,9 +134,13 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
 void Pipeline::Impl::updateStandardUniforms(){
   float time = getTime();
   setUniform(DataType::Float, "sgaTime", (char*)&time, sizeof(time), true);
+  
+  vk::Extent2D extent = targetWindow->impl->getCurrentFramebuffer().second;
+  float e[2] = {(float)extent.width, (float)extent.height};
+  setUniform(DataType::Float2, "sgaResolution", (char*)&e, sizeof(e), true);
 }
 
-void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
+void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
   if(!ensureValidity()) return;
 
   // Extra VBO-specific validity check
@@ -142,7 +149,8 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
   }
   
   cook();
-  drawBuffer(vbo->impl->buffer, vbo->size);
+  updateStandardUniforms();
+  drawBuffer(vbo->impl->buffer, vbo->getDataSize());
 }
 
 bool Pipeline::Impl::ensureValidity(){
@@ -243,8 +251,8 @@ void Pipeline::Impl::cook(){
     // Descriptor set layout
     std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
 
-    c_vsUniformSize = getAnnotatedDataLayoutSize(vsUniforms);
-    c_fsUniformSize = getAnnotatedDataLayoutSize(fsUniforms);
+    c_vsUniformSize = getAnnotatedDataLayoutUBOSize(vsUniforms);
+    c_fsUniformSize = getAnnotatedDataLayoutUBOSize(fsUniforms);
     // Prepare uniform buffers.
     c_vsUniformBuffer = global::device->createBuffer(
       c_vsUniformSize,

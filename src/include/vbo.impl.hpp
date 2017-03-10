@@ -7,18 +7,18 @@
 
 namespace sga{
 
-class VBOBase::Impl{
+class VBO::Impl{
 public:
-  Impl(unsigned int datasize, unsigned int size);
+  Impl(DataLayout layout, unsigned int size);
   
   void putData(uint8_t* pData, size_t n);
   void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
 private:
-public: // TODO getter?
+public:
+  // TODO getters?
   std::shared_ptr<vkhlf::Buffer> buffer;
-
+  DataLayout layout;
 private:
-  const unsigned int datasize;
   unsigned int size;
 };
 

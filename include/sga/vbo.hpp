@@ -11,27 +11,13 @@ namespace sga{
 
 class VBOImpl;
 
-class VBOBase{
+class VBO{
 public:
-  VBOBase(unsigned int datasize, unsigned int n);
-  ~VBOBase();
+  ~VBO();
 
-  virtual DataLayout getLayout() const = 0;
-  virtual size_t getDataSize() const = 0;
+  DataLayout getLayout() const;
+  size_t getDataSize() const;
   
-  friend class Pipeline;
-protected:
-  class Impl;
-  std::unique_ptr<Impl> impl;
-
-  unsigned int size;
-  void putData(uint8_t* pData, size_t n);
-  void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
-};
-
-template<DataType... Layout>
-class VBO : public VBOBase{
-public:
   // Non-Interleaving write.
   template <typename T>
   void write(std::vector<T> data){
@@ -50,19 +36,18 @@ public:
     write(std::tuple<T, Ts...>(arg1, args...));
   }
 
-  DataLayout getLayout() const override{
-    return DataLayout({Layout...});
+  static std::shared_ptr<VBO> create(DataLayout layout, unsigned int size) {
+    return std::shared_ptr<VBO>(new VBO(layout, size));
   }
   
-  size_t getDataSize() const override{
-    return getTotalDataTypeSize(Layout...);
-  }
-
-  static std::shared_ptr<VBO<Layout...>> create(unsigned int size) {
-    return std::shared_ptr<VBO<Layout...>>(new VBO<Layout...>(size));
-  }
+  friend class Pipeline;
 private:
-  VBO(unsigned int n) : VBOBase(getDataSize(), n) {}
+  VBO(DataLayout layout, unsigned int n);
+  class Impl;
+  std::unique_ptr<Impl> impl;
+
+  void putData(uint8_t* pData, size_t n);
+  void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
 };
 
 } // namespace sga

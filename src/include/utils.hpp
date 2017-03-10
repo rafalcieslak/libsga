@@ -17,6 +17,8 @@ void out_dbg(std::string text, std::string terminator = "\n");
 
 void realizeException(SGAException* except);
 
+size_t align(size_t base, unsigned int alignment);
+
 } // namespace sga
 
 #endif // __UTILS_HPP__

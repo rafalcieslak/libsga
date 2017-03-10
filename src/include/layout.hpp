@@ -5,9 +5,11 @@
 
 namespace sga{
 
-std::string getDataTypeGLSL(DataType);
+std::string getDataTypeGLSLName(DataType);
+unsigned int getDataTypeSize(DataType dt);
+unsigned int getDataTypeGLSLstd140Alignment(DataType dt);
 size_t getAnnotatedDataLayoutSize(const std::vector<std::pair<DataType, std::string>>&);
-
+size_t getAnnotatedDataLayoutUBOSize(const std::vector<std::pair<DataType, std::string>>&);
 } // namespace sga
 
 #endif // __LAYOUT_HPP__

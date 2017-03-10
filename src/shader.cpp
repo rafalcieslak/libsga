@@ -78,6 +78,7 @@ void Shader::Impl::addUniform(sga::DataType type, std::string name){
 
 void Shader::Impl::addStandardUniforms(){
   addUniform(DataType::Float, "sgaTime");
+  addUniform(DataType::Float2, "sgaResolution");
 }
 
 void Shader::Impl::compile(){
@@ -88,23 +89,25 @@ void Shader::Impl::compile(){
   // Gather input attributes.
   for(unsigned int i = 0; i < inputAttr.size(); i++){
     preamble += "layout(location = " + std::to_string(i) + ") in " +
-      getDataTypeGLSL(inputAttr[i].first) + " " + inputAttr[i].second + ";\n";
+      getDataTypeGLSLName(inputAttr[i].first) + " " + inputAttr[i].second + ";\n";
     inputLayout.extend(inputAttr[i].first);
   }
   // Gather output attributes.
   for(unsigned int i = 0; i < outputAttr.size(); i++){
     preamble += "layout(location = " + std::to_string(i) + ") out " +
-      getDataTypeGLSL(outputAttr[i].first) + " " + outputAttr[i].second + ";\n";
+      getDataTypeGLSLName(outputAttr[i].first) + " " + outputAttr[i].second + ";\n";
     outputLayout.extend(outputAttr[i].first);
   }
   // Gather uniforms
   assert(uniforms.size() > 0);
   unsigned int bindno = (stage == vk::ShaderStageFlagBits::eVertex) ? 0 : 1;
-  preamble += "layout(binding = "  + std::to_string(bindno) + ") uniform sga_uniforms {\n";
+  preamble += "layout(std140, binding = "  + std::to_string(bindno) + ") uniform sga_uniforms {\n";
   for(unsigned int i = 0; i < uniforms.size(); i++){
-    preamble += "  " + getDataTypeGLSL(uniforms[i].first) + " " + uniforms[i].second + ";\n";
+    preamble += "  " + getDataTypeGLSLName(uniforms[i].first) + " " + uniforms[i].second + ";\n";
   }
   preamble += "} u;\n";
+
+  // out_dbg(preamble);
   
   auto module = compileGLSLToSPIRV(stage, preamble + source);
   shader = global::device->createShaderModule(module);
@@ -269,6 +272,9 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
       std::string infoDebugLog = shader.getInfoDebugLog();
       ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
+
+  //program.buildReflection();
+  //program.dumpReflection();
   
   // TODO: Does this have a return value?
   std::vector<uint32_t> code;

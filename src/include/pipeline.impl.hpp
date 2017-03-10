@@ -14,7 +14,7 @@ class Pipeline::Impl{
 public:
   Impl();
   void setTarget(std::shared_ptr<Window> tgt);
-  void drawVBO(std::shared_ptr<VBOBase>);
+  void drawVBO(std::shared_ptr<VBO>);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
   void setClearColor(float r, float g, float b);
 
@@ -25,9 +25,7 @@ public:
   void updateStandardUniforms();
   
   bool ensureValidity();
-  void cook();
 private:
-  bool cooked = false;
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
 
@@ -41,6 +39,8 @@ private:
   std::vector<std::pair<DataType, std::string>> fsUniforms;
   DataLayout fsOutputLayout;
   
+  void cook();
+  bool cooked = false;
   // These fields require cooking
   std::shared_ptr<vkhlf::Pipeline> c_pipeline;
   std::shared_ptr<vkhlf::RenderPass> c_renderPass;

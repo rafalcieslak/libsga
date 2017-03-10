@@ -295,4 +295,10 @@ void SGAException::raise(){
   }
 }
 
+size_t align(size_t base, unsigned int alignment){
+  if(base % alignment == 0) return base;
+  size_t low = base / alignment;
+  return (low+1) * alignment;
+}
+
 } // namespace sga

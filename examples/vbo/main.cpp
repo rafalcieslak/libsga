@@ -3,33 +3,40 @@
 #include <sga.hpp>
 
 struct __attribute__((packed)) CustomData{
-  float position[2];
+  float position[3];
   float color[4];
 };
 
 std::vector<CustomData> vertices = {
-  { { 0.0,         -1.0 }, { 1, 0, 0, 1 }, },
-  { { 0.8660254037, 0.5 }, { 0, 1, 0, 1 }, },
-  { {-0.8660254037, 0.5 }, { 0, 0, 1, 1 }, },
+  // Smaller triangle.
+  { { 0.0,         -1.0, 0.1 }, { 1, 0, 0, 1 }, },
+  { { 0.8660254037, 0.5, 0.1 }, { 0, 1, 0, 1 }, },
+  { {-0.8660254037, 0.5, 0.1 }, { 0, 0, 1, 1 }, },
+  
+  // Slightly larger triangle
+  { { 0.0          * 1.2,-1.0 * 1.2, 0.2 }, { 0.4, 0.2, 0, 1 }, },
+  { { 0.8660254037 * 1.2, 0.5 * 1.2, 0.2 }, { 0, 0.4, 0.2, 1 }, },
+  { {-0.8660254037 * 1.2, 0.5 * 1.2, 0.2 }, { 0.2, 0, 0.4, 1 }, },
 };
 
 int main(){
-  sga::init();
+  sga::init(sga::VerbosityLevel::Debug, sga::ErrorStrategy::MessageThrow);
   auto window = sga::Window::create(500, 500, "Example window");
   auto pipeline = sga::Pipeline::create();
 
-  auto vbo = sga::VBO<sga::DataType::Float2,
-                      sga::DataType::Float4>::create(3);
+  auto vbo = sga::VBO<sga::DataType::Float3,
+                      sga::DataType::Float4>::create(6);
   
   vbo->write(vertices);
   
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main()
     {
-      mat2 rotate = mat2( cos(u.angle), sin(u.angle), 
-                         -sin(u.angle), cos(u.angle));
-      vec2 pos = rotate * inVertex;
-      gl_Position = vec4(pos, 0, 1);
+      mat3 rotate = mat3( cos(u.angle), sin(u.angle), 0, 
+                         -sin(u.angle), cos(u.angle), 0,
+                                     0,            0, 1);
+      vec3 pos = rotate * inVertex;
+      gl_Position = vec4(pos, 1);
       outColor = inColor;
     }
   )");
@@ -40,7 +47,7 @@ int main(){
     }
   )");
 
-  vertShader->addInput(sga::DataType::Float2, "inVertex");
+  vertShader->addInput(sga::DataType::Float3, "inVertex");
   vertShader->addInput(sga::DataType::Float4, "inColor");
   vertShader->addOutput(sga::DataType::Float4, "outColor");
 

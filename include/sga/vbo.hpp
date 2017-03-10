@@ -26,6 +26,7 @@ protected:
 
   unsigned int size;
   void putData(uint8_t* pData, size_t n);
+  void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
 };
 
 template<DataType... Layout>
@@ -34,12 +35,7 @@ public:
   // Non-Interleaving write.
   template <typename T>
   void write(std::vector<T> data){
-    static_assert(sizeof(T) == getTotalDataTypeSize(Layout...), "VBO Layout does not match written data layout!");
-    if(data.size() != size){
-      std::cout << "Error: VBO size does not match written data size!" << std::endl;
-    }else{
-      putData((uint8_t*)data.data(), data.size() * sizeof(T));
-    }
+    putData((uint8_t*)data.data(), data.size(), sizeof(T));
   }
 
   // Interleaving write.

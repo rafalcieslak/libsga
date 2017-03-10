@@ -138,8 +138,7 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
 
   // Extra VBO-specific validity check
   if(vbo->getLayout() != vsInputLayout){
-    std::cout << "ERROR: VBO layout does not match pipeline input layout!" << std::endl;
-    return;
+    PipelineConfigError("VertexLayoutMismatch", "VBO layout does not match pipeline input layout!").raise();
   }
   
   cook();
@@ -149,16 +148,16 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBOBase> vbo){
 bool Pipeline::Impl::ensureValidity(){
   // TODO: More verbose output?
   if(!vertexShader){
-    std::cout << "Vertex shader not set." << std::endl; return false;
+    PipelineConfigError("VertexShaderNotSet", "This pipeline is not ready for rendering, the vertex shader was not set.").raise();
   }
   if(!fragmentShader){
-    std::cout << "Fragment shader not set." << std::endl; return false;
+    PipelineConfigError("FragmentShaderNotSet", "This pipeline is not ready for rendering, the fragment shader was not set.").raise();
   }
   if(vsOutputLayout != fsInputLayout){
-    std::cout << "Vertex shader output layout does not match fragment shader input layout" << std::endl; return false;
+    PipelineConfigError("ShaderInterfaceDataLayoutMismatch", "Vertex shader output layout does not match fragment shader input layout.").raise();
   }
   if(!targetWindow){
-    std::cout << "Target window not set" << std::endl; return false;
+    PipelineConfigError("RenderTargetMissing", "The pipeline is not ready for rendering, target surface not set.").raise();
   }
   return true;
 }

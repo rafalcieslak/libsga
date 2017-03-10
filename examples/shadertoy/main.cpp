@@ -3,11 +3,7 @@
 
 #include <sga.hpp>
 
-struct __attribute__((packed)) CustomData{
-  float position[2];
-};
-
-std::vector<CustomData> vertices = {
+std::vector<std::array<float,2>> vertices = {
   { {-1, -1 } },
   { { 3, -1 } },
   { {-1,  3 } },
@@ -29,6 +25,7 @@ int main(int argc, char** argv){
     std::cout << "USAGE: " << argv[0] << " shader_file" << std::endl;
     return 1;
   }
+  // Read shader file
   std::ifstream file(argv[1]);
   if(!file){
     std::cout << "Failed to open file " << argv[1] << std::endl;
@@ -43,22 +40,21 @@ int main(int argc, char** argv){
   source = ReplaceString(source, "iResolution", "u.sgaResolution");
   source = ReplaceString(source, "iMouse", "vec4(0)");
   source += R"(
-void main(){
-  mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
-}
-)";
-  
+    void main() {
+      mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
+    }
+  )";
+
+  // Prepare SGA
   sga::init(sga::VerbosityLevel::Debug, sga::ErrorStrategy::MessageThrow);
   auto window = sga::Window::create(800, 600, "Shadertoy simulator");
   auto pipeline = sga::Pipeline::create();
 
   auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
-  
   vbo->write(vertices);
   
   auto vertShader = sga::VertexShader::createFromSource(R"(
-    void main()
-    {
+    void main() {
       gl_Position = vec4(inVertex, 0, 1);
     }
   )");
@@ -66,7 +62,6 @@ void main(){
   auto fragShader = sga::FragmentShader::createFromSource(source);
 
   vertShader->addInput(sga::DataType::Float2, "inVertex");
-
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
   vertShader->compile();
@@ -77,7 +72,6 @@ void main(){
   pipeline->setTarget(window);
   
   window->setFPSLimit(60);
-
   while(window->isOpen()){
     pipeline->drawVBO(vbo);
     window->nextFrame();

@@ -114,29 +114,6 @@ void Shader::Impl::compile(){
   compiled = true;
 }
 
-// TODO: Move to utils maybe?
-static std::string ReplaceString(std::string subject, const std::string& search,
-                          const std::string& replace) {
-    size_t pos = 0;
-    while ((pos = subject.find(search, pos)) != std::string::npos) {
-         subject.replace(pos, search.length(), replace);
-         pos += replace.length();
-    }
-    return subject;
-}
-
-std::string FragmentShader::importShaderToyShader(std::string source){
-  source = ReplaceString(source, "iGlobalTime", "u.sgaTime");
-  source = ReplaceString(source, "iResolution", "u.sgaResolution");
-  source += R"(
-void main()
-{
-  mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
-}
-)";
-  return source;
-}
-
 // === GLSL compiler interface to glslang. Mostly based on vkhlf. === 
 
 class GLSLToSPIRVCompiler

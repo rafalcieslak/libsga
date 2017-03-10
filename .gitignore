@@ -2,4 +2,6 @@
 *#
 build
 
+examples/shadertoy/*.frag
+
 src/include/version.hpp

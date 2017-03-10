@@ -38,8 +38,6 @@ public:
 class FragmentShader : public Shader{
 public:
   static std::shared_ptr<FragmentShader> createFromSource(std::string source);
-  
-  static std::string importShaderToyShader(std::string source);
 };
 
 

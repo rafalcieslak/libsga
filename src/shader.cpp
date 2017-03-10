@@ -114,6 +114,30 @@ void Shader::Impl::compile(){
   compiled = true;
 }
 
+// TODO: Move to utils maybe?
+static std::string ReplaceString(std::string subject, const std::string& search,
+                          const std::string& replace) {
+    size_t pos = 0;
+    while ((pos = subject.find(search, pos)) != std::string::npos) {
+         subject.replace(pos, search.length(), replace);
+         pos += replace.length();
+    }
+    return subject;
+}
+
+std::string FragmentShader::importShaderToyShader(std::string source){
+  source = ReplaceString(source, "iGlobalTime", "u.sgaTime");
+  source = ReplaceString(source, "iResolution", "u.sgaResolution");
+  source += R"(
+void main()
+{
+  vec2 pos = vec2(inFragPos.x, 1.0-inFragPos.y) * u.sgaResolution.xy;
+  mainImage(outColor, pos);
+}
+)";
+  return source;
+}
+
 // === GLSL compiler interface to glslang. Mostly based on vkhlf. === 
 
 class GLSLToSPIRVCompiler
@@ -268,8 +292,8 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
 
   if (!program.link(messages))
     {
-      std::string infoLog = shader.getInfoLog();
-      std::string infoDebugLog = shader.getInfoDebugLog();
+      std::string infoLog = program.getInfoLog();
+      std::string infoDebugLog = program.getInfoDebugLog();
       ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
 

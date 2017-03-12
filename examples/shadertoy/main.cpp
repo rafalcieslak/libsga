@@ -82,6 +82,7 @@ int main(int argc, char** argv){
         click_x = x;
         click_y = y;
       }
+      if(!l) x = y = 0;
       std::array<float,4> val = {(float)x,
                                  (float)y,
                                  l ? click_x : -1.0f,

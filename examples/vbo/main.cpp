@@ -20,7 +20,7 @@ std::vector<CustomData> vertices = {
 };
 
 int main(){
-  sga::init(sga::VerbosityLevel::Debug, sga::ErrorStrategy::MessageThrow);
+  sga::init();
   auto window = sga::Window::create(500, 500, "Example window");
   auto pipeline = sga::Pipeline::create();
 

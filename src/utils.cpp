@@ -95,6 +95,15 @@ double getTime(){
   return glfwGetTime();
 }
 
+static void env_verbosity(){
+  char* q = std::getenv("LIBSGA_DEBUG");
+  if(!q) return;
+  std::string qq(q);
+  if(qq == "debug") global::verbosity = VerbosityLevel::Debug;
+  if(qq == "quiet") global::verbosity = VerbosityLevel::Quiet;
+  if(qq == "verbose") global::verbosity = VerbosityLevel::Verbose;
+}
+
 void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   if(global::initialized){
     return;
@@ -107,6 +116,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
 
   global::verbosity = verbosity;
   global::error_strategy = strategy;
+  env_verbosity();
 
   // create vulkan instance, set up validation layers and optional debug
   // features, pick a physical device, set up the logical device, querry
@@ -246,12 +256,12 @@ void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface)
 }
 
 void out_msg(std::string text, std::string terminator){
-  if(global::verbosity >= VerbosityLevel::Verbose) return;
+  if(global::verbosity < VerbosityLevel::Verbose) return;
   std::cerr << "SGA: " << text << terminator;
   std::cerr.flush();
 }
 void out_dbg(std::string text, std::string terminator){
-  if(global::verbosity >= VerbosityLevel::Debug) return;
+  if(global::verbosity < VerbosityLevel::Debug) return;
   std::cerr << "SGA DEBUG: " << text << terminator;
   std::cerr.flush();
 }

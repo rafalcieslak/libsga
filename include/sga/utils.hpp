@@ -9,10 +9,9 @@ void info();
 double getTime();
 
 enum class VerbosityLevel{
-  Quiet,
-  Verbose,
-  Debug,
-  DebugWithVulkan
+  Quiet = 0,
+  Verbose = 1,
+  Debug = 2,
 };
 
 // TODO: Bitfield?
@@ -35,7 +34,7 @@ enum class ErrorStrategy{
 /** Prepares SGA. Chooses a device to use and prepares it for rendering.  You
     may choose the verbosity level SGA will use, default is Quiet. If you call
     init(), you must call terminate() before your application closes! */
-void init(VerbosityLevel level = VerbosityLevel::Quiet,
+void init(VerbosityLevel level = VerbosityLevel::Verbose,
           ErrorStrategy stragety = ErrorStrategy::MessageThrow);
 
 /** Deinitializes SGA. You MUST call terminate() before your application exits,

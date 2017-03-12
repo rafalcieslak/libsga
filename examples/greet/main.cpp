@@ -2,7 +2,7 @@
 
 int main(){
   sga::info();
-  sga::init(sga::VerbosityLevel::Debug);
+  sga::init();
 
   sga::info();
   

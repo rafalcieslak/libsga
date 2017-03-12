@@ -46,7 +46,7 @@ int main(int argc, char** argv){
   )";
 
   // Prepare SGA
-  sga::init(sga::VerbosityLevel::Debug, sga::ErrorStrategy::MessageThrow);
+  sga::init();
   auto window = sga::Window::create(800, 600, "Shadertoy simulator");
   auto pipeline = sga::Pipeline::create();
 

@@ -38,7 +38,7 @@ int main(int argc, char** argv){
   // Prepare shadertoy shader
   source = ReplaceString(source, "iGlobalTime", "u.sgaTime");
   source = ReplaceString(source, "iResolution", "u.sgaResolution");
-  source = ReplaceString(source, "iMouse", "vec4(0)");
+  source = ReplaceString(source, "iMouse", "u.stoyMouse");
   source += R"(
     void main() {
       mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
@@ -48,6 +48,7 @@ int main(int argc, char** argv){
   // Prepare SGA
   sga::init();
   auto window = sga::Window::create(800, 600, "Shadertoy simulator");
+  
   auto pipeline = sga::Pipeline::create();
 
   auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
@@ -58,11 +59,10 @@ int main(int argc, char** argv){
       gl_Position = vec4(inVertex, 0, 1);
     }
   )");
-
   auto fragShader = sga::FragmentShader::createFromSource(source);
-
   vertShader->addInput(sga::DataType::Float2, "inVertex");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
+  fragShader->addUniform(sga::DataType::Float4, "stoyMouse");
 
   vertShader->compile();
   fragShader->compile();
@@ -70,6 +70,21 @@ int main(int argc, char** argv){
   pipeline->setVertexShader(vertShader);
   pipeline->setFragmentShader(fragShader);
   pipeline->setTarget(window);
+
+  bool mouse_l_last = false;
+  float click_x = 250.0, click_y = 250.0;
+  window->setOnMouseAny([&](double x, double y, bool l, bool){
+      if(!mouse_l_last && l){
+        click_x = x;
+        click_y = y;
+      }
+      std::array<float,4> val = {(float)x,
+                                 (float)y,
+                                 l ? click_x : -1.0f,
+                                 l ? click_y : -1.0f};
+      pipeline->setUniform("stoyMouse", val);
+      mouse_l_last = l;
+    });
   
   window->setFPSLimit(60);
   while(window->isOpen()){

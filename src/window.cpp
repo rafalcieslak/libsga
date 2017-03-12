@@ -19,6 +19,16 @@ void Window::nextFrame() {impl->nextFrame();}
 bool Window::isOpen() {return impl->isOpen();}
 void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
 
+void Window::setOnMouseMove(std::function<void(double, double)> f) {
+  impl->setOnMouseMove(f);
+};
+void Window::setOnMouseButton(std::function<void(bool, bool)> f) {
+  impl->setOnMouseButton(f);
+};
+void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
+  impl->setOnMouseAny(f);
+};
+
 // ====== IMPL ======
 
 Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
@@ -26,6 +36,8 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
     glfwSetWindowUserPointer(window, this);
+
+    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
     
     surface = global::instance->createSurface(window);
     ensurePhysicalDeviceSurfaceSupport(surface);
@@ -70,6 +82,8 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
 
     // Hook some glfw callbacks.
     glfwSetFramebufferSizeCallback(window, Window::Impl::resizeCallback);
+    glfwSetCursorPosCallback(window, Window::Impl::mousePositionCallback);
+    glfwSetMouseButtonCallback(window, Window::Impl::mouseButtonCallback);
 }
   
 void Window::Impl::do_resize(unsigned int w, unsigned int h){
@@ -167,10 +181,42 @@ void Window::Impl::setFPSLimit(double fps){
   if(fps > 0.0 && fps < 1.0) fps = 1.0;
   fpsLimit = fps;
 }
-  
+
+void Window::Impl::setOnMouseMove(std::function<void(double, double)> f) {
+  f_onMouseMove = f;
+};
+void Window::Impl::setOnMouseButton(std::function<void(bool, bool)> f) {
+  f_onMouseButton = f;
+};
+void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
+  f_onMouseAny = f;
+};
+
 void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){
     Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
     wd->do_resize(width, height);
+}
+void Window::Impl::mousePositionCallback(GLFWwindow *window, double x, double y){
+  Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
+  wd->mouse_x = x;
+  wd->mouse_y = wd->height - y;
+  if(wd->f_onMouseMove)
+    wd->f_onMouseMove(wd->mouse_x, wd->mouse_y);
+  if(wd->f_onMouseAny)
+    wd->f_onMouseAny(wd->mouse_x, wd->mouse_y, wd->mouse_l, wd->mouse_r);
+}
+void Window::Impl::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods){
+  Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
+  if(button == GLFW_MOUSE_BUTTON_1){
+    wd->mouse_l = action==GLFW_PRESS;
+  }
+  if(button == GLFW_MOUSE_BUTTON_2){
+    wd->mouse_r = action==GLFW_PRESS;
+  }
+  if(wd->f_onMouseButton)
+    wd->f_onMouseButton(wd->mouse_l, wd->mouse_r);
+  if(wd->f_onMouseAny)
+    wd->f_onMouseAny(wd->mouse_x, wd->mouse_y, wd->mouse_l, wd->mouse_r);
 }
 
 } // namespace sga

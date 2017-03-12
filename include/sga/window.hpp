@@ -18,6 +18,10 @@ public:
     return std::shared_ptr<Window>(new Window(width, height, title));
   }
 
+  void setOnMouseMove(std::function<void(double, double)> f);
+  void setOnMouseButton(std::function<void(bool, bool)> f);
+  void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
+
   friend class Pipeline;
 private:
   Window(unsigned int width, unsigned int height, std::string title);

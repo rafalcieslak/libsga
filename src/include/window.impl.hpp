@@ -17,8 +17,14 @@ public:
   void nextFrame();
   bool isOpen();
   void setFPSLimit(double fps);
-  static void resizeCallback(GLFWwindow *window, int width, int height);
   
+  static void resizeCallback(GLFWwindow *window, int width, int height);
+  static void mousePositionCallback(GLFWwindow *window, double width, double height);
+  static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+ 
+  void setOnMouseMove(std::function<void(double, double)> f);
+  void setOnMouseButton(std::function<void(bool, bool)> f);
+  void setOnMouseAny(std::function<void(double, double, bool, bool)> f); 
 private:
   GLFWwindow* window;
   unsigned int width, height;
@@ -49,6 +55,15 @@ private:
   
   double fpsLimit = 60;
   double limitFPS_lastTime = 0.0;
+
+  double mouse_x = 0.0;
+  double mouse_y = 0.0;
+  bool mouse_l = false;
+  bool mouse_r = false;
+
+  std::function<void(double, double)> f_onMouseMove;
+  std::function<void(bool, bool)> f_onMouseButton;
+  std::function<void(double, double, bool, bool)> f_onMouseAny;
 };
 
 } // namespace sga

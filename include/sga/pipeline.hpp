@@ -11,17 +11,45 @@ class VBO;
 class VertexShader;
 class FragmentShader;
 
+/** This class represents the state and configuration of a rendering
+    pipeline. Once it is configured, it may then be used for rendering onto a
+    window or image surface.
+*/
 class Pipeline{
 public:
   ~Pipeline();
 
-  void setTarget(std::shared_ptr<Window> target);
+  /** Configures the pipeline to render onto the provided window. */
+  void setTarget(std::shared_ptr<Window> window);
+  /** Performs rendering using vertex data from the provided VBO. This method
+      blocks until rendering completes. Before rendering pipeline configuration
+      is valdiated, and you will be notified of any errors or
+      inconsistencies. */
   void drawVBO(std::shared_ptr<VBO>);
+
+  /** Configures the clear color of this pipeline, i.e. the color used for
+      clearing the target surface before at the beginning of a render. */
   void setClearColor(float r, float g, float b);
-  
+
+  /** Sets the vertex shader program for this pipeline. The shader must have
+      been compiled before it is used in a pipeline. Further changes to the
+      referenced shader will not affect this pipeline, which stores a copy of
+      the shader. */
+  // TODO: observer_ptr?
   void setVertexShader(std::shared_ptr<VertexShader>);
+  /** Sets the fragment shader program for this pipeline. The shader must have
+      been compiled before it is used in a pipeline. Further changes to the
+      referenced shader will not affect this pipeline, which stores a copy of
+      the shader. */
+  // TODO: observer_ptr?
   void setFragmentShader(std::shared_ptr<FragmentShader>);
 
+  //@{
+  /** Sets the value of a named uniform within this pipeline to the provided
+      value. The uniform name must correspond to a uniform previously declared
+      during shader preparation. These methods will refuse to set a standard
+      uniform (`u.sga*`). Using these methods is insanely fast. All changes are
+      cached and writes are postponed until next render. */
   void setUniform(std::string name, float value);
   void setUniform(std::string name, int value);
   void setUniform(std::string name, unsigned int value);
@@ -34,7 +62,9 @@ public:
   void setUniform(std::string name, T value, DataType dt){
     setUniform(dt, name, (char*)&value, sizeof(value));
   }
-  
+  //@}
+
+  /** Creates a new unconfigured Pipeline. */
   static std::shared_ptr<Pipeline> create(){
     return std::shared_ptr<Pipeline>(new Pipeline());
   }

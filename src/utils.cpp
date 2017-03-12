@@ -9,7 +9,7 @@
 #include <vkhlf/vkhlf.h>
 #include <GLFW/glfw3.h>
 
-#include "version.hpp"
+#include <sga/config.hpp>
 #include "global.hpp"
 #include "utils.hpp"
 

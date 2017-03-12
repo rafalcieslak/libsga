@@ -1,7 +1,7 @@
 #ifndef __SGA_IMAGE_HPP__
 #define __SGA_IMAGE_HPP__
 
-#include <memory>
+#include "config.hpp"
 
 namespace sga{
 
@@ -14,7 +14,7 @@ public:
 
 private:
   class Impl;
-  std::unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl;
 };
 
 } // namespace sga

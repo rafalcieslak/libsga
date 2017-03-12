@@ -1,10 +1,11 @@
 #ifndef __SGA_VBO_HPP__
 #define __SGA_VBO_HPP__
 
-#include <memory>
 #include <vector>
 #include <initializer_list>
 #include <iostream>
+
+#include "config.hpp"
 #include "layout.hpp"
 
 namespace sga{
@@ -44,7 +45,7 @@ public:
 private:
   VBO(DataLayout layout, unsigned int n);
   class Impl;
-  std::unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl;
 
   void putData(uint8_t* pData, size_t n);
   void putData(uint8_t* pData, size_t n_elem, size_t elem_size);

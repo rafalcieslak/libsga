@@ -1,10 +1,10 @@
 #ifndef __SGA_SHADER_HPP__
 #define __SGA_SHADER_HPP__
 
-#include <memory>
 #include <string>
 
-#include <sga/layout.hpp>
+#include "config.hpp"
+#include "layout.hpp"
 
 namespace sga{
 
@@ -27,7 +27,7 @@ public:
 protected:
   Shader();
   class Impl;
-  std::unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl;
 };
 
 class VertexShader : public Shader{

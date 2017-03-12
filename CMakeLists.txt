@@ -59,6 +59,12 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   add_definitions( -Wall -Wextra -g)
 endif()
 
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/sga/config.hpp.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/sga/config.hpp
+  @ONLY)
+
+
 add_subdirectory(src)
 add_subdirectory(doc)
 add_subdirectory(examples)

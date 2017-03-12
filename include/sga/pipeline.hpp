@@ -1,8 +1,7 @@
 #ifndef __SGA_PIPELINE_HPP__
 #define __SGA_PIPELINE_HPP__
 
-#include <memory>
-
+#include "config.hpp"
 #include "window.hpp"
 #include "layout.hpp"
 
@@ -44,7 +43,7 @@ private:
   void setUniform(DataType dt, std::string name, char* pData, size_t size);
   
   class Impl;
-  std::unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl;
 };
 
 } // namespace sga

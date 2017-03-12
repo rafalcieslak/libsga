@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "config.hpp"
+
 namespace sga{
 
 class Window{
@@ -20,7 +22,7 @@ public:
 private:
   Window(unsigned int width, unsigned int height, std::string title);
   class Impl;
-  std::unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl;
 };
   
 } // namespace sga

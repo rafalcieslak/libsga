@@ -20,6 +20,11 @@ struct SGAException : public std::runtime_error{
   virtual ~SGAException() {} 
 };
 
+struct SystemError : public SGAException{
+  SystemError(std::string name, std::string information, std::string description = "")
+    : SGAException(name, information, description) {}
+  virtual void raise_this() override { throw *this; }
+};
 struct PipelineConfigError : public SGAException{
   PipelineConfigError(std::string name, std::string information, std::string description = "")
     : SGAException(name, information, description) {}

@@ -241,7 +241,7 @@ void Pipeline::Impl::cook(){
     if(cooked) return;
 
     // Prepare vkPipeline etc.
-    std::cout << "Cooking a pipeline." << std::endl;
+    out_dbg("Cooking a pipeline.");
 
     // Descriptor bindings
     std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;

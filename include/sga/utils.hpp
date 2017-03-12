@@ -11,7 +11,8 @@ double getTime();
 enum class VerbosityLevel{
   Quiet,
   Verbose,
-  Debug
+  Debug,
+  DebugWithVulkan
 };
 
 // TODO: Bitfield?

@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 
 #include <sga/config.hpp>
+#include <sga/exceptions.hpp>
 #include "global.hpp"
 #include "utils.hpp"
 
@@ -28,31 +29,16 @@ void info(){
 
 static VkBool32 debugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t, const char*, const char* pMessage, void*)
   {
-    VkBool32 critical = VK_FALSE;
-    switch (flags)
-    {
-      case VK_DEBUG_REPORT_INFORMATION_BIT_EXT :
-        std::cerr << "Vulkan validation layer INFORMATION: ";
-        break;
-      case VK_DEBUG_REPORT_WARNING_BIT_EXT :
-        std::cerr << "Vulkan validation layer WARNING: ";
-        break;
-      case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
-        std::cerr << "Vulkan validation layer PERFORMANCE WARNING: ";
-        break;
-      case VK_DEBUG_REPORT_ERROR_BIT_EXT:
-        std::cerr << "Vulkan validation layer ERROR: ";
-        critical = VK_TRUE;
-        break;
-      case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
-        std::cout << "Vulkan validation layer DEBUG: ";
-        break;
-      default:
-        break;
-    }
-    if(pMessage)
-      std::cerr << pMessage << std::endl;
-    return critical;
+    if(!pMessage) return VK_FALSE;
+    static std::map<VkDebugReportFlagsEXT, std::string> namemap {
+      {VK_DEBUG_REPORT_INFORMATION_BIT_EXT, "INFORMATION"},
+      {VK_DEBUG_REPORT_WARNING_BIT_EXT, "WARNING"},
+      {VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT, "PERFORMANCE WARNING"},
+      {VK_DEBUG_REPORT_ERROR_BIT_EXT, "ERROR"},
+      {VK_DEBUG_REPORT_DEBUG_BIT_EXT, "DEBUG"},
+    };
+    out_dbg("Vulkan validation layer " + namemap[flags] + ": " + pMessage);
+    return flags | VK_DEBUG_REPORT_ERROR_BIT_EXT;
 }
 
 static std::map<vk::PhysicalDeviceType, int> deviceTypeScores{
@@ -81,10 +67,9 @@ static int rateDevice(std::shared_ptr<vkhlf::PhysicalDevice> dev){
 
 static bool pickPhysicalDevice(){
   unsigned int device_count = global::instance->getPhysicalDeviceCount();
-  std::cout << "Found " << device_count << " physical devices." << std::endl;
+  out_dbg("Found " + std::to_string(device_count) + " physical devices.");
   if(device_count == 0){
-    std::cout << "No vulkan-supporting devices found!" << std::endl;
-    return false;
+    SystemError("NoDevices", "No vulkan-supporting devices were found.").raise();
   }
   std::vector<int> scores(device_count);
   for(unsigned int i = 0; i < device_count; i++){
@@ -94,14 +79,13 @@ static bool pickPhysicalDevice(){
 
   auto argmax_it = std::max_element(scores.begin(), scores.end());
   if(*argmax_it == 0){
-    std::cout << "Vulkan devices found, but none of them supports features required for libSGA to operate" << std::endl;
-    return false;
+    SystemError("NoDeviceFeatures", "Vulkan devices found, but none of them supports features required for libSGA to operate.").raise();
   }
   unsigned int best_device = argmax_it - scores.begin();
   auto pDev = global::instance->getPhysicalDevice(best_device);
 
   std::string devName = pDev->getProperties().deviceName;
-  std::cout << "Picked device: " << devName << std::endl;
+  out_msg("Using device: " + devName);
 
   global::physicalDevice = pDev;
   return true;
@@ -113,13 +97,11 @@ double getTime(){
 
 void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   if(global::initialized){
-    std::cout << "SGA was already initialized!" << std::endl;
     return;
   }
 
   if(!glfwInit()){
-    std::cout << "Failed to initialize GLFW!" << std::endl;
-    return;
+    SystemError("GLFWInitError", "Failed to initialize GFLW!").raise();
   }
   glfwSetTime(0.0);
 
@@ -131,7 +113,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   // available memory features, prepare command queue families.
 
   std::vector<vk::LayerProperties> layerProperties = vk::enumerateInstanceLayerProperties();
-  std::cout << "Found " << layerProperties.size() << " instance layers." << std::endl;
+  out_dbg("Found " + std::to_string(layerProperties.size()) + " instance layers.");
 
   std::vector<std::string> requiredLayers, desiredLayers, enabledLayers;
   std::vector<std::string> enabledInstanceExtensions, enabledDeviceExtensions;
@@ -141,8 +123,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     auto it = std::find_if(layerProperties.begin(), layerProperties.end(), [&](vk::LayerProperties lp){return lp.layerName == layer;});
     if(it == layerProperties.end()){
       // A required layer is not available!
-      std::cout << "A required layer " << layer << " is not available!" << std::endl;
-      throw std::runtime_error("LayerNotAvailable");
+      SystemError("LayerNotAvailable", "A required layer \"" + layer + "\" is not available!").raise();
     }
     enabledLayers.push_back(layer);
   }
@@ -150,8 +131,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     auto it = std::find_if(layerProperties.begin(), layerProperties.end(), [&](vk::LayerProperties lp){return lp.layerName == layer;});
     if(it == layerProperties.end()){
       // A desired layer is not available!
-      std::cout << "A desired layer " << layer << " is not available, skipping." << std::endl;
-      continue;
+      out_dbg("LayerNotAvailable", "A desired layer \"" + layer + "\" is not available!");
     }
     enabledLayers.push_back(layer);
   }
@@ -161,9 +141,10 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   const char** extensions = glfwGetRequiredInstanceExtensions(&count);
   std::copy(extensions, extensions + count, std::back_inserter(enabledInstanceExtensions));
 
-  for(auto i : enabledInstanceExtensions){
-    std::cout << i << " ";
-  } std::cout << std::endl;
+  std::string ext_list;
+  for(auto i : enabledInstanceExtensions)
+    ext_list += i + " ";
+  out_dbg("Enabled extensions: " + ext_list);
 
   enabledDeviceExtensions.push_back("VK_KHR_swapchain");
   
@@ -191,14 +172,13 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
     if (props[i].queueFlags & vk::QueueFlagBits::eGraphics)
       indices.push_back(vkhlf::checked_cast<uint32_t>(i));
   if(indices.empty()){
-    std::cout << "No queue families on the picked physical device support graphic ops?" << std::endl;
-    throw std::runtime_error("InvalidPhysDevice");
+    SystemError("InvalidPhysicalDevice", "No queue families on the picked physical device support graphic ops?").raise();
   }
   // Pick a queue family.
   global::queueFamilyIndex = indices[0];
 
   global::device = global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(global::queueFamilyIndex, 1.0f), nullptr, enabledDeviceExtensions);
-  std::cout << "Logical device created." << std::endl;
+  out_dbg("Logical device created.");
 
   global::queue = global::device->getQueue(global::queueFamilyIndex, 0);
 
@@ -209,14 +189,13 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   global::commandPool = global::device->createCommandPool(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, global::queueFamilyIndex);
   
   global::initialized = true;
-  std::cout << "SGA initialized successfully." << std::endl;
+  out_msg("SGA initialized successfully.");
   
 }
 
 void terminate(){
   if(!global::initialized)
     return;
-  std::cout << "Terminate start." << std::endl;
   global::physicalDevice = nullptr;
   global::device = nullptr;
   global::queue = nullptr;
@@ -224,10 +203,10 @@ void terminate(){
   global::debugReportCallback = nullptr;
   
   if(global::instance.use_count() == 1){
-    std::cout << "SGA successfully terminated." << std::endl;
+    out_dbg("SGA successfully terminated.");
   }else{
-    std::cout << "Dead reference to global instance!" << std::endl;
-    std::cout << "Could it be that the user program still keeps some live SGA objects?" << std::endl;
+    out_dbg("Dead reference to global vk instance!");
+    out_dbg("Could it be that the user program still keeps some live SGA objects?");
   }
   global::instance = nullptr;
 
@@ -267,12 +246,12 @@ void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface)
 }
 
 void out_msg(std::string text, std::string terminator){
-  if(global::verbosity < VerbosityLevel::Verbose) return;
+  if(global::verbosity >= VerbosityLevel::Verbose) return;
   std::cerr << "SGA: " << text << terminator;
   std::cerr.flush();
 }
 void out_dbg(std::string text, std::string terminator){
-  if(global::verbosity < VerbosityLevel::Debug) return;
+  if(global::verbosity >= VerbosityLevel::Debug) return;
   std::cerr << "SGA DEBUG: " << text << terminator;
   std::cerr.flush();
 }

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <vector>
 #include <stdexcept>
+#include <regex>
 
 #include <vulkan/vulkan.h>
 #include <vkhlf/vkhlf.h>
@@ -288,6 +289,11 @@ size_t align(size_t base, unsigned int alignment){
   if(base % alignment == 0) return base;
   size_t low = base / alignment;
   return (low+1) * alignment;
+}
+
+bool isVariableNameValid(std::string s){
+  std::regex e("[a-zA-Z][a-zA-Z0-9]*");
+  return std::regex_match(s,e);
 }
 
 } // namespace sga

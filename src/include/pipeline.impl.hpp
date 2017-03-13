@@ -68,7 +68,7 @@ private:
   // should a pipeline react on image changes (e.g. resizing?);
   std::map<std::string, SamplerData> s_samplers;
 
-std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f}};
+  std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f}};
 };
 
 } // namespace sga

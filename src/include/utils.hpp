@@ -19,6 +19,8 @@ void realizeException(SGAException* except);
 
 size_t align(size_t base, unsigned int alignment);
 
+bool isVariableNameValid(std::string);
+
 } // namespace sga
 
 #endif // __UTILS_HPP__

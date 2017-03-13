@@ -23,7 +23,7 @@ public:
   void addOutput(std::pair<DataType, std::string>);
   void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
   
-  void addUniform(DataType type, std::string name);
+  void addUniform(DataType type, std::string name, bool special = false);
   void addSampler(std::string name);
   
   std::vector<std::pair<DataType, std::string>> inputAttr;

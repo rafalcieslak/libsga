@@ -85,8 +85,8 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
     DataFormatError("UniformSizeMismatch", "setUniform failed: Provided input has different size than declared data type!").raise();
   }
 
-  // TODO: Prevent setting values of standard uniforms when standard=false
-  (void)standard;
+  if(!standard && name.substr(0,3) == "sga")
+    PipelineConfigError("SpecialUniform", "Cannot set the value of a standard uniform.", "Uniforms with names beginning with `sga` have a special meaning, and you cannot manually assign values to them.").raise();
 
   if(!program)
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
@@ -187,6 +187,12 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   vk::Extent2D extent;
   std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
 
+  // Ensure all samplers are set.
+  for(const auto & s: s_samplers){
+    if(!s.second.sampler)
+      PipelineConfigError("SamplerNotSet", "This pipeline cannot render, sampler \"" + s.first + "\" was not bound to an image.").raise();
+  }
+  
   auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();
   

@@ -76,16 +76,22 @@ void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
   outputAttr.push_back(pair);
 }
 
-void Shader::Impl::addUniform(sga::DataType type, std::string name){
+void Shader::Impl::addUniform(sga::DataType type, std::string name, bool special){
+  if(!special && name.substr(0,3) == "sga")
+    ProgramConfigError("UniformNameReserved", "Cannot add an uniform using a reserved name", "Uniforms with names beginning with `sga` have a special meaning, and you cannot declare your own").raise();
+  if(!isVariableNameValid(name))
+    ProgramConfigError("UniformNameInvalid", "Cannot use \"" + name + "\" for the identifier of a uniform, it must be a valid C indentifier.").raise();
   uniforms.push_back(std::make_pair(type,name));
 }
 void Shader::Impl::addSampler(std::string name){
+  if(!isVariableNameValid(name))
+    ProgramConfigError("SamplerNameInvalid", "Cannot use \"" + name + "\" for the identifier of a sampler, it must be a valid C indentifier.").raise();
   samplers.push_back(name);
 }
 
 void Shader::Impl::addStandardUniforms(){
-  addUniform(DataType::Float, "sgaTime");
-  addUniform(DataType::Float2, "sgaResolution");
+  addUniform(DataType::Float, "sgaTime", true);
+  addUniform(DataType::Float2, "sgaResolution", true);
 }
 
 // ====== Program impl ======

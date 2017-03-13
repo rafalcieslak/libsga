@@ -16,6 +16,9 @@ Image::~Image() = default;
 
 void Image::fillWithPink() {impl->fillWithPink();}
 void Image::testContents() {impl->testContents();}
+void Image::putData(std::vector<uint8_t> data) {impl->putData(data);}
+void Image::putDataRaw(unsigned char* data, size_t size) {impl->putDataRaw(data, size);}
+std::vector<uint8_t> Image::getData() {return impl->getData();}
 void Image::copyOnto(std::shared_ptr<Image> target,
                      int source_x, int source_y,
                      int target_x, int target_y,
@@ -78,10 +81,12 @@ void Image::Impl::prepareImage(){
   std::cout << "Image prepared." << std::endl;
 }
 void Image::Impl::putData(std::vector<uint8_t> data){
-  unsigned int N = data.size();
-  unsigned int size = width * height * 4;
+  putDataRaw(data.data(), data.size());
+}
+void Image::Impl::putDataRaw(unsigned char* data, size_t size){
+  unsigned int N = width * height * 4;
   if(N != size){
-    std::cout << "Data for Image::putData has " << N << " elements, expected " << size << std::endl;
+    std::cout << "Data for Image::putData has " << size << " elements, expected " << N << std::endl;
     return;
   }
   

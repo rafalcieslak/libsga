@@ -2,6 +2,7 @@
 #define __SGA_IMAGE_HPP__
 
 #include "config.hpp"
+#include <vector>
 
 namespace sga{
 
@@ -12,6 +13,10 @@ public:
   ~Image();
   void fillWithPink();
   void testContents();
+
+  void putData(std::vector<uint8_t> data);
+  void putDataRaw(unsigned char * data, size_t size);
+  std::vector<uint8_t> getData();
 
   void copyOnto(
     std::shared_ptr<Image> target,

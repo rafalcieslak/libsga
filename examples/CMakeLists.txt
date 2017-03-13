@@ -3,7 +3,6 @@ include_directories(SYSTEM ../include)
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   add_definitions(
     -Wall -Wextra
-	-Werror
 	-g
 	)
 endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
@@ -26,6 +25,11 @@ macro(add_example NAME)
   endif()
 endmacro(add_example)
 
+add_custom_target(
+  copy-example-data ALL
+  COMMAND cmake -E copy_directory ${CMAKE_SOURCE_DIR}/examples/data ${CMAKE_BINARY_DIR}/data
+  )
+  
 add_example(greet)
 add_example(image)
 add_example(image2)
@@ -33,4 +37,5 @@ add_example(window)
 add_example(pipeline)
 add_example(vbo)
 add_example(fragTest1)
+add_example(sampler)
 add_example(shadertoy)

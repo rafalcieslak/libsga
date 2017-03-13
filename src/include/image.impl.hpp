@@ -14,6 +14,7 @@ public:
   Impl(unsigned int width, unsigned int height);
   
   void putData(std::vector<uint8_t> data);
+  void putDataRaw(unsigned char* data, size_t size);
   std::vector<uint8_t> getData();
 
   void copyOnto(

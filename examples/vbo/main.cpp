@@ -57,11 +57,18 @@ int main(){
 
   vertShader->addUniform(sga::DataType::Float, "angle");
   
-  vertShader->compile();
-  fragShader->compile();
+  //vertShader->compile();
+  //fragShader->compile();
 
-  pipeline->setVertexShader(vertShader);
-  pipeline->setFragmentShader(fragShader);
+  auto program = sga::Program::create();
+  program->setVertexShader(vertShader);
+  program->setFragmentShader(fragShader);
+  program->compile();
+  
+  //pipeline->setVertexShader(vertShader);
+  //pipeline->setFragmentShader(fragShader);
+
+  pipeline->setProgram(program);
   pipeline->setTarget(window);
   
   window->setFPSLimit(60);

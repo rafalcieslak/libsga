@@ -30,14 +30,36 @@ public:
   std::vector<std::pair<DataType, std::string>> uniforms;
 
   void addStandardUniforms();
+};
+
+class Program::Impl{
+public:
+  Impl();
+  void setVertexShader(std::shared_ptr<VertexShader> vs);
+  void setFragmentShader(std::shared_ptr<FragmentShader> vs);
   
   void compile();
+  
+  friend class Pipeline;
+private:
+  struct ShaderData{
+    std::string source, attrCode, fullSource;
+    std::vector<std::pair<DataType, std::string>> inputAttr, outputAttr, uniforms;
+    DataLayout inputLayout, outputLayout;
+  };
+  ShaderData VS;
+  ShaderData FS;
+
   bool compiled = false;
   
-  std::shared_ptr<vkhlf::ShaderModule> shader;
-  
-  DataLayout inputLayout;
-  DataLayout outputLayout;
+  // Only valid once compiled.
+  DataLayout c_inputLayout;
+  DataLayout c_outputLayout;
+  std::shared_ptr<vkhlf::ShaderModule> c_VS_shader = nullptr;
+  std::shared_ptr<vkhlf::ShaderModule> c_FS_shader = nullptr;
+
+  std::map<std::string, std::pair<size_t, DataType>> c_uniformOffsets;
+  size_t c_uniformSize = 0;
 };
 
 std::vector<uint32_t> compileGLSLToSPIRV(vk::ShaderStageFlagBits stage, std::string const & source);

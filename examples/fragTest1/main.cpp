@@ -15,7 +15,6 @@ std::vector<CustomData> vertices = {
 int main(){
   sga::init();
   auto window = sga::Window::create(800, 600, "Example window");
-  auto pipeline = sga::Pipeline::create();
 
   auto vbo = sga::VBO::create(
     {sga::DataType::Float2}, 3);
@@ -45,14 +44,15 @@ int main(){
   )");
 
   vertShader->addInput(sga::DataType::Float2, "inVertex");
-
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
-  vertShader->compile();
-  fragShader->compile();
+  auto program = sga::Program::create();
+  program->setVertexShader(vertShader);
+  program->setFragmentShader(fragShader);
+  program->compile();
 
-  pipeline->setVertexShader(vertShader);
-  pipeline->setFragmentShader(fragShader);
+  auto pipeline = sga::Pipeline::create();
+  pipeline->setProgram(program);
   pipeline->setTarget(window);
   
   window->setFPSLimit(60);

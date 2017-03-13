@@ -10,6 +10,7 @@ namespace sga{
 class VBO;
 class VertexShader;
 class FragmentShader;
+class Program;
 
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
@@ -31,19 +32,8 @@ public:
       clearing the target surface before at the beginning of a render. */
   void setClearColor(float r, float g, float b);
 
-  /** Sets the vertex shader program for this pipeline. The shader must have
-      been compiled before it is used in a pipeline. Further changes to the
-      referenced shader will not affect this pipeline, which stores a copy of
-      the shader. */
-  // TODO: observer_ptr?
-  void setVertexShader(std::shared_ptr<VertexShader>);
-  /** Sets the fragment shader program for this pipeline. The shader must have
-      been compiled before it is used in a pipeline. Further changes to the
-      referenced shader will not affect this pipeline, which stores a copy of
-      the shader. */
-  // TODO: observer_ptr?
-  void setFragmentShader(std::shared_ptr<FragmentShader>);
-
+  void setProgram(std::shared_ptr<Program>);
+  
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided
       value. The uniform name must correspond to a uniform previously declared

@@ -25,6 +25,11 @@ struct SystemError : public SGAException{
     : SGAException(name, information, description) {}
   virtual void raise_this() override { throw *this; }
 };
+struct ProgramConfigError : public SGAException{
+  ProgramConfigError(std::string name, std::string information, std::string description = "")
+    : SGAException(name, information, description) {}
+  virtual void raise_this() override { throw *this; }
+};
 struct PipelineConfigError : public SGAException{
   PipelineConfigError(std::string name, std::string information, std::string description = "")
     : SGAException(name, information, description) {}

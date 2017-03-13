@@ -15,7 +15,6 @@ namespace sga{
 
 Shader::Shader() : impl(std::make_unique<Shader::Impl>()) {}
 Shader::~Shader() = default;
-void Shader::compile() {impl->compile();}
 
 void Shader::addInput(DataType type, std::string name) {impl->addInput(type, name);}
 void Shader::addInput(std::pair<DataType, std::string> pair) {impl->addInput(pair);}
@@ -25,6 +24,14 @@ void Shader::addOutput(std::pair<DataType, std::string> pair) {impl->addOutput(p
 void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
 
 void Shader::addUniform(DataType type, std::string name) {impl->addUniform(type, name);}
+
+Program::Program() : impl(std::make_unique<Program::Impl>()) {}
+Program::~Program() = default;
+void Program::compile() {impl->compile();}
+void Program::setVertexShader(std::shared_ptr<VertexShader> vs) {impl->setVertexShader(vs);}
+void Program::setFragmentShader(std::shared_ptr<FragmentShader> fs) {impl->setFragmentShader(fs);}
+
+// ======= Shader impl =======
 
 Shader::Impl::Impl() {}
 
@@ -44,7 +51,6 @@ std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string sou
   return p;
 }
 
-
 void Shader::Impl::addInput(DataType type, std::string name) {
   addInput(std::make_pair(type,name));
 }
@@ -63,17 +69,14 @@ void Shader::Impl::addOutput(std::initializer_list<std::pair<DataType, std::stri
 void Shader::Impl::addInput(std::pair<DataType, std::string> pair) {
   // TODO: check if name OK (e.g. no redefinition)
   inputAttr.push_back(pair);
-  compiled = false;
 }
 void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
   // TODO: check if name OK (e.g. no redefinition)
   outputAttr.push_back(pair);
-  compiled = false;
 }
 
 void Shader::Impl::addUniform(sga::DataType type, std::string name){
   uniforms.push_back(std::make_pair(type,name));
-  compiled = false;
 }
 
 void Shader::Impl::addStandardUniforms(){
@@ -81,36 +84,110 @@ void Shader::Impl::addStandardUniforms(){
   addUniform(DataType::Float2, "sgaResolution");
 }
 
-void Shader::Impl::compile(){
+// ====== Program impl ======
+
+Program::Impl::Impl() {}
+
+void Program::Impl::setVertexShader(std::shared_ptr<VertexShader> vs) {
+  if(compiled)
+    ProgramConfigError("AlreadyCompiled", "This program has already been compiled, you cannot change shaders anymore.").raise();
+  if(VS.source != "")
+    ProgramConfigError("AlreadyHasVS", "This program already has a vertex shader, you cannot set another.").raise();
+  if(!vs || vs->impl->source == "")
+    ProgramConfigError("EmptyShader", "The provided shader is empty.").raise();
+
+  VS.source = vs->impl->source;
+  VS.inputAttr = vs->impl->inputAttr;
+  VS.outputAttr = vs->impl->outputAttr;
+  VS.uniforms = vs->impl->uniforms;
+}
+void Program::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs) {
+  if(compiled)
+    ProgramConfigError("AlreadyCompiled", "This program has already been compiled, you cannot change shaders anymore").raise();
+  if(FS.source != "")
+    ProgramConfigError("AlreadyHasFS", "This program already has a fragment shader, you cannot set another.").raise();
+  if(!fs || fs->impl->source == "")
+    ProgramConfigError("EmptyShader", "The provided shader is empty.").raise();
+  
+  FS.source = fs->impl->source;
+  FS.inputAttr = fs->impl->inputAttr;
+  FS.outputAttr = fs->impl->outputAttr;
+  FS.uniforms = fs->impl->uniforms;
+}
+  
+void Program::Impl::compile() {
+  if(compiled)
+    ProgramConfigError("AlreadyCompiled", "This program has already been compiled.").raise();
+
+  out_dbg("Compiling program");
+  if(VS.source == "" || FS.source == "")
+    ProgramConfigError("MissingShader", "A program must have both vertex and fragment shaders set before compiling!").raise();
+
   // Prepare preamble.
   std::string preamble = "#version 420\n";
 
-  inputLayout = DataLayout();
-  // Gather input attributes.
-  for(unsigned int i = 0; i < inputAttr.size(); i++){
-    preamble += "layout(location = " + std::to_string(i) + ") in " +
-      getDataTypeGLSLName(inputAttr[i].first) + " " + inputAttr[i].second + ";\n";
-    inputLayout.extend(inputAttr[i].first);
+  // Gather uniforms.
+  std::map<std::string, DataType> uniforms;
+  for(const ShaderData& S : {std::ref(FS), std::ref(VS)}){
+    for(const auto& p : S.uniforms){
+      auto it = uniforms.find(p.second);
+      if(it == uniforms.end()){
+        uniforms[p.second] = p.first;
+      }else{
+        if(it->second != p.first)
+          PipelineConfigError("UniformMismatch", "There are some uniforms that share name, but not type.");
+      }
+    }
   }
-  // Gather output attributes.
-  for(unsigned int i = 0; i < outputAttr.size(); i++){
-    preamble += "layout(location = " + std::to_string(i) + ") out " +
-      getDataTypeGLSLName(outputAttr[i].first) + " " + outputAttr[i].second + ";\n";
-    outputLayout.extend(outputAttr[i].first);
-  }
-  // Gather uniforms
-  assert(uniforms.size() > 0);
-  unsigned int bindno = (stage == vk::ShaderStageFlagBits::eVertex) ? 0 : 1;
-  preamble += "layout(std140, binding = "  + std::to_string(bindno) + ") uniform sga_uniforms {\n";
-  for(unsigned int i = 0; i < uniforms.size(); i++){
-    preamble += "  " + getDataTypeGLSLName(uniforms[i].first) + " " + uniforms[i].second + ";\n";
-  }
-  preamble += "} u;\n";
 
-  // out_dbg(preamble);
+  // Prepare uniform layout.
+  size_t offset = 0;
+  std::string uniformCode = "layout(std140, binding = 0) uniform sga_uniforms {\n";
+  for(const auto& p : uniforms){
+    offset = align(offset, getDataTypeGLSLstd140Alignment(p.second));
+    c_uniformOffsets[p.first] = std::make_pair(offset, p.second);
+    uniformCode += "  " + getDataTypeGLSLName(p.second) + " " + p.first + ";\n";
+    offset += getDataTypeSize(p.second);
+  }
+  uniformCode += "} u;\n\n";
+  c_uniformSize = offset;
   
-  auto module = compileGLSLToSPIRV(stage, preamble + source);
-  shader = global::device->createShaderModule(module);
+  // Prepare attributes.
+  for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
+    for(unsigned int i = 0; i < S.inputAttr.size(); i++){
+      S.attrCode += "layout(location = " + std::to_string(i) + ") in " +
+        getDataTypeGLSLName(S.inputAttr[i].first) + " " + S.inputAttr[i].second + ";\n";
+      S.inputLayout.extend(S.inputAttr[i].first);
+    }
+    for(unsigned int i = 0; i < S.outputAttr.size(); i++){
+      S.attrCode += "layout(location = " + std::to_string(i) + ") out " +
+        getDataTypeGLSLName(S.outputAttr[i].first) + " " + S.outputAttr[i].second + ";\n";
+      S.outputLayout.extend(S.outputAttr[i].first);
+    }
+  }
+
+  // Verify attributes inferface.
+  if(VS.outputLayout != FS.inputLayout)
+    ProgramConfigError("ShaderInterfaceMismatch", "Vertex shader output does not match fragment shader input.");
+  
+  // Emit full sources.
+  for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
+    S.fullSource = preamble + S.attrCode + uniformCode + S.source;
+    std::cout << S.fullSource << std::endl;
+  }
+  
+  // Extract metadata.
+  c_inputLayout = VS.inputLayout;
+  c_outputLayout = FS.outputLayout;
+  
+  // Compile to SPIRV.
+  c_VS_shader = global::device->createShaderModule(
+    compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, VS.fullSource)
+    );
+  c_FS_shader = global::device->createShaderModule(
+    compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, FS.fullSource)
+    );
+  
   compiled = true;
 }
 
@@ -273,8 +350,8 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
       ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
 
-  //program.buildReflection();
-  //program.dumpReflection();
+  program.buildReflection();
+  program.dumpReflection();
   
   // TODO: Does this have a return value?
   std::vector<uint32_t> code;

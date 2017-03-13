@@ -19,12 +19,10 @@ namespace sga{
 Pipeline::Pipeline() : impl(std::make_unique<Pipeline::Impl>()) {}
 Pipeline::~Pipeline() = default;
 
-
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
 void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
-void Pipeline::setFragmentShader(std::shared_ptr<FragmentShader> shader) {impl->setFragmentShader(shader);}
-void Pipeline::setVertexShader(std::shared_ptr<VertexShader> shader) {impl->setVertexShader(shader);}
+void Pipeline::setProgram(std::shared_ptr<Program> p) {impl->setProgram(p);}
 
 
 void Pipeline::setUniform(std::string name, float value){
@@ -67,68 +65,37 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   // TODO: Reset shared ptr to target image
 }
 
-void Pipeline::Impl::setVertexShader(std::shared_ptr<VertexShader> vs){
-  cooked = false;
-  if(!vs->impl->compiled){
-    PipelineConfigError("ShaderNotCompiled", "The shader passed to the pipeline was not compiled.",
-                        "Any shader passed to a pipeline must be compiled first, using Shader::compile() method. If you modify shader parameters after it was compiled, you have to compile it again.").raise();
-  }
-  vertexShader = vs->impl->shader;
-  vsInputLayout = vs->impl->inputLayout;
-  vsOutputLayout = vs->impl->outputLayout;
-  vsUniforms = vs->impl->uniforms;
-}
-void Pipeline::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs){
-  cooked = false;
-  if(!fs->impl->compiled){
-    PipelineConfigError("ShaderNotCompiled", "The shader passed to the pipeline was not compiled.",
-                        "Any shader passed to a pipeline must be compiled first, using Shader::compile() method. If you modify shader parameters after it was compiled, you have to compile it again.").raise();
-  }
-  fragmentShader = fs->impl->shader;
-  fsInputLayout = fs->impl->inputLayout;
-  fsOutputLayout = fs->impl->outputLayout;
-  fsUniforms = fs->impl->uniforms;
+void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
+  if(p && !p->impl->compiled)
+    PipelineConfigError("ProgramNotCompiled", "The program  passed to the pipeline was not compiled.",
+                        "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
+  program = p;
 }
 
 void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
-  cook();
-  
   if(size != getDataTypeSize(dt)){
     // TODO: Name types in output?
     DataFormatError("UniformSizeMismatch", "setUniform failed: Provided input has different size than declared data type!").raise();
   }
 
-  // TODO: Check whether uniform with such name was found.
   // TODO: Prevent setting values of standard uniforms when standard=false
   (void)standard;
 
-  // TODO: Offsets cache.
+  if(!program)
+    PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
 
-  // Search in vertex shader uniforms.
-  size_t offset = 0;
-  for(const auto& p : vsUniforms){
-    offset = align(offset, getDataTypeGLSLstd140Alignment(p.first));
-    if(p.second == name){
-      if(p.first != dt){
-        DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
-      }
-      memcpy(c_vsUniformArea + offset, pData, size);
-    }
-    offset += getDataTypeSize(p.first);
-  }
-
-  // Search in fragment shader uniforms.
-  offset = 0;
-  for(const auto& p : fsUniforms){
-    offset = align(offset, getDataTypeGLSLstd140Alignment(p.first));
-    if(p.second == name){
-      if(p.first != dt){
-        DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
-      }
-      memcpy(c_fsUniformArea + offset, pData, size);
-    }
-    offset += getDataTypeSize(p.first);
-  }
+  prepare_unibuffers();
+  
+  // Lookup offset.
+  const auto& off_map = program->impl->c_uniformOffsets;
+  auto it = off_map.find(name);
+  if(it == off_map.end())
+    PipelineConfigError("NoUniform", "Uniform " + name + " does not exist.").raise();
+  if(it->second.second != dt)
+    DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
+  
+  size_t offset = it->second.first;
+  memcpy(b_uniformArea + offset, pData, size);
 }
 
 void Pipeline::Impl::updateStandardUniforms(){
@@ -144,7 +111,7 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
   if(!ensureValidity()) return;
 
   // Extra VBO-specific validity check
-  if(vbo->getLayout() != vsInputLayout){
+  if(vbo->getLayout() != program->impl->c_inputLayout){
     PipelineConfigError("VertexLayoutMismatch", "VBO layout does not match pipeline input layout!").raise();
   }
   
@@ -154,15 +121,8 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
 }
 
 bool Pipeline::Impl::ensureValidity(){
-  // TODO: More verbose output?
-  if(!vertexShader){
-    PipelineConfigError("VertexShaderNotSet", "This pipeline is not ready for rendering, the vertex shader was not set.").raise();
-  }
-  if(!fragmentShader){
-    PipelineConfigError("FragmentShaderNotSet", "This pipeline is not ready for rendering, the fragment shader was not set.").raise();
-  }
-  if(vsOutputLayout != fsInputLayout){
-    PipelineConfigError("ShaderInterfaceDataLayoutMismatch", "Vertex shader output layout does not match fragment shader input layout.").raise();
+  if(!program){
+    PipelineConfigError("ProgramNotSet", "This pipeline is not ready for rendering, the program was not set.").raise();
   }
   if(!targetWindow){
     PipelineConfigError("RenderTargetMissing", "The pipeline is not ready for rendering, target surface not set.").raise();
@@ -179,31 +139,19 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   cmdBuffer->begin();
   
   // Update uniform buffers.
-  std::shared_ptr<vkhlf::Buffer> unisbvs = global::device->createBuffer(
-    c_vsUniformSize,
+  std::shared_ptr<vkhlf::Buffer> unisb = global::device->createBuffer(
+    b_uniformSize,
     vk::BufferUsageFlagBits::eTransferSrc,
     vk::SharingMode::eExclusive,
     nullptr,
     vk::MemoryPropertyFlagBits::eHostVisible,
     nullptr);
-  std::shared_ptr<vkhlf::Buffer> unisbfs = global::device->createBuffer(
-    c_fsUniformSize,
-    vk::BufferUsageFlagBits::eTransferSrc,
-    vk::SharingMode::eExclusive,
-    nullptr,
-    vk::MemoryPropertyFlagBits::eHostVisible,
-    nullptr);
-  auto sbvsdm = unisbvs->get<vkhlf::DeviceMemory>();
-  auto sbfsdm = unisbfs->get<vkhlf::DeviceMemory>();
-  void* pvsMapped = sbvsdm->map(0, c_vsUniformSize);
-  void* pfsMapped = sbfsdm->map(0, c_fsUniformSize);
-  memcpy(pvsMapped, c_vsUniformArea, c_vsUniformSize);
-  memcpy(pfsMapped, c_fsUniformArea, c_fsUniformSize);
-  sbvsdm->flush(0, c_vsUniformSize); sbvsdm->unmap();
-  sbfsdm->flush(0, c_fsUniformSize); sbfsdm->unmap();
+  auto sbdm = unisb->get<vkhlf::DeviceMemory>();
+  void* pMapped = sbdm->map(0, b_uniformSize);
+  memcpy(pMapped, b_uniformArea, b_uniformSize);
+  sbdm->flush(0, b_uniformSize); sbdm->unmap();
 
-  cmdBuffer->copyBuffer(unisbvs, c_vsUniformBuffer, vk::BufferCopy(0, 0, c_vsUniformSize));
-  cmdBuffer->copyBuffer(unisbfs, c_fsUniformBuffer, vk::BufferCopy(0, 0, c_fsUniformSize));
+  cmdBuffer->copyBuffer(unisb, b_uniformBuffer, vk::BufferCopy(0, 0, b_uniformSize));
   
   cmdBuffer->beginRenderPass(
     c_renderPass, framebuffer,
@@ -237,6 +185,23 @@ void Pipeline::Impl::setClearColor(float r, float g, float b){
   clear_color = {r,g,b};
 }
 
+void Pipeline::Impl::prepare_unibuffers(){
+  if(unibuffers_prepared) return;
+
+  b_uniformSize = program->impl->c_uniformSize;
+  // Prepare uniform buffers.
+  b_uniformBuffer = global::device->createBuffer(
+    b_uniformSize,
+    vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
+    vk::SharingMode::eExclusive,
+    nullptr,
+    vk::MemoryPropertyFlagBits::eDeviceLocal);
+  if(b_uniformArea != nullptr) delete[] b_uniformArea;
+  b_uniformArea = new char[b_uniformSize];
+  
+  unibuffers_prepared = true;
+}
+
 void Pipeline::Impl::cook(){
     if(cooked) return;
 
@@ -245,48 +210,24 @@ void Pipeline::Impl::cook(){
 
     // Descriptor bindings
     std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;
-    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, nullptr));
-    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, nullptr));
+    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
 
     // Descriptor set layout
     std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
 
-    c_vsUniformSize = getAnnotatedDataLayoutUBOSize(vsUniforms);
-    c_fsUniformSize = getAnnotatedDataLayoutUBOSize(fsUniforms);
-    // Prepare uniform buffers.
-    c_vsUniformBuffer = global::device->createBuffer(
-      c_vsUniformSize,
-      vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
-      vk::SharingMode::eExclusive,
-      nullptr,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
-    c_fsUniformBuffer = global::device->createBuffer(
-      c_fsUniformSize,
-      vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
-      vk::SharingMode::eExclusive,
-      nullptr,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
-    if(c_vsUniformArea != nullptr) delete[] c_vsUniformArea;
-    if(c_fsUniformArea != nullptr) delete[] c_fsUniformArea;
-    c_vsUniformArea = new char[c_vsUniformSize];
-    c_fsUniformArea = new char[c_fsUniformSize];
-
+    prepare_unibuffers();
+    
     // Set up descriptor sets
     std::shared_ptr<vkhlf::DescriptorPool> descriptorPool = global::device->createDescriptorPool(
       {}, 1,
-      {{vk::DescriptorType::eUniformBuffer, 1},
-       {vk::DescriptorType::eUniformBuffer, 1}});
+      {{vk::DescriptorType::eUniformBuffer, 1}, {vk::DescriptorType::eUniformBuffer, 1}});
      
     c_descriptorSet = global::device->allocateDescriptorSet(descriptorPool, descriptorSetLayout);
     std::vector<vkhlf::WriteDescriptorSet> wdss;
     wdss.push_back(vkhlf::WriteDescriptorSet(
                      c_descriptorSet, 0, 0, 1,
                      vk::DescriptorType::eUniformBuffer, nullptr,
-                     vkhlf::DescriptorBufferInfo(c_vsUniformBuffer, 0, c_vsUniformSize)));
-    wdss.push_back(vkhlf::WriteDescriptorSet(
-                     c_descriptorSet, 1, 0, 1,
-                     vk::DescriptorType::eUniformBuffer, nullptr,
-                     vkhlf::DescriptorBufferInfo(c_fsUniformBuffer, 0, c_fsUniformSize)));
+                     vkhlf::DescriptorBufferInfo(b_uniformBuffer, 0, b_uniformSize)));
     global::device->updateDescriptorSets(wdss, nullptr);
     
     // pipeline layout
@@ -304,9 +245,9 @@ void Pipeline::Impl::cook(){
 
     // Use shaders
     vkhlf::PipelineShaderStageCreateInfo vertexStage(
-      vk::ShaderStageFlagBits::eVertex,   vertexShader, "main");
+      vk::ShaderStageFlagBits::eVertex,   program->impl->c_VS_shader, "main");
     vkhlf::PipelineShaderStageCreateInfo fragmentStage(
-      vk::ShaderStageFlagBits::eFragment, fragmentShader, "main");
+      vk::ShaderStageFlagBits::eFragment, program->impl->c_FS_shader, "main");
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
@@ -320,7 +261,7 @@ void Pipeline::Impl::cook(){
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;
     size_t offset = 0, n = 0;
-    for(DataType dt : vsInputLayout.layout){
+    for(DataType dt : program->impl->c_inputLayout.layout){
       attribs.push_back(vk::VertexInputAttributeDescription(
                           n, 0, dataTypeLayout[dt], offset));
       n++;

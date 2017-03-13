@@ -57,8 +57,6 @@ int main(int argc, char** argv){
   sga::init();
   auto window = sga::Window::create(800, 600, "Shadertoy simulator");
   
-  auto pipeline = sga::Pipeline::create();
-
   auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
   vbo->write(vertices);
   
@@ -68,12 +66,15 @@ int main(int argc, char** argv){
   fragShader->addOutput(sga::DataType::Float4, "outColor");
   fragShader->addUniform(sga::DataType::Float4, "stoyMouse");
 
-  vertShader->compile();
-  fragShader->compile();
+  auto program = sga::Program::create();
+  program->setVertexShader(vertShader);
+  program->setFragmentShader(fragShader);
+  program->compile();
 
-  pipeline->setVertexShader(vertShader);
-  pipeline->setFragmentShader(fragShader);
+  auto pipeline = sga::Pipeline::create();
+  pipeline->setProgram(program);
   pipeline->setTarget(window);
+  pipeline->setUniform("stoyMouse", {0,0,-1,-1});
 
   bool mouse_l_last = false;
   float click_x = 250.0, click_y = 250.0;
@@ -83,11 +84,11 @@ int main(int argc, char** argv){
         click_y = y;
       }
       if(!l) x = y = 0;
-      std::array<float,4> val = {(float)x,
-                                 (float)y,
-                                 l ? click_x : -1.0f,
-                                 l ? click_y : -1.0f};
-      pipeline->setUniform("stoyMouse", val);
+      pipeline->setUniform("stoyMouse",
+                           {(float)x,
+                            (float)y,
+                            l ? click_x : -1.0f,
+                            l ? click_y : -1.0f});
       mouse_l_last = l;
     });
   

@@ -21,9 +21,7 @@ public:
 
   void addUniform(DataType type, std::string name);
   
-  void compile();
-  
-  friend class Pipeline;
+  friend class Program;
 protected:
   Shader();
   class Impl;
@@ -38,6 +36,26 @@ public:
 class FragmentShader : public Shader{
 public:
   static std::shared_ptr<FragmentShader> createFromSource(std::string source);
+};
+
+class Program{
+public:
+  ~Program();
+  void setVertexShader(std::shared_ptr<VertexShader> vs);
+  void setFragmentShader(std::shared_ptr<FragmentShader> fs);
+  
+  void compile();
+
+  static std::shared_ptr<Program> create(){
+    return std::shared_ptr<Program>(new Program());
+  }
+  
+  friend class Pipeline;
+private:
+  Program();
+  
+  class Impl;
+  pimpl_unique_ptr<Impl> impl;
 };
 
 

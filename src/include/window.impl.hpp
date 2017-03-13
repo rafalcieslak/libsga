@@ -33,6 +33,7 @@ private:
   vk::Format depthFormat;
   
   std::shared_ptr<vkhlf::Surface> surface;
+  
 public: // TODO: friend Pipeline? getter?
   std::shared_ptr<vkhlf::RenderPass> renderPass;
   // This gets flipped to true when there is data for current frame available for presentation.
@@ -46,6 +47,9 @@ public: // TODO: friend Pipeline? getter?
       framebufferSwapchain->getFramebuffer(),
       framebufferSwapchain->getExtent()
       );
+  }
+  std::shared_ptr<vkhlf::Image> getCurrentImage(){
+    return framebufferSwapchain->getColorImage();
   }
 private:
   std::unique_ptr<vkhlf::FramebufferSwapchain> framebufferSwapchain;

@@ -28,6 +28,7 @@ endmacro(add_example)
 
 add_example(greet)
 add_example(image)
+add_example(image2)
 add_example(window)
 add_example(pipeline)
 add_example(vbo)

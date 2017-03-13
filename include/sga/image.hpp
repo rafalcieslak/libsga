@@ -5,14 +5,30 @@
 
 namespace sga{
 
+class Window;
+
 class Image{
 public:
-  Image(int width, int height);
   ~Image();
   void fillWithPink();
   void testContents();
 
+  void copyOnto(
+    std::shared_ptr<Image> target,
+    int source_x = 0, int source_y = 0,
+    int target_x = 0, int target_y = 0,
+    int width = -1, int height = -1);
+  /*void copyOnto(
+    std::shared_ptr<Window> target,
+    int source_x = 0, int source_y = 0,
+    int target_x = 0, int target_y = 0,
+    int width = -1, int height = -1);*/
+
+  static std::shared_ptr<Image> create(int width, int height){
+    return std::shared_ptr<Image>(new Image(width, height));
+  }
 private:
+  Image(int width, int height);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

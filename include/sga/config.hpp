@@ -2,7 +2,7 @@
 #define __SGA_CONFIG_HPP__
 
 #define LIBSGA_VERSION_SHORT "v0.0-debug"
-#define LIBSGA_VERSION_LONG  "v0.0-48-g8d97f77-dirty-debug"
+#define LIBSGA_VERSION_LONG  "v0.0-51-g5e51dec-dirty-debug"
 
 #include <memory>
 #if __cpp_lib_experimental_propagate_const >= 201505

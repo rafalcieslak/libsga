@@ -23,6 +23,7 @@ public:
   void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
 
   friend class Pipeline;
+  friend class Image;
 private:
   Window(unsigned int width, unsigned int height, std::string title);
   class Impl;

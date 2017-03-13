@@ -41,10 +41,12 @@ Image::Impl::Impl(unsigned int width, unsigned int height) :
   prepareImage();
 }
 void Image::Impl::prepareImage(){
+  auto FORMAT = vk::Format::eR8G8B8A8Unorm;
+  
   image = global::device->createImage(
     vk::ImageCreateFlags(),
     vk::ImageType::e2D,
-    vk::Format::eR8G8B8A8Unorm,
+    FORMAT,
     vk::Extent3D(width, height, 1),
     1,
     1,
@@ -61,7 +63,6 @@ void Image::Impl::prepareImage(){
     nullptr, nullptr
     );
   
-  
   executeOneTimeCommands([&](auto cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
@@ -71,6 +72,8 @@ void Image::Impl::prepareImage(){
   // Clear image.
   std::vector<uint8_t> data(width*height*4, 0);
   putData(data);
+
+  image_view = image->createImageView(vk::ImageViewType::e2D, FORMAT);
   
   std::cout << "Image prepared." << std::endl;
 }

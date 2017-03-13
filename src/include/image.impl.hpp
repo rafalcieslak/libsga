@@ -30,9 +30,12 @@ public:
   
   void fillWithPink();
   void testContents();
+
+  friend class Pipeline;
 private:
   unsigned int width, height;
   std::shared_ptr<vkhlf::Image> image;
+  std::shared_ptr<vkhlf::ImageView> image_view;
   void prepareImage();
 };
 

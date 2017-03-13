@@ -27,6 +27,7 @@ public:
   static std::shared_ptr<Image> create(int width, int height){
     return std::shared_ptr<Image>(new Image(width, height));
   }
+  friend class Pipeline;
 private:
   Image(int width, int height);
   class Impl;

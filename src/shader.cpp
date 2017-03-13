@@ -24,6 +24,7 @@ void Shader::addOutput(std::pair<DataType, std::string> pair) {impl->addOutput(p
 void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
 
 void Shader::addUniform(DataType type, std::string name) {impl->addUniform(type, name);}
+void Shader::addSampler(std::string name) {impl->addSampler(name);}
 
 Program::Program() : impl(std::make_unique<Program::Impl>()) {}
 Program::~Program() = default;
@@ -78,6 +79,9 @@ void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
 void Shader::Impl::addUniform(sga::DataType type, std::string name){
   uniforms.push_back(std::make_pair(type,name));
 }
+void Shader::Impl::addSampler(std::string name){
+  samplers.push_back(name);
+}
 
 void Shader::Impl::addStandardUniforms(){
   addUniform(DataType::Float, "sgaTime");
@@ -100,6 +104,7 @@ void Program::Impl::setVertexShader(std::shared_ptr<VertexShader> vs) {
   VS.inputAttr = vs->impl->inputAttr;
   VS.outputAttr = vs->impl->outputAttr;
   VS.uniforms = vs->impl->uniforms;
+  VS.samplers = vs->impl->samplers;
 }
 void Program::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs) {
   if(compiled)
@@ -113,6 +118,7 @@ void Program::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs) {
   FS.inputAttr = fs->impl->inputAttr;
   FS.outputAttr = fs->impl->outputAttr;
   FS.uniforms = fs->impl->uniforms;
+  FS.samplers = fs->impl->samplers;
 }
   
 void Program::Impl::compile() {
@@ -151,8 +157,24 @@ void Program::Impl::compile() {
   }
   uniformCode += "} u;\n\n";
   c_uniformSize = offset;
+
+  // Prepare samplers.
+  std::set<std::string> sampler_names;
+  for(const ShaderData& S : {std::ref(FS), std::ref(VS)})
+    for(const auto& p : S.samplers)
+      sampler_names.insert(p);
   
-  // Prepare attributes.
+  // Prepare sampler bindings.
+  unsigned int bindno = 1; // binding 0 is used for UBO
+  for(const auto& name : sampler_names)
+    c_samplerBindings[name] = bindno++;
+
+  // Prepare sampler source code.
+  std::string samplerCode;
+  for(const auto& p : c_samplerBindings)
+    samplerCode += "layout (binding = " + std::to_string(p.second) + ") uniform sampler2D " + p.first + ";\n";
+  
+  // Prepare attributes and their source code.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
     for(unsigned int i = 0; i < S.inputAttr.size(); i++){
       S.attrCode += "layout(location = " + std::to_string(i) + ") in " +
@@ -172,7 +194,7 @@ void Program::Impl::compile() {
   
   // Emit full sources.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
-    S.fullSource = preamble + S.attrCode + uniformCode + S.source;
+    S.fullSource = preamble + S.attrCode + uniformCode + samplerCode + S.source;
     std::cout << S.fullSource << std::endl;
   }
   

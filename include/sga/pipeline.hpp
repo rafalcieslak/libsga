@@ -11,6 +11,7 @@ class VBO;
 class VertexShader;
 class FragmentShader;
 class Program;
+class Image;
 
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
@@ -33,6 +34,8 @@ public:
   void setClearColor(float r, float g, float b);
 
   void setProgram(std::shared_ptr<Program>);
+
+  void setSampler(std::string, std::shared_ptr<Image>);
   
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided

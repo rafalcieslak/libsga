@@ -24,10 +24,12 @@ public:
   void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
   
   void addUniform(DataType type, std::string name);
+  void addSampler(std::string name);
   
   std::vector<std::pair<DataType, std::string>> inputAttr;
   std::vector<std::pair<DataType, std::string>> outputAttr;
   std::vector<std::pair<DataType, std::string>> uniforms;
+  std::vector<std::string> samplers;
 
   void addStandardUniforms();
 };
@@ -45,6 +47,7 @@ private:
   struct ShaderData{
     std::string source, attrCode, fullSource;
     std::vector<std::pair<DataType, std::string>> inputAttr, outputAttr, uniforms;
+    std::vector<std::string> samplers;
     DataLayout inputLayout, outputLayout;
   };
   ShaderData VS;
@@ -60,6 +63,8 @@ private:
 
   std::map<std::string, std::pair<size_t, DataType>> c_uniformOffsets;
   size_t c_uniformSize = 0;
+  
+  std::map<std::string, unsigned int> c_samplerBindings;
 };
 
 std::vector<uint32_t> compileGLSLToSPIRV(vk::ShaderStageFlagBits stage, std::string const & source);

@@ -12,6 +12,7 @@
 #include "window.impl.hpp"
 #include "vbo.impl.hpp"
 #include "shader.impl.hpp"
+#include "image.impl.hpp"
 #include "layout.hpp"
 
 namespace sga{
@@ -51,6 +52,9 @@ void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t siz
   impl->setUniform(dt, name, pData, size);
 }
 
+void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i){
+  impl->setSampler(s,i);
+}
 
 // ====== IMPL ======
 
@@ -70,6 +74,8 @@ void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
     PipelineConfigError("ProgramNotCompiled", "The program  passed to the pipeline was not compiled.",
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
   program = p;
+  cooked = false;
+  samplers_prepared = descset_prepared = unibuffers_prepared = false;
 }
 
 void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
@@ -90,12 +96,45 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   const auto& off_map = program->impl->c_uniformOffsets;
   auto it = off_map.find(name);
   if(it == off_map.end())
-    PipelineConfigError("NoUniform", "Uniform " + name + " does not exist.").raise();
+    PipelineConfigError("NoUniform", "Uniform \"" + name + "\" does not exist.").raise();
   if(it->second.second != dt)
     DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
   
   size_t offset = it->second.first;
   memcpy(b_uniformArea + offset, pData, size);
+}
+
+void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image){
+  if(!program)
+    PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
+
+  prepare_samplers();
+  prepare_descset();
+
+  auto it = s_samplers.find(name);
+  if(it == s_samplers.end())
+    PipelineConfigError("NoSampler", "Sampler \"" + name + "\" does not exist.").raise();
+
+  auto& sdata = it->second;
+  sdata.image = image;
+  sdata.sampler = global::device->createSampler(
+    vk::Filter::eNearest, vk::Filter::eNearest,
+    vk::SamplerMipmapMode::eNearest,
+    vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge,
+    0.0f, false, 0.0f, false,
+    vk::CompareOp::eNever, 0.0f, 0.0f,
+    vk::BorderColor::eFloatOpaqueWhite, false);
+
+  
+  std::vector<vkhlf::WriteDescriptorSet> wdss;
+  wdss.push_back(vkhlf::WriteDescriptorSet(
+                   d_descriptorSet, sdata.bindno, 0, 1,
+                   vk::DescriptorType::eCombinedImageSampler,
+                   vkhlf::DescriptorImageInfo(sdata.sampler, image->impl->image_view, vk::ImageLayout::eGeneral),
+                   nullptr
+                   ));
+  global::device->updateDescriptorSets(wdss, nullptr);
+  std::cout << "Updated!" << std::endl;
 }
 
 void Pipeline::Impl::updateStandardUniforms(){
@@ -160,7 +199,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
       vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
     vk::SubpassContents::eInline);
   cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
-  cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {c_descriptorSet}, nullptr);
+  cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
   cmdBuffer->bindVertexBuffer(0, buffer, 0);
   cmdBuffer->setViewport(0, vk::Viewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f));
   cmdBuffer->setScissor(0, vk::Rect2D({ 0, 0 }, extent));
@@ -202,36 +241,61 @@ void Pipeline::Impl::prepare_unibuffers(){
   unibuffers_prepared = true;
 }
 
+void Pipeline::Impl::prepare_samplers(){
+  if(samplers_prepared) return;
+  for(const auto& s : program->impl->c_samplerBindings){
+    s_samplers[s.first] = SamplerData(s.second);
+  }
+  samplers_prepared = true;
+}
+void Pipeline::Impl::prepare_descset(){
+  if(descset_prepared) return;
+
+  prepare_unibuffers();
+
+  unsigned int samplerno = program->impl->c_samplerBindings.size();
+
+  
+  // Descriptor bindings
+  std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;
+  dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
+  for(unsigned int i = 0; i < samplerno; i++)
+    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(1 + i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
+  // Descriptor set layout
+  d_descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
+    
+  // Set up descriptor sets
+  std::shared_ptr<vkhlf::DescriptorPool> descriptorPool = global::device->createDescriptorPool(
+    {}, 1 + samplerno,
+    {{vk::DescriptorType::eUniformBuffer, 1},
+        {vk::DescriptorType::eCombinedImageSampler, samplerno}});
+  
+  d_descriptorSet = global::device->allocateDescriptorSet(descriptorPool, d_descriptorSetLayout);
+  
+  std::vector<vkhlf::WriteDescriptorSet> wdss;
+  wdss.push_back(vkhlf::WriteDescriptorSet(
+                   d_descriptorSet, 0, 0, 1,
+                   vk::DescriptorType::eUniformBuffer, nullptr,
+                   vkhlf::DescriptorBufferInfo(b_uniformBuffer, 0, b_uniformSize)));
+    global::device->updateDescriptorSets(wdss, nullptr);
+  
+  descset_prepared = true;
+}
+
 void Pipeline::Impl::cook(){
     if(cooked) return;
 
     // Prepare vkPipeline etc.
     out_dbg("Cooking a pipeline.");
 
-    // Descriptor bindings
-    std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;
-    dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
-
-    // Descriptor set layout
-    std::shared_ptr<vkhlf::DescriptorSetLayout> descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
-
     prepare_unibuffers();
-    
-    // Set up descriptor sets
-    std::shared_ptr<vkhlf::DescriptorPool> descriptorPool = global::device->createDescriptorPool(
-      {}, 1,
-      {{vk::DescriptorType::eUniformBuffer, 1}, {vk::DescriptorType::eUniformBuffer, 1}});
-     
-    c_descriptorSet = global::device->allocateDescriptorSet(descriptorPool, descriptorSetLayout);
-    std::vector<vkhlf::WriteDescriptorSet> wdss;
-    wdss.push_back(vkhlf::WriteDescriptorSet(
-                     c_descriptorSet, 0, 0, 1,
-                     vk::DescriptorType::eUniformBuffer, nullptr,
-                     vkhlf::DescriptorBufferInfo(b_uniformBuffer, 0, b_uniformSize)));
-    global::device->updateDescriptorSets(wdss, nullptr);
+
+    prepare_samplers();
+
+    prepare_descset();
     
     // pipeline layout
-    c_pipelineLayout = global::device->createPipelineLayout(descriptorSetLayout, nullptr);
+    c_pipelineLayout = global::device->createPipelineLayout(d_descriptorSetLayout, nullptr);
 
     // Take renderpass and framebuffer
     if(target_is_window){

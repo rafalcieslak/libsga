@@ -5,24 +5,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../common/stb_image.h"
 
-struct __attribute__((packed)) CustomData{
-  float position[2];
-};
-
-std::vector<CustomData> vertices = {
-  { {-1, -1 } },
-  { { 3, -1 } },
-  { {-1,  3 } },
-};
-
 int main(){
   sga::init();
   auto window = sga::Window::create(800, 600, "Example window");
-
-  auto vbo = sga::VBO::create(
-    {sga::DataType::Float2}, 3);
-  
-  vbo->write(vertices);
   
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main()
@@ -40,6 +25,7 @@ int main(){
     }
   )");
 
+  // Read image
   auto texture = sga::Image::create(320, 240);
   int w,h,n;
   unsigned char* data = stbi_load("data/test_image.png", &w, &h, &n, 4);
@@ -48,6 +34,11 @@ int main(){
     return 1;
   }
   texture->putDataRaw(data, w*h*4);
+
+  auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
+  
+  std::vector<std::array<float,2>> vertices = {{-1,-1},{ 3,-1},{-1, 3}};
+  vbo->write(vertices);
   
   vertShader->addInput(sga::DataType::Float2, "inVertex");
   fragShader->addOutput(sga::DataType::Float4, "outColor");

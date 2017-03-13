@@ -13,6 +13,17 @@ class FragmentShader;
 class Program;
 class Image;
 
+enum class SamplerInterpolation{
+  Nearest,
+  Linear,
+};
+
+enum class SamplerWarpMode{
+  Clamp,
+  Repeat,
+  Mirror
+};
+
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
     window or image surface.
@@ -35,7 +46,9 @@ public:
 
   void setProgram(std::shared_ptr<Program>);
 
-  void setSampler(std::string, std::shared_ptr<Image>);
+  void setSampler(std::string, std::shared_ptr<Image>,
+                  SamplerInterpolation interpolation = SamplerInterpolation::Linear,
+                  SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
   
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided

@@ -52,8 +52,9 @@ void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t siz
   impl->setUniform(dt, name, pData, size);
 }
 
-void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i){
-  impl->setSampler(s,i);
+void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i,
+                          SamplerInterpolation in, SamplerWarpMode wm){
+  impl->setSampler(s,i,in,wm);
 }
 
 // ====== IMPL ======
@@ -104,7 +105,7 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   memcpy(b_uniformArea + offset, pData, size);
 }
 
-void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image){
+void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, SamplerInterpolation interpolation, SamplerWarpMode warp_mode){
   if(!program)
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
 
@@ -115,12 +116,24 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image){
   if(it == s_samplers.end())
     PipelineConfigError("NoSampler", "Sampler \"" + name + "\" does not exist.").raise();
 
+  vk::Filter filter;
+  switch(interpolation){
+  case SamplerInterpolation::Nearest: filter = vk::Filter::eNearest;  break;
+  case SamplerInterpolation::Linear:  filter = vk::Filter::eLinear;   break;
+  }
+  vk::SamplerAddressMode amode;
+  switch(warp_mode){
+  case SamplerWarpMode::Clamp:  amode = vk::SamplerAddressMode::eClampToEdge;    break;
+  case SamplerWarpMode::Repeat: amode = vk::SamplerAddressMode::eRepeat;         break;
+  case SamplerWarpMode::Mirror: amode = vk::SamplerAddressMode::eMirroredRepeat; break;
+  }
+  
   auto& sdata = it->second;
   sdata.image = image;
   sdata.sampler = global::device->createSampler(
-    vk::Filter::eNearest, vk::Filter::eNearest,
+    filter, filter,
     vk::SamplerMipmapMode::eNearest,
-    vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge,
+    amode, amode, amode,
     0.0f, false, 0.0f, false,
     vk::CompareOp::eNever, 0.0f, 0.0f,
     vk::BorderColor::eFloatOpaqueWhite, false);

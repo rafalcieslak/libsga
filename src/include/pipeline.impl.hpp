@@ -23,7 +23,9 @@ public:
   void setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard=false);
   void updateStandardUniforms();
 
-  void setSampler(std::string, std::shared_ptr<Image>);
+  void setSampler(std::string, std::shared_ptr<Image>,
+                  SamplerInterpolation interpolation = SamplerInterpolation::Linear,
+                  SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
   
   bool ensureValidity();
 private:

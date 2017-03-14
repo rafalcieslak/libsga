@@ -3,5 +3,6 @@
 build
 
 examples/shadertoy/*.frag
+examples/data/shadertoy/
 
 src/include/version.hpp

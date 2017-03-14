@@ -26,13 +26,13 @@ int main(){
   )");
 
   // Read image
-  auto texture = sga::Image::create(320, 240);
   int w,h,n;
   unsigned char* data = stbi_load("data/test_image.png", &w, &h, &n, 4);
   if(!data){
     std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
     return 1;
   }
+  auto texture = sga::Image::create(w, h);
   texture->putDataRaw(data, w*h*4);
 
   auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);

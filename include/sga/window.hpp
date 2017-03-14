@@ -22,6 +22,9 @@ public:
   void setOnMouseButton(std::function<void(bool, bool)> f);
   void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
 
+  unsigned int getWidth();
+  unsigned int getHeight();
+  
   friend class Pipeline;
   friend class Image;
 private:

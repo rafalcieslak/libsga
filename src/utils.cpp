@@ -101,6 +101,8 @@ static void env_verbosity(){
   if(!q) return;
   std::string qq(q);
   if(qq == "debug") global::verbosity = VerbosityLevel::Debug;
+  if(qq == "on") global::verbosity = VerbosityLevel::Debug;
+  if(qq == "1") global::verbosity = VerbosityLevel::Debug;
   if(qq == "quiet") global::verbosity = VerbosityLevel::Quiet;
   if(qq == "verbose") global::verbosity = VerbosityLevel::Verbose;
 }

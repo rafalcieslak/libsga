@@ -17,6 +17,8 @@ unsigned int getDataTypeSize(DataType dt){
     {DataType::Float3, 12},
     {DataType::Float4, 16},
     {DataType::Double, 8},
+    {DataType::Mat3, 48},
+    {DataType::Mat4, 64},
   };
   return map[dt];
 }
@@ -31,6 +33,8 @@ std::string getDataTypeGLSLName(DataType dt){
     {DataType::Float3, "vec3"},
     {DataType::Float4, "vec4"},
     {DataType::Double, "double"},
+    {DataType::Mat3, "mat3"},
+    {DataType::Mat4, "mat4"},
   };
   return map[dt];
 }
@@ -45,6 +49,8 @@ unsigned int getDataTypeGLSLstd140Alignment(DataType dt){
     {DataType::Float3, 16},
     {DataType::Float4, 16},
     {DataType::Double, 8},
+    {DataType::Mat3, 16},
+    {DataType::Mat4, 16},
   };
   return map[dt];
 }

@@ -24,6 +24,17 @@ enum class SamplerWarpMode{
   Mirror
 };
 
+enum class FaceCullMode{
+  None,
+  Back,
+  Front,
+};
+
+enum class FaceDirection{
+  Clockwise,
+  CounterClockwise
+};
+
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
     window or image surface.
@@ -49,6 +60,8 @@ public:
   void setSampler(std::string, std::shared_ptr<Image>,
                   SamplerInterpolation interpolation = SamplerInterpolation::Linear,
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
+
+  void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
   
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided
@@ -56,13 +69,49 @@ public:
       during shader preparation. These methods will refuse to set a standard
       uniform (`u.sga*`). Using these methods is insanely fast. All changes are
       cached and writes are postponed until next render. */
-  void setUniform(std::string name, float value);
-  void setUniform(std::string name, int value);
-  void setUniform(std::string name, unsigned int value);
-  void setUniform(std::string name, std::array<float,2> value);
-  void setUniform(std::string name, std::array<float,3> value);
-  void setUniform(std::string name, std::array<float,4> value);
-  void setUniform(std::string name, double value);
+  void setUniform(std::string name, float value){
+    setUniform(DataType::Float, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, int value){
+    setUniform(DataType::Int, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, unsigned int value){
+    setUniform(DataType::UInt, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, std::array<float,2> value){
+    setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, std::array<float,3> value){
+    setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, std::array<float,4> value){
+    setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, double value){
+    setUniform(DataType::Double, name, (char*)&value, sizeof(value));
+  }
+#ifdef SGA_USE_GLM
+  void setUniform(std::string name, glm::vec2 value){
+    setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, glm::vec3 value){
+    setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, glm::vec4 value){
+    setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
+  }
+  // TODO: Careful with mat3's! They use a non-packed layout:
+  // (1  2  3)  4
+  // (5  6  7)  8
+  // (9 10 11) 12
+  void setUniform(std::string name, glm::mat3 value){
+    setUniform(DataType::Mat3, name, (char*)&value, sizeof(value));
+  }
+  void setUniform(std::string name, glm::mat4 value){
+    setUniform(DataType::Mat4, name, (char*)&value, sizeof(value));
+  }
+#endif
+
 
   template <typename T>
   void setUniform(std::string name, T value, DataType dt){

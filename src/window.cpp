@@ -19,6 +19,9 @@ void Window::nextFrame() {impl->nextFrame();}
 bool Window::isOpen() {return impl->isOpen();}
 void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
 
+unsigned int Window::getWidth() {return impl->getWidth();}
+unsigned int Window::getHeight() {return impl->getHeight();}
+
 void Window::setOnMouseMove(std::function<void(double, double)> f) {
   impl->setOnMouseMove(f);
 };

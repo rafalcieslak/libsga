@@ -25,29 +25,6 @@ void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 void Pipeline::setProgram(std::shared_ptr<Program> p) {impl->setProgram(p);}
 
-
-void Pipeline::setUniform(std::string name, float value){
-  setUniform(DataType::Float, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, int value){
-  setUniform(DataType::Int, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, unsigned int value){
-  setUniform(DataType::UInt, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, std::array<float,2> value){
-  setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, std::array<float,3> value){
-  setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, std::array<float,4> value){
-  setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
-}
-void Pipeline::setUniform(std::string name, double value){
-  setUniform(DataType::Double, name, (char*)&value, sizeof(value));
-}
-
 void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t size){
   impl->setUniform(dt, name, pData, size);
 }
@@ -55,6 +32,10 @@ void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t siz
 void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i,
                           SamplerInterpolation in, SamplerWarpMode wm){
   impl->setSampler(s,i,in,wm);
+}
+
+void Pipeline::setFaceCull(FaceCullMode fcm, FaceDirection fd){
+  impl->setFaceCull(fcm,fd);
 }
 
 // ====== IMPL ======
@@ -69,6 +50,18 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   targetWindow = tgt;
   // TODO: Reset shared ptr to target image
 }
+
+
+void Pipeline::Impl::setClearColor(float r, float g, float b){
+  clear_color = {r,g,b};
+}
+
+void Pipeline::Impl::setFaceCull(FaceCullMode fcm, FaceDirection fd){
+  faceCullMode = fcm;
+  faceDirection = fd;
+  cooked = false;
+}
+
 
 void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
   if(p && !p->impl->compiled)
@@ -239,10 +232,6 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
    }
 }
 
-void Pipeline::Impl::setClearColor(float r, float g, float b){
-  clear_color = {r,g,b};
-}
-
 void Pipeline::Impl::prepare_unibuffers(){
   if(unibuffers_prepared) return;
 
@@ -359,7 +348,18 @@ void Pipeline::Impl::cook(){
     vkhlf::PipelineViewportStateCreateInfo viewport(
       { {} }, { {} });   // one dummy viewport and scissor, as dynamic state sets them
     vk::PipelineRasterizationStateCreateInfo rasterization(
-      {}, true, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack, vk::FrontFace::eClockwise, false, 0.0f, 0.0f, 0.0f, 1.0f);
+      {}, true, false,
+      vk::PolygonMode::eFill,
+      [=]{ switch(faceCullMode){
+        case FaceCullMode::Back:  return vk::CullModeFlagBits::eBack;
+        case FaceCullMode::Front: return vk::CullModeFlagBits::eFront;
+        case FaceCullMode::None:  return vk::CullModeFlagBits::eNone;
+        }}(),
+      [=]{ switch(faceDirection){
+        case FaceDirection::Clockwise:        return vk::FrontFace::eClockwise;
+        case FaceDirection::CounterClockwise: return vk::FrontFace::eCounterClockwise;
+        }}(),
+      false, 0.0f, 0.0f, 0.0f, 1.0f);
     vkhlf::PipelineMultisampleStateCreateInfo multisample(
       vk::SampleCountFlagBits::e1, false, 0.0f, nullptr, false, false);
     vk::StencilOpState stencilOpState(

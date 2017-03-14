@@ -11,7 +11,8 @@ enum class DataType{
   Int,
   UInt,
   Float, Float2, Float3, Float4,
-  Double
+  Double,
+  Mat3, Mat4,
 };
 
 class DataLayout{

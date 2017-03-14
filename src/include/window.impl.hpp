@@ -21,7 +21,10 @@ public:
   static void resizeCallback(GLFWwindow *window, int width, int height);
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
   static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
- 
+
+  unsigned int getWidth() {return width;}
+  unsigned int getHeight() {return height;}
+  
   void setOnMouseMove(std::function<void(double, double)> f);
   void setOnMouseButton(std::function<void(bool, bool)> f);
   void setOnMouseAny(std::function<void(double, double, bool, bool)> f); 

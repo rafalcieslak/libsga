@@ -27,12 +27,17 @@ public:
                   SamplerInterpolation interpolation = SamplerInterpolation::Linear,
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
   
+  void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
+  
   bool ensureValidity();
 private:
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
 
   std::shared_ptr<Program> program;
+  
+  FaceCullMode faceCullMode = FaceCullMode::None;
+  FaceDirection faceDirection = FaceDirection::Clockwise;
   
   void cook();
   bool cooked = false;

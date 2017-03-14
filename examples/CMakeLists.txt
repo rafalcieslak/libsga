@@ -7,7 +7,23 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 	)
 endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
-macro(add_example NAME)
+function(add_example NAME)
+  if(${ARGC} EQUAL 1)
+    SET(REQUIRES "")
+  else()
+    SET(REQUIRES ${ARGV1})
+  endif()
+
+  # Ensure all required dependencies are present
+  foreach(REQ ${REQUIRES})
+    if(NOT "${${REQ}_FOUND}")
+      message("${REQ} not found, example ${NAME} will not be build.")
+      return()
+    endif()
+  endforeach()
+
+  # TODO: Gather required resources for header dirs and link targets.
+  
   file(GLOB EXAMPLE_SOURCES
     ./${NAME}/*.cpp
     )
@@ -23,7 +39,7 @@ macro(add_example NAME)
 	  COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_SHADERS} "${PROJECT_BINARY_DIR}/examples/"
     )
   endif()
-endmacro(add_example)
+endfunction(add_example)
 
 add_custom_target(
   copy-example-data ALL
@@ -39,3 +55,4 @@ add_example(vbo)
 add_example(fragTest1)
 add_example(sampler)
 add_example(shadertoy)
+add_example(cube GLM)

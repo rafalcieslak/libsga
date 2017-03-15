@@ -30,6 +30,7 @@ DataLayout VBO::getLayout() const{
 size_t VBO::getDataSize() const{
   return impl->layout.size();
 }
+unsigned int VBO::getSize() const{ return impl->getSize(); }
 
 VBO::Impl::Impl(DataLayout layout, unsigned int s)
   : layout(layout), size(s) {
@@ -41,6 +42,10 @@ VBO::Impl::Impl(DataLayout layout, unsigned int s)
     nullptr,
     vk::MemoryPropertyFlagBits::eDeviceLocal,
     nullptr);
+}
+
+unsigned int VBO::Impl::getSize() const{
+  return size;
 }
 
 void VBO::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){

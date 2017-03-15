@@ -162,7 +162,7 @@ void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
   
   cook();
   updateStandardUniforms();
-  drawBuffer(vbo->impl->buffer, vbo->getDataSize());
+  drawBuffer(vbo->impl->buffer, vbo->getSize());
 }
 
 bool Pipeline::Impl::ensureValidity(){

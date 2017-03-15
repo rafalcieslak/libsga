@@ -294,8 +294,9 @@ size_t align(size_t base, unsigned int alignment){
 }
 
 bool isVariableNameValid(std::string s){
-  std::regex e("[a-zA-Z][a-zA-Z0-9]*");
-  return std::regex_match(s,e);
+  //std::regex e("[a-zA-Z_][a-zA-Z0-9_]*");
+  //return std::regex_match(s,e);
+  return true;
 }
 
 } // namespace sga

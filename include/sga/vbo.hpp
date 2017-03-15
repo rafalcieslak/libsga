@@ -18,6 +18,7 @@ public:
 
   DataLayout getLayout() const;
   size_t getDataSize() const;
+  unsigned int getSize() const;
   
   // Non-Interleaving write.
   template <typename T>

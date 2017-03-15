@@ -51,6 +51,14 @@ public:
     return std::shared_ptr<Program>(new Program());
   }
   
+  static std::shared_ptr<Program> createAndCompile(std::shared_ptr<VertexShader> vs, std::shared_ptr<FragmentShader> fs){
+    auto p = create();
+    p->setVertexShader(vs);
+    p->setFragmentShader(fs);
+    p->compile();
+    return p;
+  }
+  
   friend class Pipeline;
 private:
   Program();

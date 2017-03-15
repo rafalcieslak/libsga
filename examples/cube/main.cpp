@@ -72,6 +72,7 @@ int main(){
 
   auto window = sga::Window::create(800, 600, "Cube");
 
+  // Prepare VBO
   auto vbo = sga::VBO::create({
       sga::DataType::Float3,
       sga::DataType::Float3,
@@ -79,7 +80,6 @@ int main(){
     vertices.size());
   
   vbo->write(vertices);
-  std::cout << vertices.size() << std::endl;
 
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
@@ -96,11 +96,12 @@ int main(){
     }
   )");
 
-  vertShader->addInput(sga::DataType::Float3, "in_position");
-  vertShader->addInput(sga::DataType::Float3, "in_normal");
-  vertShader->addInput(sga::DataType::Float2, "in_texuv");
-  vertShader->addOutput(sga::DataType::Float3, "out_normal");
-  vertShader->addOutput(sga::DataType::Float2, "out_texuv");
+  // Configure shader input/output/uniforms
+  vertShader->addInput({{sga::DataType::Float3, "in_position"},
+                        {sga::DataType::Float3, "in_normal"},
+                        {sga::DataType::Float2, "in_texuv"}});
+  vertShader->addOutput({{sga::DataType::Float3, "out_normal"},
+                         {sga::DataType::Float2, "out_texuv"}});
   vertShader->addUniform(sga::DataType::Mat4, "MVP");
 
   fragShader->addInput(sga::DataType::Float3, "in_normal");
@@ -115,27 +116,29 @@ int main(){
     std::cout << "Opening texture ./data/cube.png failed: " << stbi_failure_reason() << std::endl;
     return 1;
   }
-  auto texture = sga::Image::create(w, h);
-  texture->putDataRaw(data, w*h*4);
+  auto textureImage = sga::Image::create(w, h);
+  textureImage->putDataRaw(data, w*h*4);
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};
   glm::mat4 camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
   glm::mat4 projection = glm::perspectiveFov(glm::radians(70.0), 800.0, 600.0, 0.1, 10.0);
   glm::mat4 MVP = projection * camera;
-  
+
+  // Compile shaders
   auto program = sga::Program::create();
   program->setVertexShader(vertShader);
   program->setFragmentShader(fragShader);
   program->compile();
 
+  // Configure pipeline
   auto pipeline = sga::Pipeline::create();
   pipeline->setProgram(program);
   pipeline->setTarget(window);
   pipeline->setFaceCull(sga::FaceCullMode::Back);
   
   pipeline->setUniform("MVP", MVP);
-  pipeline->setSampler("tex", texture, sga::SamplerInterpolation::Linear);
+  pipeline->setSampler("tex", textureImage, sga::SamplerInterpolation::Linear);
   
   window->setFPSLimit(60);
 
@@ -151,7 +154,8 @@ int main(){
       MVP = projection * camera;
       pipeline->setUniform("MVP", MVP);
     });
-  
+
+  // Main loop
   while(window->isOpen()){
     pipeline->drawVBO(vbo);
     window->nextFrame();

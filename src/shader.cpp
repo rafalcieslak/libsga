@@ -21,7 +21,7 @@ void Shader::addInput(std::pair<DataType, std::string> pair) {impl->addInput(pai
 void Shader::addInput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
 void Shader::addOutput(DataType type, std::string name) {impl->addOutput(type, name);}
 void Shader::addOutput(std::pair<DataType, std::string> pair) {impl->addOutput(pair);}
-void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addInput(list);}
+void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> list) {impl->addOutput(list);}
 
 void Shader::addUniform(DataType type, std::string name) {impl->addUniform(type, name);}
 void Shader::addSampler(std::string name) {impl->addSampler(name);}

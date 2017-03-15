@@ -140,7 +140,6 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
                    nullptr
                    ));
   global::device->updateDescriptorSets(wdss, nullptr);
-  std::cout << "Updated!" << std::endl;
 }
 
 void Pipeline::Impl::updateStandardUniforms(){

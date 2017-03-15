@@ -118,6 +118,14 @@ int main(){
   }
   auto textureImage = sga::Image::create(w, h);
   textureImage->putDataRaw(data, w*h*4);
+  
+  data = stbi_load("data/cube2.png", &w, &h, &n, 4);
+  if(!data){
+    std::cout << "Opening texture ./data/cube2.png failed: " << stbi_failure_reason() << std::endl;
+    return 1;
+  }
+  auto textureImage2= sga::Image::create(w, h);
+  textureImage2->putDataRaw(data, w*h*4);
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};
@@ -138,7 +146,7 @@ int main(){
   pipeline->setFaceCull(sga::FaceCullMode::Back);
   
   pipeline->setUniform("MVP", MVP);
-  pipeline->setSampler("tex", textureImage, sga::SamplerInterpolation::Linear);
+  pipeline->setSampler("tex", textureImage);
   
   window->setFPSLimit(60);
 
@@ -157,6 +165,12 @@ int main(){
 
   // Main loop
   while(window->isOpen()){
+    // Periodically switch texture
+    float q = sga::getTime();
+    int w = q/0.75;
+    if(w % 2) pipeline->setSampler("tex", textureImage);
+    else      pipeline->setSampler("tex", textureImage2);
+    
     pipeline->drawVBO(vbo);
     window->nextFrame();
   }

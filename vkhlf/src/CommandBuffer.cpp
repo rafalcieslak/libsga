@@ -656,15 +656,6 @@ namespace vkhlf
     vk::AccessFlags accessFlags;
     switch (layout)
     {
-      case vk::ImageLayout::eTransferDstOptimal:
-        srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-        break;
-      case vk::ImageLayout::eTransferSrcOptimal:
-        srcAccessMask = vk::AccessFlagBits::eTransferRead;
-        break;
-      case vk::ImageLayout::eShaderReadOnlyOptimal:
-        srcAccessMask = vk::AccessFlagBits::eShaderRead;
-        break;
       case vk::ImageLayout::eColorAttachmentOptimal:
         accessFlags = vk::AccessFlagBits::eColorAttachmentWrite;
         break;

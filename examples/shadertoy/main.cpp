@@ -76,7 +76,6 @@ int main(int argc, char** argv){
         std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
         return 1;
       }
-      std::cout << "ASDASDSADAS" << std::endl;
       images[i] = sga::Image::create(w, h);
       images[i]->putDataRaw(data, w*h*4);
     }else{

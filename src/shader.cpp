@@ -201,7 +201,7 @@ void Program::Impl::compile() {
   // Emit full sources.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
     S.fullSource = preamble + S.attrCode + uniformCode + samplerCode + S.source;
-    std::cout << S.fullSource << std::endl;
+    out_dbg("=== FULL SHADER SOURCE ===\n" + S.fullSource);
   }
   
   // Extract metadata.
@@ -378,8 +378,8 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
       ShaderLinkingError(infoLog, infoDebugLog).raise();
     }
 
-  program.buildReflection();
-  program.dumpReflection();
+  //program.buildReflection();
+  //program.dumpReflection();
   
   // TODO: Does this have a return value?
   std::vector<uint32_t> code;

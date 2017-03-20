@@ -78,7 +78,7 @@ void Image::Impl::prepareImage(){
 
   image_view = image->createImageView(vk::ImageViewType::e2D, FORMAT);
   
-  std::cout << "Image prepared." << std::endl;
+  out_dbg("Image prepared.");
 }
 void Image::Impl::putData(std::vector<uint8_t> data){
   putDataRaw(data.data(), data.size());

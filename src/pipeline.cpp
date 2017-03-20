@@ -25,6 +25,9 @@ void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 void Pipeline::setProgram(std::shared_ptr<Program> p) {impl->setProgram(p);}
 
+void Pipeline::setUniform(std::string name, std::initializer_list<float> floats){
+  impl->setUniform(name, floats);
+}
 void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t size){
   impl->setUniform(dt, name, pData, size);
 }
@@ -72,6 +75,24 @@ void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
   samplers_prepared = descset_prepared = unibuffers_prepared = false;
 }
 
+void Pipeline::Impl::setUniform(std::string name, std::initializer_list<float> floats){
+  if(floats.size() == 1){
+    setUniform(DataType::Float, name, (char*)floats.begin(), 1*4);
+  }else if(floats.size() == 2){
+    setUniform(DataType::Float2, name, (char*)floats.begin(), 2*4);
+  }else if(floats.size() == 3){
+    setUniform(DataType::Float3, name, (char*)floats.begin(), 3*4);
+  }else if(floats.size() == 4){
+    setUniform(DataType::Float4, name, (char*)floats.begin(), 4*4);
+  }else if(floats.size() == 9){
+    setUniform(DataType::Mat3, name, (char*)floats.begin(), 9*4);
+  }else if(floats.size() == 16){
+    setUniform(DataType::Mat4, name, (char*)floats.begin(), 16*4);
+  }else{
+    DataFormatError("SetUniformInitializerList", "Unable to automatically deduce data type from an initializer list used for setUniform, please use a more specific type (like std::array, glm::vec etc.)").raise();
+  }
+}
+  
 void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
   if(size != getDataTypeSize(dt)){
     // TODO: Name types in output?
@@ -184,6 +205,8 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
     if(!s.second.sampler)
       PipelineConfigError("SamplerNotSet", "This pipeline cannot render, sampler \"" + s.first + "\" was not bound to an image.").raise();
   }
+
+  // TODO: ensure all uniforms are set!
   
   auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();

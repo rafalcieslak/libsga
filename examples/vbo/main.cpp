@@ -44,7 +44,7 @@ int main(){
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      outColor = inColor + 0.2 * texture(some_texture, vec2(0, 0));
+      outColor = inColor;
     }
   )");
 
@@ -56,19 +56,11 @@ int main(){
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
   vertShader->addUniform(sga::DataType::Float, "angle");
-  vertShader->addSampler("some_texture");
 
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
-
-  auto texture = sga::Image::create(64,64);
-  texture->fillWithPink();
+  auto program = sga::Program::createAndCompile(vertShader, fragShader);
   
   pipeline->setProgram(program);
   pipeline->setTarget(window);
-  pipeline->setSampler("some_texture", texture);
   
   window->setFPSLimit(60);
 

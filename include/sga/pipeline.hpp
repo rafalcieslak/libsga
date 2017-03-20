@@ -111,6 +111,7 @@ public:
     setUniform(DataType::Mat4, name, (char*)&value, sizeof(value));
   }
 #endif
+  void setUniform(std::string name, std::initializer_list<float> floats);
 
 
   template <typename T>

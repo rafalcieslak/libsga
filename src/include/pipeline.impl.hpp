@@ -19,7 +19,8 @@ public:
   void setClearColor(float r, float g, float b);
   
   void setProgram(std::shared_ptr<Program>);
-  
+
+  void setUniform(std::string name, std::initializer_list<float> floats);  
   void setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard=false);
   void updateStandardUniforms();
 

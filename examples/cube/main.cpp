@@ -84,15 +84,18 @@ int main(){
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
       gl_Position = u.MVP * vec4(in_position,1);
-      out_normal = (u.MVP * vec4(in_position,0) ).xyz;
+      out_normal = in_normal; //(u.MVP * vec4(in_position,0) ).xyz;
       out_texuv = in_texuv;
+      out_position = in_position;
 
       gl_Position.y = -gl_Position.y;
     }
   )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      out_color = texture(tex, in_texuv);
+      vec3 dir_to_light = normalize(u.lightpos - in_position);
+      float q = max(0.2, dot(dir_to_light, in_normal));
+      out_color = texture(tex, in_texuv) * q;
     }
   )");
 
@@ -100,13 +103,16 @@ int main(){
   vertShader->addInput({{sga::DataType::Float3, "in_position"},
                         {sga::DataType::Float3, "in_normal"},
                         {sga::DataType::Float2, "in_texuv"}});
-  vertShader->addOutput({{sga::DataType::Float3, "out_normal"},
+  vertShader->addOutput({{sga::DataType::Float3, "out_position"},
+                         {sga::DataType::Float3, "out_normal"},
                          {sga::DataType::Float2, "out_texuv"}});
   vertShader->addUniform(sga::DataType::Mat4, "MVP");
 
+  fragShader->addInput(sga::DataType::Float3, "in_position");
   fragShader->addInput(sga::DataType::Float3, "in_normal");
   fragShader->addInput(sga::DataType::Float2, "in_texuv");
   fragShader->addOutput(sga::DataType::Float4, "out_color");
+  fragShader->addUniform(sga::DataType::Float3, "lightpos");
   fragShader->addSampler("tex");
 
   // Read image
@@ -146,6 +152,7 @@ int main(){
   pipeline->setFaceCull(sga::FaceCullMode::Back);
   
   pipeline->setUniform("MVP", MVP);
+  pipeline->setUniform("lightpos", {3.0, -4.0, -5.0});
   pipeline->setSampler("tex", textureImage);
   
   window->setFPSLimit(60);

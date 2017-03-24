@@ -145,13 +145,4 @@ target_include_directories(VkHLF-static
   INTERFACE  "${PROJECT_SOURCE_DIR}"
 )
 
-target_link_libraries( VkHLF-static
-  ${OPENGL_gl_LIBRARY}
-  glslang
-  OGLCompiler
-  OSDependent
-  HLSL
-  SPIRV
-)
-
 set_property(TARGET VkHLF-static PROPERTY POSITION_INDEPENDENT_CODE 1)

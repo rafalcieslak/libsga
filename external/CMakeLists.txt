@@ -1,64 +1,34 @@
-include(ExternalProject)
+# Custom vulkan header distributed with source
+set(vulkan_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/vulkan)
+set(vulkan_INCLUDE_DIRS ${vulkan_INCLUDE_DIRS} PARENT_SCOPE)
 
-# Workaround against ExternalProject sporiously failing to find git
-find_package(Git)
+# GLFW 3
+message("- Configuring GLFW3")
+OPTION(GLFW_BUILD_DOCS OFF)
+OPTION(GLFW_BUILD_EXAMPLES OFF)
+OPTION(GLFW_BUILD_TESTS OFF)
+add_subdirectory(glfw)
+set(glfw_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include PARENT_SCOPE)
+set(glfw_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/glfw/src/libglfw3.a PARENT_SCOPE)
 
-# Note: As of current CMake release, there is no way to ask GIT_SUBMODULES to
-# update NO submodules. Therefore we use a custom git download command to
-# clone VkHLF without initializing submodules we won't even use.
-ExternalProject_Add( glfw
-  PREFIX glfw
-  GIT_REPOSITORY https://github.com/rafalcieslak/glfw
-  GIT_TAG libsga
-  DOWNLOAD_COMMAND rm -rf glfw && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/glfw
-  UPDATE_COMMAND true
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/install -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF
-  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/install
-  )
-
-ExternalProject_Get_Property(glfw INSTALL_DIR)
-set(glfw_INCLUDE_DIR ${INSTALL_DIR}/include PARENT_SCOPE)
-set(glfw_LIBRARIES ${INSTALL_DIR}/lib/libglfw3.a PARENT_SCOPE)
-
-ExternalProject_Add( glslang
-  PREFIX glslang
-  GIT_REPOSITORY https://github.com/rafalcieslak/glslang
-  GIT_TAG libsga
-  DOWNLOAD_COMMAND rm -rf glslang && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/glslang
-  UPDATE_COMMAND true
-  )
-
-ExternalProject_Get_Property(glslang INSTALL_DIR)
-set(glslang_LIBRARY_DIR ${INSTALL_DIR}/src/glslang-build/install/lib)
-set(glslang_INCLUDE_DIR ${INSTALL_DIR}/src)
-
-ExternalProject_Add( VkHLF
-  DEPENDS glslang
-  PREFIX vkhlf
-  GIT_REPOSITORY https://github.com/rafalcieslak/VkHLF
-  GIT_TAG libsga
-  GIT_SUBMODULES "3rdparty"
-  DOWNLOAD_COMMAND rm -rf VkHLF && git clone -b libsga --single-branch --depth 1 https://github.com/rafalcieslak/VkHLF
-  UPDATE_COMMAND true
-  CMAKE_ARGS -DBUILD_VKCPP_SAMPLES=OFF -DBUILD_SUBMODULES=OFF -DEXTRA_INCLUDE_DIRS=${glslang_INCLUDE_DIR}
-  INSTALL_COMMAND
-    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/vkhlf/src/VkHLF/vkhlf ${CMAKE_CURRENT_BINARY_DIR}/install/include/vkhlf &&
-    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/vkhlf/src/VkHLF-build/bin/release ${CMAKE_CURRENT_BINARY_DIR}/install/lib
-    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/vkhlf/src/VkHLF-build/lib/release ${CMAKE_CURRENT_BINARY_DIR}/install/lib
-  INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}/install
-  )
-
-# Export VkHLF configuration
-ExternalProject_Get_Property(VkHLF INSTALL_DIR)
-set(VkHLF_INCLUDE_DIRS ${INSTALL_DIR}/include PARENT_SCOPE)
-set(VkHLF_LIBRARIES ${INSTALL_DIR}/lib/libVkHLF.a PARENT_SCOPE)
-
-# Export glslang configuration
-set(glslang_INCLUDE_DIRS ${glslang_INCLUDE_DIR} PARENT_SCOPE)
+# glslang
+message("- Configuring glslang")
+add_subdirectory(glslang)
+set(glslang_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+set(glslang_INCLUDE_DIRS ${glslang_INCLUDE_DIRS} PARENT_SCOPE)
 set(glslang_LIBRARIES
-  ${glslang_LIBRARY_DIR}/libglslang.a
-  ${glslang_LIBRARY_DIR}/libOGLCompiler.a
-  ${glslang_LIBRARY_DIR}/libOSDependent.a
-  ${glslang_LIBRARY_DIR}/libSPIRV.a
-  ${glslang_LIBRARY_DIR}/libHLSL.a
+  ${CMAKE_CURRENT_BINARY_DIR}/glslang/glslang/libglslang.a
+  ${CMAKE_CURRENT_BINARY_DIR}/glslang/OGLCompilersDLL/libOGLCompiler.a
+  ${CMAKE_CURRENT_BINARY_DIR}/glslang/glslang/OSDependent/Unix/libOSDependent.a
+  ${CMAKE_CURRENT_BINARY_DIR}/glslang/SPIRV/libSPIRV.a
+  ${CMAKE_CURRENT_BINARY_DIR}/glslang/hlsl/libHLSL.a
   PARENT_SCOPE)
+
+# vkhlf
+message("- Configuring VkHLF")
+set(BUILD_VKCPP_SAMPLES OFF)
+set(BUILD_SUBMODULES OFF)
+set(EXTRA_INCLUDE_DIRS ${glslang_INCLUDE_DIRS} ${vulkan_INCLUDE_DIRS})
+add_subdirectory(vkhlf)
+set(VkHLF_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/vkhlf PARENT_SCOPE)
+set(VkHLF_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/vkhlf/lib/libVkHLF.a PARENT_SCOPE)

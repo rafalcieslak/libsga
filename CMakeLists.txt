@@ -38,6 +38,7 @@ project(
 # Import custom cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# TODO: Only the library is required, not the header, since we bring a custom version.
 find_package(Vulkan) # manually required
 find_package(Doxygen) # optional
 find_package(GLM) # optional

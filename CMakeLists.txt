@@ -26,6 +26,7 @@
 
 
 cmake_minimum_required(VERSION 2.8)
+cmake_policy(SET CMP0048 NEW)
 
 PROJECT( VkHLF )
 
@@ -34,11 +35,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 #GLFW3 doesn't add the Vulkan include directories by default. Add them before.
 include_directories($ENV{VK_SDK_PATH}/include)
 
-
-SET( BUILD_SUBMODULES ON  CACHE BOOL "Build submodules" )
+if(NOT DEFINED BUILD_SUBMODULES)
+  SET( BUILD_SUBMODULES ON  CACHE BOOL "Build submodules" )
+endif()
 
 if( BUILD_SUBMODULES )
-
   option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
   option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
   option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
@@ -102,7 +103,6 @@ endif()
 
 set(VK_3RDPARTY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty" CACHE STRING "CkSpp 3rdParty path")
 set(VK_BINARY_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${VK_CONFIG}")
-message( "VK_BINARY_PATH = ${VK_BINARY_PATH}" )
 
 # some useful macros
 MACRO(ADD_TARGET_PROPERTIES _target _name)

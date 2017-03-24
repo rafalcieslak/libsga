@@ -2,6 +2,13 @@
 set(vulkan_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/vulkan)
 set(vulkan_INCLUDE_DIRS ${vulkan_INCLUDE_DIRS} PARENT_SCOPE)
 
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/glfw/CMakeLists.txt)
+  execute_process(
+    COMMAND git submodule update --init
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+endif()
+
 # GLFW 3
 message("- Configuring GLFW3")
 OPTION(GLFW_BUILD_DOCS OFF)

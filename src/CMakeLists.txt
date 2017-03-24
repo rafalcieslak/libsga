@@ -11,14 +11,14 @@ include_directories(SYSTEM ${VkHLF_INCLUDE_DIRS})
 
 add_library(sga SHARED ${LIBSGA_SOURCES})
 set_target_properties(sga PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-add_dependencies(sga VkHLF-static)
 
 target_link_libraries(sga
   PRIVATE -Wl,--no-as-needed # This forces a runtime link dependency to libvulkan.so
-  PUBLIC ${Vulkan_LIBRARIES}
+  PRIVATE ${Vulkan_LIBRARIES}
   # Following libraries are static, so these get embedded into libsga.
-  PRIVATE ${VkHLF_LIBRARIES} # static
-  PRIVATE ${glfw_LIBRARIES}  # static
-  PRIVATE Xrandr X11 Xcursor Xxf86vm Xinerama # dynamic
-  PRIVATE -Wl,--whole-archive ${glslang_LIBRARIES} -Wl,--no-whole-archive # static
+  PRIVATE glslang # static
+  PRIVATE SPIRV # static
+  PRIVATE glfw  # static
+  PRIVATE VkHLF-static # static
+  # PRIVATE Xrandr X11 Xcursor Xxf86vm Xinerama # dynamic
   )

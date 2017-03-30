@@ -149,7 +149,7 @@ int main(){
   auto pipeline = sga::Pipeline::create();
   pipeline->setProgram(program);
   pipeline->setTarget(window);
-  pipeline->setFaceCull(sga::FaceCullMode::Back);
+  pipeline->setFaceCull(sga::FaceCullMode::None);
   
   pipeline->setUniform("MVP", MVP);
   pipeline->setUniform("lightpos", {3.0, -4.0, -5.0});
@@ -163,6 +163,16 @@ int main(){
 
   window->setOnKeyDown(sga::Key::F11, [&](){
       window->toggleFullscreen();
+    });
+
+  window->setOnKeyDown(sga::Key::d1, [&](){
+      pipeline->setRasterizerMode(sga::RasterizerMode::Filled);
+    });
+  window->setOnKeyDown(sga::Key::d2, [&](){
+      pipeline->setRasterizerMode(sga::RasterizerMode::Wireframe);
+    });
+  window->setOnKeyDown(sga::Key::d3, [&](){
+      pipeline->setRasterizerMode(sga::RasterizerMode::Points);
     });
   
   window->setOnMouseMove([&](double x, double y){

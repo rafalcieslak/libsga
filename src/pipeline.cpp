@@ -40,6 +40,8 @@ void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i,
 void Pipeline::setFaceCull(FaceCullMode fcm, FaceDirection fd){
   impl->setFaceCull(fcm,fd);
 }
+void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl->setRasterizerMode(r);}
+void Pipeline::setPolygonMode(sga::PolygonMode p){impl->setPolygonMode(p);}
 
 // ====== IMPL ======
 
@@ -65,6 +67,14 @@ void Pipeline::Impl::setFaceCull(FaceCullMode fcm, FaceDirection fd){
   cooked = false;
 }
 
+void Pipeline::Impl::setPolygonMode(PolygonMode p) {
+  polygonMode = p;
+  cooked = false;
+}
+void Pipeline::Impl::setRasterizerMode(RasterizerMode r) {
+  rasterizerMode = r;
+  cooked = false;
+}
 
 void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
   if(p && !p->impl->compiled)
@@ -366,20 +376,36 @@ void Pipeline::Impl::cook(){
     
     
     vk::PipelineInputAssemblyStateCreateInfo assembly(
-      {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE);
+      {},
+      [=]{ switch(polygonMode){
+        case PolygonMode::Points:       return vk::PrimitiveTopology::ePointList;
+        case PolygonMode::Lines:        return vk::PrimitiveTopology::eLineList;
+        case PolygonMode::LineStrip:    return vk::PrimitiveTopology::eLineStrip;
+        case PolygonMode::Triangles:    return vk::PrimitiveTopology::eTriangleList;
+        case PolygonMode::TriangleStrip:return vk::PrimitiveTopology::eTriangleStrip;
+        case PolygonMode::TriangleFan:  return vk::PrimitiveTopology::eTriangleFan;
+        default: return vk::PrimitiveTopology::eTriangleList;
+        }}(), VK_FALSE);
     vkhlf::PipelineViewportStateCreateInfo viewport(
       { {} }, { {} });   // one dummy viewport and scissor, as dynamic state sets them
     vk::PipelineRasterizationStateCreateInfo rasterization(
       {}, true, false,
-      vk::PolygonMode::eFill,
+      [=]{ switch(rasterizerMode){
+        case RasterizerMode::Filled:  return vk::PolygonMode::eFill;
+        case RasterizerMode::Points:  return vk::PolygonMode::ePoint;
+        case RasterizerMode::Wireframe:  return vk::PolygonMode::eLine;
+        default: return vk::PolygonMode::eFill;
+        }}(),
       [=]{ switch(faceCullMode){
         case FaceCullMode::Back:  return vk::CullModeFlagBits::eBack;
         case FaceCullMode::Front: return vk::CullModeFlagBits::eFront;
         case FaceCullMode::None:  return vk::CullModeFlagBits::eNone;
+        default: return vk::CullModeFlagBits::eNone;
         }}(),
       [=]{ switch(faceDirection){
         case FaceDirection::Clockwise:        return vk::FrontFace::eClockwise;
         case FaceDirection::CounterClockwise: return vk::FrontFace::eCounterClockwise;
+        default: return vk::FrontFace::eClockwise;
         }}(),
       false, 0.0f, 0.0f, 0.0f, 1.0f);
     vkhlf::PipelineMultisampleStateCreateInfo multisample(

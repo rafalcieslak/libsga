@@ -35,6 +35,21 @@ enum class FaceDirection{
   CounterClockwise
 };
 
+enum class PolygonMode{
+  Points,
+  Lines,
+  LineStrip,
+  Triangles,
+  TriangleStrip,
+  TriangleFan,
+};
+
+enum class RasterizerMode{
+  Filled,
+  Wireframe,
+  Points,
+};
+
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
     window or image surface.
@@ -62,6 +77,9 @@ public:
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
 
   void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
+  
+  void setPolygonMode(PolygonMode p);
+  void setRasterizerMode(RasterizerMode r);
   
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided

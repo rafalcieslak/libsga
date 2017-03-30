@@ -29,6 +29,8 @@ public:
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
   
   void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
+  void setPolygonMode(PolygonMode p);
+  void setRasterizerMode(RasterizerMode r);
   
   bool ensureValidity();
 private:
@@ -39,6 +41,8 @@ private:
   
   FaceCullMode faceCullMode = FaceCullMode::None;
   FaceDirection faceDirection = FaceDirection::Clockwise;
+  PolygonMode polygonMode = PolygonMode::Triangles;
+  RasterizerMode rasterizerMode = RasterizerMode::Filled;
   
   void cook();
   bool cooked = false;

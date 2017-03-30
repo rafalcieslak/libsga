@@ -18,6 +18,9 @@ public:
   void putDataRaw(unsigned char * data, size_t size);
   std::vector<uint8_t> getData();
 
+  unsigned int getWidth();
+  unsigned int getHeight();
+  
   void copyOnto(
     std::shared_ptr<Image> target,
     int source_x = 0, int source_y = 0,

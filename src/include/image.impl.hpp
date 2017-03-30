@@ -28,6 +28,9 @@ public:
     int source_x = 0, int source_y = 0,
     int target_x = 0, int target_y = 0,
     int width = -1, int height = -1);
+
+  unsigned int getWidth() {return width;}
+  unsigned int getHeight() {return height;}
   
   void fillWithPink();
   void testContents();

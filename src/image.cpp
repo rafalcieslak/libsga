@@ -25,6 +25,8 @@ void Image::copyOnto(std::shared_ptr<Image> target,
                      int cwidth, int cheight){
   impl->copyOnto(target,source_x,source_y,target_x,target_y,cwidth,cheight);
 }
+unsigned int Image::getWidth() {return impl->getWidth();}
+unsigned int Image::getHeight() {return impl->getHeight();}
 /*
 void Image::copyOnto(std::shared_ptr<Window> target,
                      int source_x, int source_y,

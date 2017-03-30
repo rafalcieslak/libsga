@@ -12,6 +12,7 @@ namespace sga{
 class Window::Impl{
 public:
   Impl(unsigned int width, unsigned int height, std::string title);
+  ~Impl();
   
   void do_resize(unsigned int w, unsigned int h);
   void nextFrame();
@@ -21,10 +22,17 @@ public:
   static void resizeCallback(GLFWwindow *window, int width, int height);
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
   static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+  static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
   unsigned int getWidth() {return width;}
   unsigned int getHeight() {return height;}
+
+  bool isKeyPressed(Key k);
   
+  void close();
+  
+  void setOnKeyDown(Key k, std::function<void()>);
+  void setOnKeyUp(Key k, std::function<void()>);
   void setOnMouseMove(std::function<void(double, double)> f);
   void setOnMouseButton(std::function<void(bool, bool)> f);
   void setOnMouseAny(std::function<void(double, double, bool, bool)> f); 
@@ -71,6 +79,10 @@ private:
   std::function<void(double, double)> f_onMouseMove;
   std::function<void(bool, bool)> f_onMouseButton;
   std::function<void(double, double, bool, bool)> f_onMouseAny;
+
+  std::map<Key, std::function<void()>> fmap_onKeyDown;
+  std::map<Key, std::function<void()>> fmap_onKeyUp;
+  std::map<Key, bool> keyState;
 };
 
 } // namespace sga

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "config.hpp"
+#include "keys.hpp"
 
 namespace sga{
 
@@ -13,6 +14,11 @@ public:
   ~Window();
   void nextFrame();
   bool isOpen();
+
+  void close();
+  void setOnKeyDown(Key k, std::function<void()>);
+  void setOnKeyUp(Key k, std::function<void()>);
+  
   void setFPSLimit(double fps);
   static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
     return std::shared_ptr<Window>(new Window(width, height, title));

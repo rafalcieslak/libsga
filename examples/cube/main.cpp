@@ -157,6 +157,10 @@ int main(){
   
   window->setFPSLimit(60);
 
+  window->setOnKeyDown(sga::Key::Escape, [&](){
+      window->close();
+    });
+  
   window->setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
       x = glm::min(x/window->getWidth(),  0.999);

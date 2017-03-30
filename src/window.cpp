@@ -22,15 +22,23 @@ void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
 unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
 
+void Window::close() {impl->close();}
+
+void Window::setOnKeyDown(sga::Key k, std::function<void ()> f){
+  impl->setOnKeyDown(k, f);
+}
+void Window::setOnKeyUp(sga::Key k, std::function<void ()> f){
+  impl->setOnKeyUp(k, f);
+}
 void Window::setOnMouseMove(std::function<void(double, double)> f) {
   impl->setOnMouseMove(f);
-};
+}
 void Window::setOnMouseButton(std::function<void(bool, bool)> f) {
   impl->setOnMouseButton(f);
-};
+}
 void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   impl->setOnMouseAny(f);
-};
+}
 
 // ====== IMPL ======
 
@@ -87,6 +95,11 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     glfwSetFramebufferSizeCallback(window, Window::Impl::resizeCallback);
     glfwSetCursorPosCallback(window, Window::Impl::mousePositionCallback);
     glfwSetMouseButtonCallback(window, Window::Impl::mouseButtonCallback);
+    glfwSetKeyCallback(window, Window::Impl::keyCallback);
+}
+
+Window::Impl::~Impl(){
+  glfwDestroyWindow(window);
 }
   
 void Window::Impl::do_resize(unsigned int w, unsigned int h){
@@ -118,6 +131,8 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   }
 
 void Window::Impl::nextFrame() {
+
+  if(!isOpen()) return;
   
   // Wait with presentation for a while, if fpslimit is enabled.
   if(frameno > 0 && fpsLimit > 0){
@@ -175,14 +190,26 @@ void Window::Impl::nextFrame() {
 }
 
 bool Window::Impl::isOpen() {
-    glfwPollEvents();
-    return !glfwWindowShouldClose(window);
+  glfwPollEvents();
+  return !glfwWindowShouldClose(window);
+}
+
+void Window::Impl::close(){
+  glfwHideWindow(window);
+  glfwSetWindowShouldClose(window, 1);
 }
 
 void Window::Impl::setFPSLimit(double fps){
   // -1 for no limit
   if(fps > 0.0 && fps < 1.0) fps = 1.0;
   fpsLimit = fps;
+}
+
+void Window::Impl::setOnKeyDown(sga::Key k, std::function<void ()> f){
+  fmap_onKeyDown[k] = f;
+}
+void Window::Impl::setOnKeyUp(sga::Key k, std::function<void ()> f){
+  fmap_onKeyUp[k] = f;
 }
 
 void Window::Impl::setOnMouseMove(std::function<void(double, double)> f) {
@@ -196,8 +223,8 @@ void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)>
 };
 
 void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){
-    Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
-    wd->do_resize(width, height);
+  Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
+  wd->do_resize(width, height);
 }
 void Window::Impl::mousePositionCallback(GLFWwindow *window, double x, double y){
   Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
@@ -220,6 +247,21 @@ void Window::Impl::mouseButtonCallback(GLFWwindow *window, int button, int actio
     wd->f_onMouseButton(wd->mouse_l, wd->mouse_r);
   if(wd->f_onMouseAny)
     wd->f_onMouseAny(wd->mouse_x, wd->mouse_y, wd->mouse_l, wd->mouse_r);
+}
+
+void Window::Impl::keyCallback(GLFWwindow* window, int key, int, int action, int){
+  Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
+  
+  Key k = glfwKeyToSgaKey(key);
+
+  // Update keyState map.
+  wd->keyState[k] = (action == GLFW_PRESS);
+
+  // Trigger registered user function.
+  const auto& fmap = (action == GLFW_PRESS) ? wd->fmap_onKeyDown : wd->fmap_onKeyUp;
+  auto it = fmap.find(k);
+  if(it != fmap.end())
+    it->second();
 }
 
 } // namespace sga

@@ -2,6 +2,8 @@
 
 #include <sga.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../common/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../common/stb_image_write.h"
 
@@ -35,12 +37,10 @@ int main(){
       outColor = vec4(gl_FragCoord.xy / u.sgaResolution, 0, 1);
       vec2 screenPos = gl_FragCoord.xy;
       if( int(screenPos.x) % 50 < 3 ){
-        outColor.rg = vec2(0);
-        outColor.b += 0.5;
+        outColor.rgb = vec3(0);
       }
       if( int(screenPos.y) % 50 < 3 ){
-        outColor.rg = vec2(0);
-        outColor.b += 0.5;
+        outColor.rgb = vec3(0);
       }
     }
   )");
@@ -53,9 +53,8 @@ int main(){
   program->setFragmentShader(fragShader);
   program->compile();
 
-  auto image = sga::Image::create(800, 600);
-  image->fillWithPink();
-  /*
+  auto image = sga::Image::create(1440, 900);
+
   auto pipeline = sga::Pipeline::create();
   pipeline->setProgram(program);
   
@@ -63,10 +62,9 @@ int main(){
 
   pipeline->drawVBO(vbo);
 
-  */
   // Save to file.
-  auto data = image->getData();
-  stbi_write_png("output.png", image->getWidth(), image->getHeight(), 4, data.data(), 4);
+  auto out = image->getData();
+  stbi_write_png("output.png", image->getWidth(), image->getHeight(), 4, out.data(), 0);
   
   sga::terminate();
 }

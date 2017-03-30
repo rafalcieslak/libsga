@@ -60,6 +60,13 @@ public:
 
   /** Configures the pipeline to render onto the provided window. */
   void setTarget(std::shared_ptr<Window> window);
+  
+  void setTarget(std::shared_ptr<Image> image) {setTarget({image});}
+  void setTarget(std::initializer_list<std::shared_ptr<Image>> images) {
+    setTarget(std::vector<std::shared_ptr<Image>>(images));
+  }
+  void setTarget(std::vector<std::shared_ptr<Image>> images);
+  
   /** Performs rendering using vertex data from the provided VBO. This method
       blocks until rendering completes. Before rendering pipeline configuration
       is valdiated, and you will be notified of any errors or

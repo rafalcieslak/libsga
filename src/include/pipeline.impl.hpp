@@ -14,6 +14,8 @@ class Pipeline::Impl{
 public:
   Impl();
   void setTarget(std::shared_ptr<Window> tgt);
+  void setTarget(std::vector<std::shared_ptr<Image>> images);
+  
   void drawVBO(std::shared_ptr<VBO>);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
   void setClearColor(float r, float g, float b);
@@ -36,6 +38,8 @@ public:
 private:
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
+  std::vector<std::shared_ptr<Image>> targetImages;
+  std::shared_ptr<Image> depthTarget;
 
   std::shared_ptr<Program> program;
   
@@ -77,6 +81,13 @@ private:
   // is never destroyed as long as it is bound to some pipeline. However, how
   // should a pipeline react on image changes (e.g. resizing?);
   std::map<std::string, SamplerData> s_samplers;
+
+  void prepare_renderpass();
+  bool renderpass_prepared;
+  std::shared_ptr<vkhlf::RenderPass> rp_renderpass;
+  std::shared_ptr<vkhlf::Framebuffer> rp_framebuffer;
+  std::shared_ptr<vkhlf::Image> rp_depthimage;
+  vk::Extent2D rp_image_target_extent;
 
   std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f}};
 };

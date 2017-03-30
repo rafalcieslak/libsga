@@ -35,9 +35,14 @@ public:
   void fillWithPink();
   void testContents();
 
+  void withLayout(vk::ImageLayout il, std::function<void()> f);
+  
+  void switchLayout(vk::ImageLayout il);
+  
   friend class Pipeline;
 private:
   unsigned int width, height;
+  vk::ImageLayout current_layout;
   std::shared_ptr<vkhlf::Image> image;
   std::shared_ptr<vkhlf::ImageView> image_view;
   void prepareImage();

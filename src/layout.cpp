@@ -71,7 +71,7 @@ size_t getAnnotatedDataLayoutUBOSize(const std::vector<std::pair<DataType, std::
   return total;
 }
 
-size_t DataLayout::size() const{
+size_t DataLayout::byteSize() const{
   return std::accumulate(
     layout.begin(), layout.end(),
     (size_t)0,

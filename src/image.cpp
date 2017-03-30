@@ -67,12 +67,10 @@ void Image::Impl::prepareImage(){
     vk::MemoryPropertyFlagBits::eDeviceLocal,
     nullptr, nullptr
     );
-  
-  executeOneTimeCommands([&](auto cmdBuffer){
-      vkhlf::setImageLayout(
-        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::ePreinitialized, vk::ImageLayout::eShaderReadOnlyOptimal);
-    });
+
+  // Switch to any layout that may be restored (Preinitialized cannot be switched to), so that this->withLayout works correctly.
+  current_layout = vk::ImageLayout::ePreinitialized;
+  switchLayout(vk::ImageLayout::eGeneral);
 
   // Clear image.
   std::vector<uint8_t> data(width*height*4, 0);
@@ -82,6 +80,27 @@ void Image::Impl::prepareImage(){
   
   out_dbg("Image prepared.");
 }
+
+void Image::Impl::switchLayout(vk::ImageLayout target_layout){
+  if(target_layout == current_layout) return;
+
+  out_dbg("Image requires layout switch.");
+  executeOneTimeCommands([&](auto cmdBuffer){
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
+        current_layout, target_layout);
+    });
+
+  current_layout = target_layout;
+}
+
+void Image::Impl::withLayout(vk::ImageLayout il, std::function<void()> f){
+  auto orig_layout = current_layout;
+  switchLayout(il);
+  f();
+  switchLayout(orig_layout);
+}
+
 void Image::Impl::putData(std::vector<uint8_t> data){
   putDataRaw(data.data(), data.size());
 }
@@ -92,22 +111,23 @@ void Image::Impl::putDataRaw(unsigned char* data, size_t size){
     return;
   }
   
+  auto stagingImage = image->get<vkhlf::Device>()->createImage(
+    {},
+    image->getType(),
+    image->getFormat(),
+    image->getExtent(),
+    image->getMipLevels(),
+    image->getArrayLayers(),
+    image->getSamples(),
+    vk::ImageTiling::eLinear,
+    vk::ImageUsageFlagBits::eTransferSrc,
+    image->getSharingMode(),
+    image->getQueueFamilyIndices(),
+    vk::ImageLayout::ePreinitialized,
+    vk::MemoryPropertyFlagBits::eHostVisible,
+    nullptr, image->get<vkhlf::Allocator>());
+      
   executeOneTimeCommands([&](auto cmdBuffer){
-      auto stagingImage = image->get<vkhlf::Device>()->createImage(
-        {},
-        image->getType(),
-        image->getFormat(),
-        image->getExtent(),
-        image->getMipLevels(),
-        image->getArrayLayers(),
-        image->getSamples(),
-        vk::ImageTiling::eLinear,
-        vk::ImageUsageFlagBits::eTransferSrc,
-        image->getSharingMode(),
-        image->getQueueFamilyIndices(),
-        vk::ImageLayout::ePreinitialized,
-        vk::MemoryPropertyFlagBits::eHostVisible,
-        nullptr, image->get<vkhlf::Allocator>());
       
       vkhlf::setImageLayout(
         cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
@@ -133,13 +153,15 @@ void Image::Impl::putDataRaw(unsigned char* data, size_t size){
       
       stagingImage->get<vkhlf::DeviceMemory>()->flush(0, size);
       stagingImage->get<vkhlf::DeviceMemory>()->unmap();
+
+      auto orig_layout = current_layout;
       
       vkhlf::setImageLayout(
         cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal);
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+        current_layout, vk::ImageLayout::eTransferDstOptimal);
       cmdBuffer->copyImage(
         stagingImage, vk::ImageLayout::eTransferSrcOptimal,
         image, vk::ImageLayout::eTransferDstOptimal,
@@ -150,7 +172,7 @@ void Image::Impl::putDataRaw(unsigned char* data, size_t size){
         );
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+        vk::ImageLayout::eTransferDstOptimal, orig_layout);
     }); // execute one time commands
 }
 
@@ -176,14 +198,14 @@ std::vector<uint8_t> Image::Impl::getData(){
   
   executeOneTimeCommands([&](auto cmdBuffer){
       
-      
       vkhlf::setImageLayout(
         cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::ePreinitialized, vk::ImageLayout::eTransferDstOptimal);
-      
+
+      auto orig_layout = current_layout;
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal);
+        current_layout, vk::ImageLayout::eTransferSrcOptimal);
       
       cmdBuffer->copyImage(
         image, vk::ImageLayout::eTransferSrcOptimal,
@@ -196,7 +218,7 @@ std::vector<uint8_t> Image::Impl::getData(){
       
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+        vk::ImageLayout::eTransferSrcOptimal, orig_layout);
         
       vkhlf::setImageLayout(
         cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
@@ -287,13 +309,17 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
                  cwidth, cheight, width, height, twidth, theight);
   
   executeOneTimeCommands([&](auto cmdBuffer){
-      vkhlf::setImageLayout(
-        cmdBuffer, target_image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferDstOptimal);
+      
+      auto source_orig_layout = current_layout;
+      auto target_orig_layout = target->impl->current_layout;
       
       vkhlf::setImageLayout(
+        cmdBuffer, target_image, vk::ImageAspectFlagBits::eColor,
+        target_orig_layout, vk::ImageLayout::eTransferDstOptimal);
+
+      vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal);
+        source_orig_layout, vk::ImageLayout::eTransferSrcOptimal);
       
       cmdBuffer->copyImage(
         image, vk::ImageLayout::eTransferSrcOptimal,
@@ -306,11 +332,11 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
       
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+        vk::ImageLayout::eTransferSrcOptimal, source_orig_layout);
         
       vkhlf::setImageLayout(
         cmdBuffer, target_image, vk::ImageAspectFlagBits::eColor,
-          vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+          vk::ImageLayout::eTransferDstOptimal, target_orig_layout);
       
     });
 }

@@ -28,7 +28,7 @@ DataLayout VBO::getLayout() const{
   return impl->layout;
 }
 size_t VBO::getDataSize() const{
-  return impl->layout.size();
+  return impl->layout.byteSize();
 }
 unsigned int VBO::getSize() const{ return impl->getSize(); }
 
@@ -36,7 +36,7 @@ VBO::Impl::Impl(DataLayout layout, unsigned int s)
   : layout(layout), size(s) {
 
   buffer = global::device->createBuffer(
-    layout.size() * size,
+    layout.byteSize() * size,
     vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
     vk::SharingMode::eExclusive,
     nullptr,
@@ -49,7 +49,7 @@ unsigned int VBO::Impl::getSize() const{
 }
 
 void VBO::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){
-  if(elem_size != layout.size()){
+  if(elem_size != layout.byteSize()){
     DataFormatError("VBODataFormatMismatch", "The size of data element used to write into a VBO does not match the element size of the VBO").raise();
   };
   

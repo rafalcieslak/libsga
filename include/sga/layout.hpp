@@ -20,7 +20,7 @@ public:
   ~DataLayout();
   DataLayout() {}
   DataLayout(std::initializer_list<DataType> types);
-  size_t size() const;
+  size_t byteSize() const;
   
   // TODO: This should be hidden from API.
   size_t UBOsize() const;

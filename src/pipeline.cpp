@@ -21,6 +21,7 @@ Pipeline::Pipeline() : impl(std::make_unique<Pipeline::Impl>()) {}
 Pipeline::~Pipeline() = default;
 
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
+void Pipeline::setTarget(std::vector<std::shared_ptr<Image>> images) {impl->setTarget(images);}
 void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
 void Pipeline::setProgram(std::shared_ptr<Program> p) {impl->setProgram(p);}
@@ -53,9 +54,31 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   cooked = false;
   target_is_window = true;
   targetWindow = tgt;
-  // TODO: Reset shared ptr to target image
+  {
+    // Drop references to image targets
+    targetImages = std::vector<std::shared_ptr<Image>>();
+    rp_renderpass = nullptr;
+    rp_framebuffer = nullptr;
+    renderpass_prepared = false;
+  }
 }
 
+void Pipeline::Impl::setTarget(std::vector<std::shared_ptr<Image>> images){
+  // Ensure images are not used for sampling.
+  for(const auto& i : images){
+    for(const auto& sp : s_samplers){
+      if(sp.second.image == i){
+        PipelineConfigError("InvalidTargetImageUsage", "An image cannot be both render target and sampler source in the same pipeline.");
+      }
+    }
+  }
+  
+  cooked = false;
+  target_is_window = false;
+  targetImages = images;
+  renderpass_prepared = false;
+  targetWindow = nullptr;
+}
 
 void Pipeline::Impl::setClearColor(float r, float g, float b){
   clear_color = {r,g,b};
@@ -133,6 +156,14 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
   if(!program)
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
 
+  // Ensure image is not a render target.
+  
+  for(const auto& i : targetImages){
+    if(image == i){
+      PipelineConfigError("InvalidSamplerImageUsage", "An image cannot be both sampler source and render target in the same pipeline.");
+    }
+  }
+  
   prepare_samplers();
   prepare_descset();
 
@@ -177,7 +208,13 @@ void Pipeline::Impl::updateStandardUniforms(){
   float time = getTime();
   setUniform(DataType::Float, "sgaTime", (char*)&time, sizeof(time), true);
   
-  vk::Extent2D extent = targetWindow->impl->getCurrentFramebuffer().second;
+  vk::Extent2D extent;
+  if(target_is_window){
+    extent = targetWindow->impl->getCurrentFramebuffer().second;
+  }else{
+    prepare_renderpass();
+    extent = rp_image_target_extent;
+  }
   float e[2] = {(float)extent.width, (float)extent.height};
   setUniform(DataType::Float2, "sgaResolution", (char*)&e, sizeof(e), true);
 }
@@ -199,8 +236,28 @@ bool Pipeline::Impl::ensureValidity(){
   if(!program){
     PipelineConfigError("ProgramNotSet", "This pipeline is not ready for rendering, the program was not set.").raise();
   }
-  if(!targetWindow){
+  if(!targetWindow && targetImages.size() == 0){
     PipelineConfigError("RenderTargetMissing", "The pipeline is not ready for rendering, target surface not set.").raise();
+  }
+  // Check PX output layout with target.
+  DataLayout outl = program->impl->c_outputLayout;
+  if(target_is_window){
+    if(outl.layout.size() != 1){
+      PipelineConfigError("OutputLayoutMismatch", "This pipeline is configured to use a window as the output, so it should use only one color output, but the pixel shader provides " + std::to_string(outl.layout.size())+ " outputs.").raise();
+    }
+    if(outl.layout[0] != sga::DataType::Float4){
+      PipelineConfigError("OutputLayoutMismatch", "Outputs from a pixel shader when rendering onto a window must be of Float4 type.").raise();
+    }
+  }else{
+    // Texture target output.
+    if(outl.layout.size() != targetImages.size()){
+      PipelineConfigError("OutputLayoutMismatch", "This pipeline is configured to use " + std::to_string(targetImages.size()) + " textures as the output, but the pixel shader provides " + std::to_string(outl.layout.size())+ " outputs.").raise();
+    }
+    for(unsigned int i = 0; i < outl.layout.size(); i++){
+      if(outl.layout[0] != sga::DataType::Float4){
+        PipelineConfigError("OutputLayoutMismatch", "All outputs from a pixel shader when rendering must be of Float4 type.").raise();
+    }
+    }
   }
   return true;
 }
@@ -208,12 +265,24 @@ bool Pipeline::Impl::ensureValidity(){
 void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned int n){
   std::shared_ptr<vkhlf::Framebuffer> framebuffer;
   vk::Extent2D extent;
-  std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
+  if(target_is_window){
+    std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
+  }else{
+    prepare_renderpass();
+    framebuffer = rp_framebuffer;
+    extent = rp_image_target_extent;
+  }
 
-  // Ensure all samplers are set.
+  // Configure layout for target images.
+  for(const auto& i : targetImages){
+    i->impl->switchLayout(vk::ImageLayout::eColorAttachmentOptimal);
+  }
+
+  // Ensure all samplers are set and configure their layout
   for(const auto & s: s_samplers){
     if(!s.second.sampler)
       PipelineConfigError("SamplerNotSet", "This pipeline cannot render, sampler \"" + s.first + "\" was not bound to an image.").raise();
+    s.second.image->impl->switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
   }
 
   // TODO: ensure all uniforms are set!
@@ -322,6 +391,106 @@ void Pipeline::Impl::prepare_descset(){
   descset_prepared = true;
 }
 
+void Pipeline::Impl::prepare_renderpass(){
+  if(target_is_window || renderpass_prepared) return;
+                        
+  out_dbg("Preparing pipeline renderpass.");
+
+  // Ensure all target images use the same extent.
+  // Assume there is at least one image in target.
+  unsigned int width = targetImages[0]->getWidth();
+  unsigned int height = targetImages[0]->getHeight();
+  for(const auto& i: targetImages){
+    if(i->getWidth() != width || i->getHeight() != height)
+      PipelineConfigError("TargetImageSizeMismatch", "All target images must share identical dimensions.").raise();
+  }
+  rp_image_target_extent = vk::Extent2D(width, height);
+  
+  
+  // Gather color attachment references.
+  std::vector<vk::AttachmentReference> colorReferences;
+  unsigned int n = 0;
+  for(const auto& i : targetImages){
+    (void)i;
+    colorReferences.push_back(vk::AttachmentReference(n, vk::ImageLayout::eColorAttachmentOptimal));
+    n++;
+  }
+  vk::AttachmentReference depthReference(n, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+  
+  // Gather attachment descriptions.
+  std::vector<vk::AttachmentDescription> attachmentDescriptions;
+  for(const auto& i : targetImages){
+    (void)i;
+    // TODO: Consider target image format.
+    attachmentDescriptions.push_back(vk::AttachmentDescription(
+                                       {}, vk::Format::eR8G8B8A8Unorm, vk::SampleCountFlagBits::e1,
+                                       vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // color
+                                       vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
+                                       // TODO: Use color attachment optimal layout
+                                       vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal
+                                       ));
+  }
+  attachmentDescriptions.push_back(vk::AttachmentDescription(
+                                     {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
+                                     vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // depth
+                                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
+                                     vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                     ));
+  
+  vk::SubpassDescription subpassDesc(
+    {}, vk::PipelineBindPoint::eGraphics, 0, nullptr,
+    colorReferences.size(), colorReferences.data(),
+    nullptr,
+    &depthReference,
+    0, nullptr
+    );
+
+  // Prepare renderpass
+  rp_renderpass = global::device->createRenderPass(attachmentDescriptions, subpassDesc, nullptr);
+
+  // Prepare imageviews for targets
+  std::vector<std::shared_ptr<vkhlf::ImageView>> iviews;
+  for(const auto& i : targetImages){
+    // TODO: Consider image format
+    auto iv = i->impl->image->createImageView(vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Unorm,
+                                            { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
+                                              vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA },
+                                            { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+    iviews.push_back(iv);
+  }
+  // Prepare imageviews for depth
+  if(depthTarget){
+    //rp_depthtarget = depthTarget;
+  }else{
+    rp_depthimage = global::device->createImage(
+      vk::ImageCreateFlags(),
+      vk::ImageType::e2D,
+      vk::Format::eD32Sfloat,
+      vk::Extent3D(width, height, 1),
+      1,
+      1,
+      vk::SampleCountFlagBits::e1,
+      vk::ImageTiling::eOptimal,
+      vk::ImageUsageFlagBits::eDepthStencilAttachment,
+      vk::SharingMode::eExclusive,
+      std::vector<uint32_t>(), // queue family indices
+      vk::ImageLayout::ePreinitialized,
+      vk::MemoryPropertyFlagBits::eDeviceLocal,
+      nullptr, nullptr
+      );
+  }
+  auto iv = rp_depthimage->createImageView(vk::ImageViewType::e2D, vk::Format::eD32Sfloat,
+                                         { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
+                                           vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA },
+                                         { vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1 });
+  iviews.push_back(iv);
+  
+  // Prepare framebuffer
+  rp_framebuffer = global::device->createFramebuffer(rp_renderpass, iviews, rp_image_target_extent, 1);
+  
+  renderpass_prepared = true;
+}
+
 void Pipeline::Impl::cook(){
     if(cooked) return;
 
@@ -341,7 +510,8 @@ void Pipeline::Impl::cook(){
     if(target_is_window){
       c_renderPass = targetWindow->impl->renderPass;
     }else{
-      std::cout << "UNIMPLMENTED [1]" << std::endl;
+      prepare_renderpass();
+      c_renderPass = rp_renderpass;
     }
     
     // init pipeline

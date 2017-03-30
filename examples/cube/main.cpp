@@ -160,6 +160,10 @@ int main(){
   window->setOnKeyDown(sga::Key::Escape, [&](){
       window->close();
     });
+
+  window->setOnKeyDown(sga::Key::F11, [&](){
+      window->toggleFullscreen();
+    });
   
   window->setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP

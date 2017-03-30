@@ -57,6 +57,10 @@ int main(){
   
   window->setFPSLimit(60);
 
+  window->setOnKeyDown(sga::Key::F11, [&](){
+      window->toggleFullscreen();
+    });
+  
   while(window->isOpen()){
     pipeline->drawVBO(vbo);
     window->nextFrame();

@@ -17,7 +17,12 @@ public:
   void do_resize(unsigned int w, unsigned int h);
   void nextFrame();
   bool isOpen();
+  // TODO: Automatically compute FPS.
   void setFPSLimit(double fps);
+
+  bool isFullscreen();
+  void setFullscreen(bool fullscreen);
+  void toggleFullscreen();
   
   static void resizeCallback(GLFWwindow *window, int width, int height);
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
@@ -39,6 +44,13 @@ public:
 private:
   GLFWwindow* window;
   unsigned int width, height;
+
+  // These are used for restoring window pos/size when returning from fullscreen
+  // mode.
+  int stored_winpos_x = 0, stored_winpos_y = 0;
+  int stored_winpos_width, stored_winpos_height;
+
+  bool fullscreen = false;
   
   vk::Format colorFormat;
   vk::Format depthFormat;

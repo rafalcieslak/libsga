@@ -125,6 +125,13 @@ int main(int argc, char** argv){
                             l ? click_y : -1.0f});
       mouse_l_last = l;
     });
+
+  window->setOnKeyDown(sga::Key::Escape, [&](){
+      window->close();
+    });
+  window->setOnKeyDown(sga::Key::F11, [&](){
+      window->toggleFullscreen();
+    });
   
   window->setFPSLimit(60);
   while(window->isOpen()){

@@ -19,6 +19,10 @@ void Window::nextFrame() {impl->nextFrame();}
 bool Window::isOpen() {return impl->isOpen();}
 void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
 
+bool Window::isFullscreen(){ return impl->isFullscreen(); }
+void Window::setFullscreen(bool fullscreen){ impl->setFullscreen(fullscreen); }
+void Window::toggleFullscreen(){ impl->toggleFullscreen(); }
+
 unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
 
@@ -45,6 +49,9 @@ void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
 Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     // Do not create OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    // Do not minimize fullscreen windows on focus loss
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
     glfwSetWindowUserPointer(window, this);
 
@@ -96,6 +103,10 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     glfwSetCursorPosCallback(window, Window::Impl::mousePositionCallback);
     glfwSetMouseButtonCallback(window, Window::Impl::mouseButtonCallback);
     glfwSetKeyCallback(window, Window::Impl::keyCallback);
+
+    // These fields do not require initialization, but just to make sure:
+    stored_winpos_width = width;
+    stored_winpos_height = height;
 }
 
 Window::Impl::~Impl(){
@@ -103,31 +114,33 @@ Window::Impl::~Impl(){
 }
   
 void Window::Impl::do_resize(unsigned int w, unsigned int h){
-    if (w == 0 || h == 0) return;
-    int w2, h2;
-    glfwGetFramebufferSize(window, &w2, &h2); w = w2; h = h2;
-    if (w == width && h == height) return;
-    
-    // Before creating the new framebuffer stapchain, the old one must be destroyed.
-    framebufferSwapchain.reset();
-    
-    framebufferSwapchain.reset(
-      new vkhlf::FramebufferSwapchain(
-        global::device,
-        surface,
-        colorFormat, 
-        depthFormat,
-        renderPass)
-      );
-    frameno = 0;
-    //std::cout << framebufferSwapchain->getExtent().width << " " << framebufferSwapchain->getExtent().height << std::endl;
-    //std::cout << w << " " << h << std::endl;
-    //std::cout << width << " " << height << std::endl;
-    //std::cout << "===" << std::endl;
-
-    width = w;
-    height = h;
-    // TODO: Call user handler for resize.
+  
+  if (w == 0 || h == 0) return;
+  int w2, h2;
+  glfwGetFramebufferSize(window, &w2, &h2); w = w2; h = h2;
+  if (w == width && h == height) return;
+  
+  // Before creating the new framebuffer stapchain, the old one must be destroyed.
+  framebufferSwapchain.reset();
+  
+  framebufferSwapchain.reset(
+    new vkhlf::FramebufferSwapchain(
+      global::device,
+      surface,
+      colorFormat, 
+      depthFormat,
+      renderPass)
+    );
+  out_dbg("Performed window resize to " + std::to_string(w) + "x" + std::to_string(h));
+  frameno = 0;
+  //std::cout << framebufferSwapchain->getExtent().width << " " << framebufferSwapchain->getExtent().height << std::endl;
+  //std::cout << w << " " << h << std::endl;
+  //std::cout << width << " " << height << std::endl;
+  //std::cout << "===" << std::endl;
+  
+  width = w;
+  height = h;
+  // TODO: Call user handler for resize.
   }
 
 void Window::Impl::nextFrame() {
@@ -203,6 +216,34 @@ void Window::Impl::setFPSLimit(double fps){
   // -1 for no limit
   if(fps > 0.0 && fps < 1.0) fps = 1.0;
   fpsLimit = fps;
+}
+
+bool Window::Impl::isFullscreen(){
+  return fullscreen;
+}
+void Window::Impl::toggleFullscreen(){
+  setFullscreen(!fullscreen);
+}
+void Window::Impl::setFullscreen(bool f){
+  fullscreen = f;
+  if(!fullscreen){
+    glfwSetWindowMonitor(window, NULL,
+                         stored_winpos_x, stored_winpos_y,
+                         stored_winpos_width, stored_winpos_height, 0);
+    do_resize(stored_winpos_width, stored_winpos_height);
+  }else{
+    glfwGetWindowPos(window, &stored_winpos_x, &stored_winpos_y);
+    glfwGetWindowSize(window, &stored_winpos_width, &stored_winpos_height);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    if (monitor){
+      const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+      glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+      do_resize(mode->width, mode->height);
+    }else{
+      fullscreen = false;
+    }
+    
+  }
 }
 
 void Window::Impl::setOnKeyDown(sga::Key k, std::function<void ()> f){

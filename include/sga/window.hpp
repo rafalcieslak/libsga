@@ -18,6 +18,10 @@ public:
   void close();
   void setOnKeyDown(Key k, std::function<void()>);
   void setOnKeyUp(Key k, std::function<void()>);
+
+  bool isFullscreen();
+  void setFullscreen(bool fullscreen);
+  void toggleFullscreen();
   
   void setFPSLimit(double fps);
   static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {

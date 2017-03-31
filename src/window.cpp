@@ -295,6 +295,10 @@ void Window::Impl::keyCallback(GLFWwindow* window, int key, int, int action, int
   
   Key k = glfwKeyToSgaKey(key);
 
+  // Ignore key repeats.
+  if(action == GLFW_REPEAT)
+    return;
+  
   // Update keyState map.
   wd->keyState[k] = (action == GLFW_PRESS);
 

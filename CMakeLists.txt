@@ -40,9 +40,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # TODO: Only the library is required, not the header, since we bring a custom version.
 find_package(Vulkan) # manually required
-find_package(Doxygen) # optional
-find_package(GLM) # optional
 find_package(Git REQUIRED)
+
+find_package(Doxygen) # optional (for doc generation)
+
+find_package(GLM) # optional (for some example programs)
+find_package(assimp) # optional (for some example programs)
 
 if(NOT Vulkan_FOUND)
   message(SEND_ERROR "Unable to find Vulkan installed on this system.")

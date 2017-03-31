@@ -1,4 +1,5 @@
-The module FindVulkan.cmake was imported from CMake 3.7, and is redistributed under the terms of CMake 3.7 licence:
+The module FindVulkan.cmake was imported from CMake 3.7, and is redistributed
+under the terms of CMake 3.7 license:
 
 ==== BEGIN FindVulkan.cmake LICENSE ===
 
@@ -111,9 +112,12 @@ documented in corresponding subdirectories or source files.
 
 ==== END FindVulkan.cmake LICENSE ===
 
-The file FindGLM.cmake was imported from nanogi, where it was made available under the terms of the following license:
 
-==== BEGIN FindGLM.cmake LICENSE ====
+
+The files FindGLM.cmake and Findassimp.cmake were imported from nanogi, where it
+where made available under the terms of the following license:
+
+==== BEGIN FindGLM.cmake and Findassimp.cmake LICENSE ====
 
 Copyright (c) 2015 Light Transport Entertainment Inc.
 All rights reserved.

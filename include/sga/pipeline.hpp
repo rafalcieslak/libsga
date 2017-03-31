@@ -58,6 +58,11 @@ class Pipeline{
 public:
   ~Pipeline();
 
+  /** Creates a new unconfigured Pipeline. */
+  static std::shared_ptr<Pipeline> create(){
+    return std::shared_ptr<Pipeline>(new Pipeline());
+  }
+  
   /** Configures the pipeline to render onto the provided window. */
   void setTarget(std::shared_ptr<Window> window);
   
@@ -144,11 +149,6 @@ public:
     setUniform(dt, name, (char*)&value, sizeof(value));
   }
   //@}
-
-  /** Creates a new unconfigured Pipeline. */
-  static std::shared_ptr<Pipeline> create(){
-    return std::shared_ptr<Pipeline>(new Pipeline());
-  }
 private:
   Pipeline();
   void setUniform(DataType dt, std::string name, char* pData, size_t size);

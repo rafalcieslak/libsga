@@ -14,33 +14,36 @@ public:
   Impl(unsigned int width, unsigned int height, std::string title);
   ~Impl();
   
-  void do_resize(unsigned int w, unsigned int h);
   void nextFrame();
-  bool isOpen();
-  // TODO: Automatically compute FPS.
   void setFPSLimit(double fps);
+  float getLastFrameDelta() const;
+  float getAverageFPS() const;
+  unsigned int getFrameNo() const;
+  
+  void do_resize(unsigned int w, unsigned int h);
+  
+  bool isOpen();
+  void close();
 
+  bool isKeyPressed(Key k);
+  void setOnKeyDown(Key k, std::function<void()>);
+  void setOnKeyUp(Key k, std::function<void()>);
+  
   bool isFullscreen();
   void setFullscreen(bool fullscreen);
   void toggleFullscreen();
+  
+  void setOnMouseMove(std::function<void(double, double)> f);
+  void setOnMouseButton(std::function<void(bool, bool)> f);
+  void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
+
+  unsigned int getWidth() {return width;}
+  unsigned int getHeight() {return height;}
   
   static void resizeCallback(GLFWwindow *window, int width, int height);
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
   static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
   static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-  unsigned int getWidth() {return width;}
-  unsigned int getHeight() {return height;}
-
-  bool isKeyPressed(Key k);
-  
-  void close();
-  
-  void setOnKeyDown(Key k, std::function<void()>);
-  void setOnKeyUp(Key k, std::function<void()>);
-  void setOnMouseMove(std::function<void(double, double)> f);
-  void setOnMouseButton(std::function<void(bool, bool)> f);
-  void setOnMouseAny(std::function<void(double, double, bool, bool)> f); 
 private:
   GLFWwindow* window;
   unsigned int width, height;
@@ -78,13 +81,24 @@ private:
   std::unique_ptr<vkhlf::FramebufferSwapchain> framebufferSwapchain;
   
 private:
+  // Number of frames displayed with this swapchain - gets reset on each resize,
+  // screen mode change etc.
   unsigned int frameno = 0;
-  
-  double fpsLimit = 60;
-  double limitFPS_lastTime = 0.0;
+  // Total number of frames displayed on this window since its creation -
+  // efectively this is the number of times NextFrame was called.
+  unsigned int totalFrameNo = 0;
 
-  double mouse_x = 0.0;
-  double mouse_y = 0.0;
+  // Curent FPS limit.
+  float fpsLimit = 60;
+  // Time when the last frame was drawn.
+  double lastFrameTime = 0.0;
+  // Time between last two drawn frames.
+  double lastFrameDelta = 0.0;
+  // Low-pass filtered time between frames
+  double averagedFrameDelta = 0.0;
+
+  float mouse_x = 0.0;
+  float mouse_y = 0.0;
   bool mouse_l = false;
   bool mouse_r = false;
 

@@ -137,6 +137,9 @@ int main(int argc, char** argv){
   while(window->isOpen()){
     pipeline->drawVBO(vbo);
     window->nextFrame();
+    
+    if(window->getFrameNo() % 20 == 0)
+      std::cout << window->getAverageFPS() << std::endl;
   }
   sga::terminate();
 }

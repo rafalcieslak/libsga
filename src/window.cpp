@@ -11,29 +11,33 @@
 
 namespace sga{
 
+// ====== Glue layer ======
+
 Window::Window(unsigned int width, unsigned int height, std::string title) :
   impl(std::make_unique<Window::Impl>(width, height, title)) {}
 Window::~Window() = default;
 
 void Window::nextFrame() {impl->nextFrame();}
+void Window::setFPSLimit(double fps) {impl->setFPSLimit(fps);}
+float Window::getLastFrameDelta() const {return impl->getLastFrameDelta();}
+float Window::getAverageFPS() const {return impl->getAverageFPS();}
+unsigned int Window::getFrameNo() const {return impl->getFrameNo();}
+
 bool Window::isOpen() {return impl->isOpen();}
-void Window::setFPSLimit(double fps) {return impl->setFPSLimit(fps);}
-
-bool Window::isFullscreen(){ return impl->isFullscreen(); }
-void Window::setFullscreen(bool fullscreen){ impl->setFullscreen(fullscreen); }
-void Window::toggleFullscreen(){ impl->toggleFullscreen(); }
-
-unsigned int Window::getWidth() {return impl->getWidth();}
-unsigned int Window::getHeight() {return impl->getHeight();}
-
 void Window::close() {impl->close();}
 
-void Window::setOnKeyDown(sga::Key k, std::function<void ()> f){
+bool Window::isFullscreen() {return impl->isFullscreen();}
+void Window::setFullscreen(bool fullscreen) {impl->setFullscreen(fullscreen);}
+void Window::toggleFullscreen() {impl->toggleFullscreen();}
+
+bool Window::isKeyPressed(Key k) {return impl->isKeyPressed(k);}
+void Window::setOnKeyDown(sga::Key k, std::function<void()> f){
   impl->setOnKeyDown(k, f);
 }
-void Window::setOnKeyUp(sga::Key k, std::function<void ()> f){
+void Window::setOnKeyUp(sga::Key k, std::function<void()> f){
   impl->setOnKeyUp(k, f);
 }
+
 void Window::setOnMouseMove(std::function<void(double, double)> f) {
   impl->setOnMouseMove(f);
 }
@@ -43,6 +47,9 @@ void Window::setOnMouseButton(std::function<void(bool, bool)> f) {
 void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   impl->setOnMouseAny(f);
 }
+
+unsigned int Window::getWidth() {return impl->getWidth();}
+unsigned int Window::getHeight() {return impl->getHeight();}
 
 // ====== IMPL ======
 
@@ -56,6 +63,7 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     glfwSetWindowUserPointer(window, this);
 
     glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+    glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
     
     surface = global::instance->createSurface(window);
     ensurePhysicalDeviceSurfaceSupport(surface);
@@ -141,65 +149,91 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   width = w;
   height = h;
   // TODO: Call user handler for resize.
-  }
+}
 
 void Window::Impl::nextFrame() {
 
   if(!isOpen()) return;
   
+  double now  = glfwGetTime();
+    
   // Wait with presentation for a while, if fpslimit is enabled.
   if(frameno > 0 && fpsLimit > 0){
-    double prev = limitFPS_lastTime;
-    double now  = glfwGetTime();
-    double timeSinceLastFrame = now - prev;
+    double timeSinceLastFrame = now - lastFrameTime;
     double desiredTime = 1.0/fpsLimit;
     double time_left = desiredTime - timeSinceLastFrame;
     if(time_left > 0.0){
       std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
     }
-    limitFPS_lastTime = glfwGetTime();
+    now = glfwGetTime();
   }
   
-    if(frameno > 0){
-      if(!currentFrameRendered){
-        std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
-
-        // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
-        
-        // TODO: Use pink to indicate unrendered frames?
-        std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f };
-        
-        auto cmdBuffer = global::commandPool->allocateCommandBuffer();
-        cmdBuffer->begin();
-        cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
-                                   vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
-                                   { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
-                                   vk::SubpassContents::eInline);
-        cmdBuffer->endRenderPass();
-        cmdBuffer->end();
-        
-        auto fence = global::device->createFence(false);
-        global::queue->submit(
-          vkhlf::SubmitInfo{
-            {},{}, cmdBuffer, {} },
-          fence
-          );
-        fence->wait(UINT64_MAX);
-      }
+  if(frameno > 0){
+    if(!currentFrameRendered){
+      std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
       
-      //std::cout << "PRESENTING" << std::endl;
-      framebufferSwapchain->present(global::queue);
-      global::queue->waitIdle();
+      // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
+      
+      std::array<float, 4> clear_color = { 1.0f, 0.0f, 1.0f };
+      
+      auto cmdBuffer = global::commandPool->allocateCommandBuffer();
+      cmdBuffer->begin();
+      cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
+                                 vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
+                                 { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
+                                 vk::SubpassContents::eInline);
+      cmdBuffer->endRenderPass();
+      cmdBuffer->end();
+      
+      auto fence = global::device->createFence(false);
+      global::queue->submit(
+        vkhlf::SubmitInfo{
+          {},{}, cmdBuffer, {} },
+        fence
+        );
+      fence->wait(UINT64_MAX);
     }
     
-    //std::cout << "ACQUIRING" << std::endl;
-    auto fence = global::device->createFence(false);
-    framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
-    fence->wait(UINT64_MAX);
+    //std::cout << "PRESENTING" << std::endl;
+    framebufferSwapchain->present(global::queue);
+    global::queue->waitIdle();
+  }
+  
+  //std::cout << "ACQUIRING" << std::endl;
+  auto fence = global::device->createFence(false);
+  framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
+  fence->wait(UINT64_MAX);
+  
+  // Compute time deltas
+  lastFrameDelta = now - lastFrameTime;
+  lastFrameTime = now;
 
-    frameno++;
+  const double fpsFilterTheta = 0.85;
+  averagedFrameDelta =
+    averagedFrameDelta * fpsFilterTheta +
+    lastFrameDelta * (1.0 - fpsFilterTheta);
 
-    glfwPollEvents();
+  // Update frame counters
+  frameno++;
+  totalFrameNo++;
+  
+  glfwPollEvents();
+}
+
+void Window::Impl::setFPSLimit(double fps){
+  // TODO: Document fps < 0 for no FPS limit
+  if(fps > 0.0 && fps < 1.0) fps = 1.0;
+  fpsLimit = fps;
+}
+
+float Window::Impl::getLastFrameDelta() const{
+  return lastFrameDelta;
+}
+float Window::Impl::getAverageFPS() const{
+  return 1.0 / averagedFrameDelta;
+}
+unsigned int Window::Impl::getFrameNo() const{
+  return totalFrameNo;
 }
 
 bool Window::Impl::isOpen() {
@@ -212,11 +246,6 @@ void Window::Impl::close(){
   glfwSetWindowShouldClose(window, 1);
 }
 
-void Window::Impl::setFPSLimit(double fps){
-  // -1 for no limit
-  if(fps > 0.0 && fps < 1.0) fps = 1.0;
-  fpsLimit = fps;
-}
 
 bool Window::Impl::isFullscreen(){
   return fullscreen;
@@ -262,6 +291,13 @@ void Window::Impl::setOnMouseButton(std::function<void(bool, bool)> f) {
 void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   f_onMouseAny = f;
 };
+
+bool Window::Impl::isKeyPressed(sga::Key k){
+  auto it = keyState.find(k);
+  if(it == keyState.end())
+    return false;
+  return it->second;
+}
 
 void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){
   Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));

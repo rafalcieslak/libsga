@@ -3,14 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
-#include <chrono>
-#include <thread>
 
 #define SGA_USE_GLM
 #include <sga.hpp>
@@ -23,7 +19,7 @@ struct ModelVertData{
 int main(){
   sga::init();
 
-  // Import model.
+  // Load model data.
   Assimp::Importer aimporter;
   std::string filepath =  "./examples/data/teapot/teapot-smooth.obj";
   const aiScene* scene = aimporter.ReadFile(filepath, 
@@ -102,8 +98,7 @@ int main(){
 
   // Lighting program
   auto LfragShader = sga::FragmentShader::createFromSource(R"(
-    void main()
-    {
+    void main(){
       vec2 here = gl_FragCoord.xy / u.sgaResolution;
       vec3 position = texture(buffer_position, here).xyz;
       vec3 normal   = normalize(texture(buffer_normal,   here).xyz);
@@ -118,7 +113,6 @@ int main(){
       vec3 s = vec3(0.8) * pow(max(0, dot(R, E)), 20.0);
 
       out_color = vec4((a + d + s) * 0.86, 1.0);
-
     }
   )");
   LfragShader->addOutput(sga::DataType::Float4, "out_color");
@@ -142,10 +136,8 @@ int main(){
 
   // Window program
   auto WfragShader = sga::FragmentShader::createFromSource(R"(
-    void main()
-    {
+    void main(){
       vec2 here = gl_FragCoord.xy / u.sgaResolution;
-
       vec2 texpos = mod(here, vec2(0.5)) * 2.0;
       // texpos = here;
 
@@ -181,7 +173,6 @@ int main(){
   pipeline_window->setSampler("result_image", result_image);
   pipeline_window->setTarget(window);
 
-
   window->setOnKeyDown(sga::Key::Escape, [&](){
       window->close();
     });
@@ -190,8 +181,8 @@ int main(){
       window->toggleFullscreen();
     });
   
-  float phi = 0.0;
-  float theta = M_PI;
+  float view_phi = 0.0;
+  float view_theta = M_PI;
   float distance = 12;
   glm::vec3 lightpos = {15.0f, 17.0f, -12.0f};
   
@@ -199,21 +190,22 @@ int main(){
       // Calculate new viewpos and MVP
       x = glm::min(x/window->getWidth(),  0.999);
       y = glm::min(y/window->getHeight(), 0.999);
-      phi = -glm::radians(180*y - 90);
-      theta = glm::radians(360*x);
+      view_phi = -glm::radians(180*y - 90);
+      view_theta = glm::radians(360*x);
     });
 
   window->setFPSLimit(60);
   while(window->isOpen()){
     // Compute camera position
-    glm::vec3 p = {0, glm::sin(phi), glm::cos(phi)};
-    glm::vec3 viewpos = glm::rotateY(p * distance, theta);
+    glm::vec3 p = {0, glm::sin(view_phi), glm::cos(view_phi)};
+    glm::vec3 viewpos = glm::rotateY(p * distance, view_theta);
     glm::mat4 camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
     glm::mat4 projection = glm::perspectiveFov(glm::radians(70.0), 800.0, 600.0, 0.2, distance * 2.1);
     glm::mat4 MVP = projection * camera;
-    
+
+    // Update uniforms
     pipeline_gbuffer->setUniform("MVP", MVP);
-    pipeline_lighting->setUniform("lightpos", lightpos*3.0f);
+    pipeline_lighting->setUniform("lightpos", lightpos);
     pipeline_lighting->setUniform("viewpos", viewpos);
 
     pipeline_gbuffer->drawVBO(modelVbo);

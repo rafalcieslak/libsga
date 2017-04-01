@@ -8,9 +8,24 @@ namespace sga{
 
 class Window;
 
+enum class ImageFormat{
+  SInt8,
+  NInt8,
+  UInt8,
+  SInt16,
+  UInt16,
+  SInt32,
+  UInt32,
+  Float,
+};
+
 class Image{
 public:
+  static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8){
+    return std::shared_ptr<Image>(new Image(width, height, ch, format));
+  }
   ~Image();
+  
   void fillWithPink();
   void testContents();
 
@@ -26,18 +41,10 @@ public:
     int source_x = 0, int source_y = 0,
     int target_x = 0, int target_y = 0,
     int width = -1, int height = -1);
-  /*void copyOnto(
-    std::shared_ptr<Window> target,
-    int source_x = 0, int source_y = 0,
-    int target_x = 0, int target_y = 0,
-    int width = -1, int height = -1);*/
 
-  static std::shared_ptr<Image> create(int width, int height){
-    return std::shared_ptr<Image>(new Image(width, height));
-  }
   friend class Pipeline;
 private:
-  Image(int width, int height);
+  Image(int width, int height, unsigned int ch, ImageFormat format);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

@@ -103,7 +103,7 @@ public:
     setUniform(DataType::Float, name, (char*)&value, sizeof(value));
   }
   void setUniform(std::string name, int value){
-    setUniform(DataType::Int, name, (char*)&value, sizeof(value));
+    setUniform(DataType::SInt, name, (char*)&value, sizeof(value));
   }
   void setUniform(std::string name, unsigned int value){
     setUniform(DataType::UInt, name, (char*)&value, sizeof(value));

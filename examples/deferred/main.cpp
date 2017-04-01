@@ -105,9 +105,9 @@ int main(){
   auto program_gbuffer = sga::Program::createAndCompile(GvertShader, GfragShader);
 
   // Create buffers
-  auto buffer_position = sga::Image::create(800,600);
-  auto buffer_normal = sga::Image::create(800,600);
-  auto buffer_albedo = sga::Image::create(800,600);
+  auto buffer_position = sga::Image::create(800,600, 3, sga::ImageFormat::Float);
+  auto buffer_normal   = sga::Image::create(800,600, 3, sga::ImageFormat::Float);
+  auto buffer_albedo   = sga::Image::create(800,600, 3, sga::ImageFormat::Float);
   
   // G-buffer pipeline
   auto pipeline_gbuffer = sga::Pipeline::create();
@@ -137,7 +137,7 @@ int main(){
       vec3 d = albedo * max(0, dot(L, normal));
       vec3 s = vec3(0.8) * pow(max(0, dot(R, E)), 20.0);
 
-      out_color = vec4((a + d) * 0.86, 1.0);
+      out_color = vec4((a + d + s) * 0.86, 1.0);
 
     }
   )");

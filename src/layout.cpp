@@ -10,8 +10,14 @@ namespace sga{
 unsigned int getDataTypeSize(DataType dt){
   // TODO: Unordered map?
   static std::map<DataType, unsigned int> map = {
-    {DataType::Int, 4},
+    {DataType::SInt, 4},
     {DataType::UInt, 4},
+    {DataType::SInt2, 8},
+    {DataType::UInt2, 8},
+    {DataType::SInt3, 12},
+    {DataType::UInt3, 12},
+    {DataType::SInt4, 16},
+    {DataType::UInt4, 16},
     {DataType::Float, 4},
     {DataType::Float2, 8},
     {DataType::Float3, 12},
@@ -26,8 +32,14 @@ unsigned int getDataTypeSize(DataType dt){
 std::string getDataTypeGLSLName(DataType dt){
   // TODO: Unordered map?
   static std::map<DataType, std::string> map = {
-    {DataType::Int, "int"},
+    {DataType::SInt, "int"},
     {DataType::UInt, "uint"},
+    {DataType::SInt2, "ivec2"},
+    {DataType::UInt2, "uvec2"},
+    {DataType::SInt3, "ivec3"},
+    {DataType::UInt3, "uvec3"},
+    {DataType::SInt4, "ivec4"},
+    {DataType::UInt4, "uvec4"},
     {DataType::Float, "float"},
     {DataType::Float2, "vec2"},
     {DataType::Float3, "vec3"},
@@ -42,8 +54,14 @@ std::string getDataTypeGLSLName(DataType dt){
 unsigned int getDataTypeGLSLstd140Alignment(DataType dt){
   // TODO: Unordered map?
   static std::map<DataType, unsigned int> map = {
-    {DataType::Int, 4},
-    {DataType::UInt, 4},
+    {DataType::SInt,  4},
+    {DataType::UInt,  4},
+    {DataType::SInt2, 8},
+    {DataType::UInt2, 8},
+    {DataType::SInt3, 16},
+    {DataType::UInt3, 16},
+    {DataType::SInt4, 16},
+    {DataType::UInt4, 16},
     {DataType::Float, 4},
     {DataType::Float2, 8},
     {DataType::Float3, 16},

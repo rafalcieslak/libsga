@@ -2,6 +2,7 @@
 #define __IMAGE_IMPL_HPP__
 
 #include <sga/image.hpp>
+#include <sga/layout.hpp>
 
 #include <vkhlf/vkhlf.h>
 
@@ -9,9 +10,19 @@ namespace sga{
 
 class Window;
 
+struct FormatProperties{
+  vk::Format vkFormat;
+  DataType shaderDataType;
+  size_t elemSize;
+  size_t stride;
+  std::array<vk::ComponentSwizzle, 4> swizzle;
+};
+
+const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat format);
+
 class Image::Impl{
 public:
-  Impl(unsigned int width, unsigned int height);
+  Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format);
   
   void putData(std::vector<uint8_t> data);
   void putDataRaw(unsigned char* data, size_t size);
@@ -42,7 +53,13 @@ public:
   friend class Pipeline;
 private:
   unsigned int width, height;
+  unsigned int channels;
+  ImageFormat userFormat;
+  FormatProperties format;
+  unsigned int N_elems;
+  
   vk::ImageLayout current_layout;
+  
   std::shared_ptr<vkhlf::Image> image;
   std::shared_ptr<vkhlf::ImageView> image_view;
   void prepareImage();

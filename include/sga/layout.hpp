@@ -8,8 +8,8 @@
 namespace sga{
 
 enum class DataType{
-  Int,
-  UInt,
+  SInt, SInt2, SInt3, SInt4,
+  UInt, UInt2, UInt3, UInt4,
   Float, Float2, Float3, Float4,
   Double,
   Mat3, Mat4,

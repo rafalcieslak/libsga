@@ -431,10 +431,8 @@ void Pipeline::Impl::prepare_renderpass(){
   // Gather attachment descriptions.
   std::vector<vk::AttachmentDescription> attachmentDescriptions;
   for(const auto& i : targetImages){
-    (void)i;
-    // TODO: Consider target image format.
     attachmentDescriptions.push_back(vk::AttachmentDescription(
-                                       {}, vk::Format::eR8G8B8A8Unorm, vk::SampleCountFlagBits::e1,
+                                       {}, i->impl->format.vkFormat, vk::SampleCountFlagBits::e1,
                                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // color
                                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
                                        // TODO: Use color attachment optimal layout
@@ -463,7 +461,7 @@ void Pipeline::Impl::prepare_renderpass(){
   std::vector<std::shared_ptr<vkhlf::ImageView>> iviews;
   for(const auto& i : targetImages){
     // TODO: Consider image format
-    auto iv = i->impl->image->createImageView(vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Unorm,
+    auto iv = i->impl->image->createImageView(vk::ImageViewType::e2D, i->impl->format.vkFormat,
                                             { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
                                               vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA },
                                             { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
@@ -536,8 +534,14 @@ void Pipeline::Impl::cook(){
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
-      {DataType::Int,  vk::Format::eR32G32B32A32Sint},
-      {DataType::UInt,  vk::Format::eR32G32B32A32Uint},
+      {DataType::SInt,  vk::Format::eR32Sint},
+      {DataType::UInt,  vk::Format::eR32Uint},
+      {DataType::SInt2,  vk::Format::eR32G32Sint},
+      {DataType::UInt2,  vk::Format::eR32G32Uint},
+      {DataType::SInt3,  vk::Format::eR32G32B32Sint},
+      {DataType::UInt3,  vk::Format::eR32G32B32Uint},
+      {DataType::SInt4,  vk::Format::eR32G32B32A32Sint},
+      {DataType::UInt4,  vk::Format::eR32G32B32A32Uint},
       {DataType::Float,  vk::Format::eR32Sfloat},
       {DataType::Float2, vk::Format::eR32G32Sfloat},
       {DataType::Float3, vk::Format::eR32G32B32Sfloat},

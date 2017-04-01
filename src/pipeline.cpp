@@ -17,39 +17,58 @@
 
 namespace sga{
 
-Pipeline::Pipeline() : impl(std::make_unique<Pipeline::Impl>()) {}
+/// ====== GLUE ======
+
+Pipeline::Pipeline() : impl_(std::make_unique<Pipeline::Impl>()) {}
+Pipeline::Pipeline(pimpl_unique_ptr<Impl> &&impl) : impl_(std::move(impl)) {}
 Pipeline::~Pipeline() = default;
 
-void Pipeline::setTarget(std::shared_ptr<Window> target) {impl->setTarget(target);}
-void Pipeline::setTarget(std::vector<std::shared_ptr<Image>> images) {impl->setTarget(images);}
-void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl->drawVBO(vbo);}
-void Pipeline::setClearColor(float r, float g, float b) {impl->setClearColor(r, g, b);}
-void Pipeline::setProgram(std::shared_ptr<Program> p) {impl->setProgram(p);}
+void Pipeline::setTarget(std::shared_ptr<Window> target) {impl()->setTarget(target);}
+void Pipeline::setTarget(std::vector<std::shared_ptr<Image>> images) {impl()->setTarget(images);}
+void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl()->drawVBO(vbo);}
+void Pipeline::setClearColor(float r, float g, float b) {impl()->setClearColor(r, g, b);}
+void Pipeline::setProgram(std::shared_ptr<Program> p) {impl()->setProgram(p);}
 
 void Pipeline::setUniform(std::string name, std::initializer_list<float> floats){
-  impl->setUniform(name, floats);
+  impl()->setUniform(name, floats);
 }
 void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t size){
-  impl->setUniform(dt, name, pData, size);
+  impl()->setUniform(dt, name, pData, size);
 }
 
 void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i,
                           SamplerInterpolation in, SamplerWarpMode wm){
-  impl->setSampler(s,i,in,wm);
+  impl()->setSampler(s,i,in,wm);
 }
 
 void Pipeline::setFaceCull(FaceCullMode fcm, FaceDirection fd){
-  impl->setFaceCull(fcm,fd);
+  impl()->setFaceCull(fcm,fd);
 }
-void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl->setRasterizerMode(r);}
-void Pipeline::setPolygonMode(sga::PolygonMode p){impl->setPolygonMode(p);}
+void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl()->setRasterizerMode(r);}
+void Pipeline::setPolygonMode(sga::PolygonMode p){impl()->setPolygonMode(p);}
+
+
+FullQuadPipeline::FullQuadPipeline() :
+  Pipeline(std::make_unique<FullQuadPipeline::Impl>()){
+}
+FullQuadPipeline::~FullQuadPipeline() = default;
+
+FullQuadPipeline::Impl* FullQuadPipeline::impl(){
+  return dynamic_cast<FullQuadPipeline::Impl*>(Pipeline::impl());
+}
+
+void FullQuadPipeline::setProgram(std::shared_ptr<Program> p) {impl()->setProgram(p);}
+void FullQuadPipeline::drawFullQuad() {impl()->drawFullQuad();}
+  
 
 // ====== IMPL ======
 
 Pipeline::Impl::Impl(){
-  
 }
-  
+
+Pipeline::Impl::~Impl(){
+}
+
 void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   cooked = false;
   target_is_window = true;
@@ -101,8 +120,11 @@ void Pipeline::Impl::setRasterizerMode(RasterizerMode r) {
 
 void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
   if(p && !p->impl->compiled)
-    PipelineConfigError("ProgramNotCompiled", "The program  passed to the pipeline was not compiled.",
+    PipelineConfigError("ProgramNotCompiled", "The program passed to the pipeline was not compiled.",
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
+  if(p->impl->isFullQuad)
+    PipelineConfigError("InvalidProgramType", "This pipeline does not support full quad programs.").raise();
+    
   program = p;
   cooked = false;
   samplers_prepared = descset_prepared = unibuffers_prepared = false;
@@ -639,5 +661,29 @@ void Pipeline::Impl::cook(){
   
     cooked = true;
 }
+
+FullQuadPipeline::Impl::Impl(){
+  vbo = VBO::create({sga::DataType::Float2}, 3);
+  
+  std::vector<std::array<float,2>> vertices = {{-1,-1},{ 3,-1},{-1, 3}};
+  vbo->write(vertices);
+}
+
+void FullQuadPipeline::Impl::setProgram(std::shared_ptr<Program> p){
+  if(p && !p->impl->compiled)
+    PipelineConfigError("ProgramNotCompiled", "The program passed to the pipeline was not compiled.",
+                        "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
+  if(!p->impl->isFullQuad)
+    PipelineConfigError("InvalidProgramType", "Only full quad programs are supported by this pipeline.").raise();
+    
+  program = p;
+  cooked = false;
+  samplers_prepared = descset_prepared = unibuffers_prepared = false;
+}
+
+void FullQuadPipeline::Impl::drawFullQuad(){
+  drawVBO(vbo);
+}
+
 
 } // namespace sga

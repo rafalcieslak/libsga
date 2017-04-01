@@ -29,6 +29,7 @@ void Shader::addSampler(std::string name) {impl->addSampler(name);}
 Program::Program() : impl(std::make_unique<Program::Impl>()) {}
 Program::~Program() = default;
 void Program::compile() {impl->compile();}
+void Program::compileFullQuad() {impl->compileFullQuad();}
 void Program::setVertexShader(std::shared_ptr<VertexShader> vs) {impl->setVertexShader(vs);}
 void Program::setFragmentShader(std::shared_ptr<FragmentShader> fs) {impl->setFragmentShader(fs);}
 
@@ -126,15 +127,42 @@ void Program::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs) {
   FS.uniforms = fs->impl->uniforms;
   FS.samplers = fs->impl->samplers;
 }
-  
+
 void Program::Impl::compile() {
-  if(compiled)
-    ProgramConfigError("AlreadyCompiled", "This program has already been compiled.").raise();
+  if(VS.source == "" || FS.source == "")
+    ProgramConfigError("MissingShader", "A program must have both vertex and fragment shaders set before compiling!").raise();
+
+  isFullQuad = false;
+  compile_internal();
+}
+
+void Program::Impl::compileFullQuad(){  
+  out_dbg("Compiling program");
+  if(VS.source != "" || FS.source == "")
+    ProgramConfigError("MissingShader", "A full quad program must have a fragment shader and NO vertex shader set before compiling!").raise();
+  
+  auto vertShader = VertexShader::createFromSource(R"(
+    void main()
+    {
+      gl_Position = vec4(inVertex, 0, 1);
+    }
+  )");
+  vertShader->addInput(sga::DataType::Float2, "inVertex");
+  setVertexShader(vertShader);
+  
+  isFullQuad = true;  
+  compile_internal();
+}
+  
+void Program::Impl::compile_internal() {
 
   out_dbg("Compiling program");
   if(VS.source == "" || FS.source == "")
     ProgramConfigError("MissingShader", "A program must have both vertex and fragment shaders set before compiling!").raise();
 
+  if(compiled)
+    ProgramConfigError("AlreadyCompiled", "This program has already been compiled.").raise();
+  
   // Prepare preamble.
   std::string preamble = "#version 420\n";
 

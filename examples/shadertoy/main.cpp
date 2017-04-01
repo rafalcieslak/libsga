@@ -6,18 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../common/stb_image.h"
 
-std::vector<std::array<float,2>> vertices = {
-  { {-1, -1 } },
-  { { 3, -1 } },
-  { {-1,  3 } },
-};
-
-std::string vertSource = R"(
-  void main() {
-    gl_Position = vec4(inVertex, 0, 1);
-  }
-)";
-
 std::string fragMain = R"(
   void main() {
     mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
@@ -83,25 +71,17 @@ int main(int argc, char** argv){
     }
   }
   
-  auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
-  vbo->write(vertices);
-  
-  auto vertShader = sga::VertexShader::createFromSource(vertSource);
-  auto fragShader = sga::FragmentShader::createFromSource(fragSource);
-  vertShader->addInput(sga::DataType::Float2, "inVertex");
-  fragShader->addOutput(sga::DataType::Float4, "outColor");
-  fragShader->addUniform(sga::DataType::Float4, "stoyMouse");
-  fragShader->addSampler("iChannel0");
-  fragShader->addSampler("iChannel1");
-  fragShader->addSampler("iChannel2");
-  fragShader->addSampler("iChannel3");
+  auto shader = sga::FragmentShader::createFromSource(fragSource);
+  shader->addOutput(sga::DataType::Float4, "outColor");
+  shader->addUniform(sga::DataType::Float4, "stoyMouse");
+  shader->addSampler("iChannel0");
+  shader->addSampler("iChannel1");
+  shader->addSampler("iChannel2");
+  shader->addSampler("iChannel3");
 
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
+  auto program = sga::Program::createAndCompile(shader);
 
-  auto pipeline = sga::Pipeline::create();
+  auto pipeline = sga::FullQuadPipeline::create();
   pipeline->setProgram(program);
   pipeline->setTarget(window);
   pipeline->setUniform("stoyMouse", {0,0,-1,-1});
@@ -135,7 +115,7 @@ int main(int argc, char** argv){
   
   window->setFPSLimit(60);
   while(window->isOpen()){
-    pipeline->drawVBO(vbo);
+    pipeline->drawFullQuad();
     window->nextFrame();
     
     if(window->getFrameNo() % 20 == 0)

@@ -9,12 +9,6 @@ int main(){
   sga::init();
   auto window = sga::Window::create(800, 600, "Example window");
   
-  auto vertShader = sga::VertexShader::createFromSource(R"(
-    void main()
-    {
-      gl_Position = vec4(inVertex, 0, 1);
-    }
-  )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
@@ -34,22 +28,13 @@ int main(){
   }
   auto texture = sga::Image::create(w, h);
   texture->putDataRaw(data, w*h*4);
-
-  auto vbo = sga::VBO::create({sga::DataType::Float2}, 3);
   
-  std::vector<std::array<float,2>> vertices = {{-1,-1},{ 3,-1},{-1, 3}};
-  vbo->write(vertices);
-  
-  vertShader->addInput(sga::DataType::Float2, "inVertex");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
   fragShader->addSampler("tex");
 
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
+  auto program = sga::Program::createAndCompile(fragShader);
 
-  auto pipeline = sga::Pipeline::create();
+  auto pipeline = sga::FullQuadPipeline::create();
   pipeline->setProgram(program);
   pipeline->setTarget(window);
   pipeline->setSampler("tex", texture);
@@ -57,7 +42,7 @@ int main(){
   window->setFPSLimit(60);
 
   while(window->isOpen()){
-    pipeline->drawVBO(vbo);
+    pipeline->drawFullQuad();
     window->nextFrame();
   }
   sga::terminate();

@@ -41,8 +41,11 @@ public:
   void setFragmentShader(std::shared_ptr<FragmentShader> vs);
   
   void compile();
+  void compileFullQuad();
+  void compile_internal();
   
   friend class Pipeline;
+  friend class FullQuadPipeline;
 private:
   struct ShaderData{
     std::string source, attrCode, fullSource;
@@ -54,6 +57,7 @@ private:
   ShaderData FS;
 
   bool compiled = false;
+  bool isFullQuad = false;
   
   // Only valid once compiled.
   DataLayout c_inputLayout;

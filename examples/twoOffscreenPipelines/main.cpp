@@ -5,31 +5,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../common/stb_image_write.h"
 
-struct __attribute__((packed)) CustomData{
-  float position[2];
-};
-
-std::vector<CustomData> vertices = {
-  { {-1, -1 } },
-  { { 3, -1 } },
-  { {-1,  3 } },
-};
-
 int main(){
   sga::init();
-
-  auto vbo = sga::VBO::create(
-    {sga::DataType::Float2}, 3);
-  vbo->write(vertices);
-
-  auto fullQuadVertShader = sga::VertexShader::createFromSource(R"(
-    void main()
-    {
-      gl_Position = vec4(inVertex, 0, 1);
-    }
-  )");
-  fullQuadVertShader->addInput(sga::DataType::Float2, "inVertex");
-
 
   // ==== Images ====
 
@@ -69,8 +46,8 @@ int main(){
   fragShader1->addOutput(sga::DataType::Float4, "outColor");
   fragShader1->addSampler("image0");
 
-  auto program1 = sga::Program::createAndCompile(fullQuadVertShader, fragShader1);
-  auto pipeline1 = sga::Pipeline::create();
+  auto program1 = sga::Program::createAndCompile(fragShader1);
+  auto pipeline1 = sga::FullQuadPipeline::create();
   pipeline1->setProgram(program1);
   pipeline1->setSampler("image0", image0);
   pipeline1->setTarget({image1});
@@ -103,16 +80,16 @@ int main(){
   fragShader2->addOutput(sga::DataType::Float4, "outColor");
   fragShader2->addSampler("image1");
 
-  auto program2 = sga::Program::createAndCompile(fullQuadVertShader, fragShader2);
-  auto pipeline2 = sga::Pipeline::create();
+  auto program2 = sga::Program::createAndCompile(fragShader2);
+  auto pipeline2 = sga::FullQuadPipeline::create();
   pipeline2->setProgram(program2);
   pipeline2->setSampler("image1", image1);
   pipeline2->setTarget({image2});
 
 
   // Perform render, using both pipelines in sequence
-  pipeline1->drawVBO(vbo);
-  pipeline2->drawVBO(vbo);
+  pipeline1->drawFullQuad();
+  pipeline2->drawFullQuad();
 
 
   // Save image2 to file.

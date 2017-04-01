@@ -15,16 +15,6 @@
 #define SGA_USE_GLM
 #include <sga.hpp>
 
-struct __attribute__((packed)) QuadVertData{
-  float position[2];
-};
-
-std::vector<QuadVertData> quadVertices = {
-  { {-1, -1 } },
-  { { 3, -1 } },
-  { {-1,  3 } },
-};
-
 struct ModelVertData{
   glm::vec3 pos;
   glm::vec3 normal;
@@ -62,17 +52,12 @@ int main(){
   }
   std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   
-  // Prepare VBOs
+  // Prepare VBO
   auto modelVbo = sga::VBO::create({
       sga::DataType::Float3,
       sga::DataType::Float3},
     vertices.size());
   modelVbo->write(vertices);
-  
-  auto quadVbo = sga::VBO::create({
-      sga::DataType::Float2},
-    quadVertices.size());
-  quadVbo->write(quadVertices);
 
   // G-buffer program
   auto GvertShader = sga::VertexShader::createFromSource(R"(
@@ -116,11 +101,6 @@ int main(){
   pipeline_gbuffer->setTarget({buffer_position, buffer_normal, buffer_albedo});
 
   // Lighting program
-  auto LvertShader = sga::VertexShader::createFromSource(R"(
-    void main(){
-      gl_Position = vec4(inVertex, 0, 1);
-    }
-  )");
   auto LfragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
@@ -141,20 +121,19 @@ int main(){
 
     }
   )");
-  LvertShader->addInput(sga::DataType::Float2, "inVertex");
   LfragShader->addOutput(sga::DataType::Float4, "out_color");
   LfragShader->addSampler("buffer_position");
   LfragShader->addSampler("buffer_normal");
   LfragShader->addSampler("buffer_albedo");
   LfragShader->addUniform(sga::DataType::Float3, "viewpos");
   LfragShader->addUniform(sga::DataType::Float3, "lightpos");
-  auto program_lighting = sga::Program::createAndCompile(LvertShader, LfragShader);
+  auto program_lighting = sga::Program::createAndCompile(LfragShader);
 
   // Result image
   auto result_image = sga::Image::create(800,600);
 
   // Lighting pipeline
-  auto pipeline_lighting = sga::Pipeline::create();
+  auto pipeline_lighting = sga::FullQuadPipeline::create();
   pipeline_lighting->setProgram(program_lighting);
   pipeline_lighting->setSampler("buffer_position", buffer_position);
   pipeline_lighting->setSampler("buffer_normal", buffer_normal);
@@ -162,11 +141,6 @@ int main(){
   pipeline_lighting->setTarget(result_image);
 
   // Window program
-  auto WvertShader = sga::VertexShader::createFromSource(R"(
-    void main(){
-      gl_Position = vec4(inVertex, 0, 1);
-    }
-  )");
   auto WfragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
@@ -188,19 +162,18 @@ int main(){
       out_color = vec4(s, 1.0);
     }
   )");
-  WvertShader->addInput(sga::DataType::Float2, "inVertex");
   WfragShader->addOutput(sga::DataType::Float4, "out_color");
   WfragShader->addSampler("buffer_position");
   WfragShader->addSampler("buffer_normal");
   WfragShader->addSampler("buffer_albedo");
   WfragShader->addSampler("result_image");
-  auto program_window = sga::Program::createAndCompile(WvertShader, WfragShader);
+  auto program_window = sga::Program::createAndCompile(WfragShader);
 
   // The window
   auto window = sga::Window::create(800,600,"Deferred shading");
 
   // Lighting pipeline
-  auto pipeline_window = sga::Pipeline::create();
+  auto pipeline_window = sga::FullQuadPipeline::create();
   pipeline_window->setProgram(program_window);
   pipeline_window->setSampler("buffer_position", buffer_position);
   pipeline_window->setSampler("buffer_normal", buffer_normal);
@@ -220,7 +193,7 @@ int main(){
   float phi = 0.0;
   float theta = M_PI;
   float distance = 12;
-  glm::vec3 lightpos = {15.0f, 7.0f, -12.0f};
+  glm::vec3 lightpos = {15.0f, 17.0f, -12.0f};
   
   window->setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
@@ -244,8 +217,8 @@ int main(){
     pipeline_lighting->setUniform("viewpos", viewpos);
 
     pipeline_gbuffer->drawVBO(modelVbo);
-    pipeline_lighting->drawVBO(quadVbo);
-    pipeline_window->drawVBO(quadVbo);
+    pipeline_lighting->drawFullQuad();
+    pipeline_window->drawFullQuad();
 
     window->nextFrame();
   }

@@ -13,6 +13,7 @@ namespace sga{
 class Pipeline::Impl{
 public:
   Impl();
+  virtual ~Impl();
   void setTarget(std::shared_ptr<Window> tgt);
   void setTarget(std::vector<std::shared_ptr<Image>> images);
   
@@ -20,7 +21,7 @@ public:
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
   void setClearColor(float r, float g, float b);
   
-  void setProgram(std::shared_ptr<Program>);
+  virtual void setProgram(std::shared_ptr<Program>);
 
   void setUniform(std::string name, std::initializer_list<float> floats);  
   void setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard=false);
@@ -35,7 +36,7 @@ public:
   void setRasterizerMode(RasterizerMode r);
   
   bool ensureValidity();
-private:
+protected:
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
   std::vector<std::shared_ptr<Image>> targetImages;
@@ -90,6 +91,18 @@ private:
   vk::Extent2D rp_image_target_extent;
 
   std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f}};
+};
+
+class FullQuadPipeline::Impl : public Pipeline::Impl{
+public:
+  Impl();
+  
+  void drawFullQuad();
+  
+  void setProgram(std::shared_ptr<Program>) override;
+
+protected:
+  std::shared_ptr<VBO> vbo;
 };
 
 } // namespace sga

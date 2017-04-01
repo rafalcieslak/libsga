@@ -2,31 +2,10 @@
 
 #include <sga.hpp>
 
-struct __attribute__((packed)) CustomData{
-  float position[2];
-};
-
-std::vector<CustomData> vertices = {
-  { {-1, -1 } },
-  { { 3, -1 } },
-  { {-1,  3 } },
-};
-
 int main(){
   sga::init();
   auto window = sga::Window::create(800, 600, "Example window");
-
-  auto vbo = sga::VBO::create(
-    {sga::DataType::Float2}, 3);
   
-  vbo->write(vertices);
-  
-  auto vertShader = sga::VertexShader::createFromSource(R"(
-    void main()
-    {
-      gl_Position = vec4(inVertex, 0, 1);
-    }
-  )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
@@ -43,15 +22,11 @@ int main(){
     }
   )");
 
-  vertShader->addInput(sga::DataType::Float2, "inVertex");
   fragShader->addOutput(sga::DataType::Float4, "outColor");
 
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
+  auto program = sga::Program::createAndCompile(fragShader);
 
-  auto pipeline = sga::Pipeline::create();
+  auto pipeline = sga::FullQuadPipeline::create();
   pipeline->setProgram(program);
   pipeline->setTarget(window);
   
@@ -62,7 +37,7 @@ int main(){
     });
   
   while(window->isOpen()){
-    pipeline->drawVBO(vbo);
+    pipeline->drawFullQuad();
     window->nextFrame();
   }
   sga::terminate();

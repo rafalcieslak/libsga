@@ -99,62 +99,43 @@ public:
       during shader preparation. These methods will refuse to set a standard
       uniform (`u.sga*`). Using these methods is insanely fast. All changes are
       cached and writes are postponed until next render. */
-  void setUniform(std::string name, float value){
-    setUniform(DataType::Float, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, int value){
-    setUniform(DataType::SInt, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, unsigned int value){
-    setUniform(DataType::UInt, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, std::array<float,2> value){
-    setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, std::array<float,3> value){
-    setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, std::array<float,4> value){
-    setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, double value){
-    setUniform(DataType::Double, name, (char*)&value, sizeof(value));
-  }
-#ifdef SGA_USE_GLM
-  void setUniform(std::string name, glm::vec2 value){
-    setUniform(DataType::Float2, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, glm::vec3 value){
-    setUniform(DataType::Float3, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, glm::vec4 value){
-    setUniform(DataType::Float4, name, (char*)&value, sizeof(value));
-  }
-  // TODO: Careful with mat3's! They use a non-packed layout:
-  // (1  2  3)  4
-  // (5  6  7)  8
-  // (9 10 11) 12
-  void setUniform(std::string name, glm::mat3 value){
-    setUniform(DataType::Mat3, name, (char*)&value, sizeof(value));
-  }
-  void setUniform(std::string name, glm::mat4 value){
-    setUniform(DataType::Mat4, name, (char*)&value, sizeof(value));
-  }
-#endif
+  #include "pipeline.uniforms.inc"
   void setUniform(std::string name, std::initializer_list<float> floats);
-
-
-  template <typename T>
-  void setUniform(std::string name, T value, DataType dt){
-    setUniform(dt, name, (char*)&value, sizeof(value));
-  }
   //@}
-private:
+protected:
   Pipeline();
   void setUniform(DataType dt, std::string name, char* pData, size_t size);
   
   class Impl;
-  pimpl_unique_ptr<Impl> impl;
+  pimpl_unique_ptr<Impl> impl_;
+  Impl* impl() {return impl_.get();}
+  const Impl* impl() const {return impl_.get();}
+  Pipeline(pimpl_unique_ptr<Impl> &&impl);
+};
+
+/* A simplified pipeline, which runs the pixel shader over the entire target area. */
+class FullQuadPipeline : public Pipeline{
+public:
+  ~FullQuadPipeline();
+  static std::shared_ptr<FullQuadPipeline> create(){
+    return std::shared_ptr<FullQuadPipeline>(new FullQuadPipeline());
+  }
+  
+  void drawFullQuad();
+  
+  void setProgram(std::shared_ptr<Program>);
+
+  // Forbid some functions from Pipeline which make no sense for FullQuadPipeline
+  void drawVBO(std::shared_ptr<VBO>) = delete;
+  void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise) = delete;
+  void setPolygonMode(PolygonMode p) = delete;
+  void setRasterizerMode(RasterizerMode r) = delete;
+  
+protected:
+  FullQuadPipeline();
+  class Impl;
+  Impl* impl();
+  const Impl* impl() const;
 };
 
 } // namespace sga

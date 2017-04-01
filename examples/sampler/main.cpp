@@ -27,7 +27,7 @@ int main(){
 
   // Read image
   int w,h,n;
-  unsigned char* data = stbi_load("data/test_image.png", &w, &h, &n, 4);
+  unsigned char* data = stbi_load("examples/data/test_image.png", &w, &h, &n, 4);
   if(!data){
     std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
     return 1;

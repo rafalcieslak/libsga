@@ -117,7 +117,7 @@ int main(){
 
   // Read image
   int w,h,n;
-  unsigned char* data = stbi_load("data/cube.png", &w, &h, &n, 4);
+  unsigned char* data = stbi_load("examples/data/cube.png", &w, &h, &n, 4);
   if(!data){
     std::cout << "Opening texture ./data/cube.png failed: " << stbi_failure_reason() << std::endl;
     return 1;
@@ -125,7 +125,7 @@ int main(){
   auto textureImage = sga::Image::create(w, h);
   textureImage->putDataRaw(data, w*h*4);
   
-  data = stbi_load("data/cube2.png", &w, &h, &n, 4);
+  data = stbi_load("examples/data/cube2.png", &w, &h, &n, 4);
   if(!data){
     std::cout << "Opening texture ./data/cube2.png failed: " << stbi_failure_reason() << std::endl;
     return 1;

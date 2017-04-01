@@ -89,7 +89,7 @@ private:
   std::shared_ptr<vkhlf::Image> rp_depthimage;
   vk::Extent2D rp_image_target_extent;
 
-  std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f}};
+  std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f}};
 };
 
 } // namespace sga

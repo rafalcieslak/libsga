@@ -84,7 +84,7 @@ void Image::Impl::prepareImage(){
 void Image::Impl::switchLayout(vk::ImageLayout target_layout){
   if(target_layout == current_layout) return;
 
-  out_dbg("Image requires layout switch.");
+  //out_dbg("Image requires layout switch.");
   executeOneTimeCommands([&](auto cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,

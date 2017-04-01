@@ -304,12 +304,22 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   sbdm->flush(0, b_uniformSize); sbdm->unmap();
 
   cmdBuffer->copyBuffer(unisb, b_uniformBuffer, vk::BufferCopy(0, 0, b_uniformSize));
+
+  std::vector<vk::ClearValue> clearValues;
+  if(target_is_window){
+    clearValues.push_back( vk::ClearValue(clear_color) );
+  }else{
+    for(unsigned int i = 0; i < targetImages.size(); i++){
+      (void)i;
+      clearValues.push_back( vk::ClearValue(clear_color) );
+    }
+  }
+  clearValues.push_back( vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) );
   
   cmdBuffer->beginRenderPass(
     c_renderPass, framebuffer,
     vk::Rect2D({ 0, 0 }, extent),
-    { vk::ClearValue(clear_color),
-      vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
+    clearValues,
     vk::SubpassContents::eInline);
   cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
   cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
@@ -415,6 +425,7 @@ void Pipeline::Impl::prepare_renderpass(){
     colorReferences.push_back(vk::AttachmentReference(n, vk::ImageLayout::eColorAttachmentOptimal));
     n++;
   }
+  n = targetImages.size();
   vk::AttachmentReference depthReference(n, vk::ImageLayout::eDepthStencilAttachmentOptimal);
   
   // Gather attachment descriptions.
@@ -584,14 +595,24 @@ void Pipeline::Impl::cook(){
       vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::CompareOp::eAlways, 0, 0, 0);
     vk::PipelineDepthStencilStateCreateInfo depthStencil(
       {}, true, true, vk::CompareOp::eLessOrEqual, false, false, stencilOpState, stencilOpState, 0.0f, 0.0f);
-    vk::PipelineColorBlendAttachmentState colorBlendAttachment(
+    
+    vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(
       false,
       vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
       vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
       vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
       vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+    std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
+    if(target_is_window){
+      colorBlendAttachments.push_back(defaultColorBlendAttachment);
+    }else{
+      for(unsigned int i = 0; i < targetImages.size(); i++){
+        colorBlendAttachments.push_back(defaultColorBlendAttachment);
+      }
+    }
+    
     vkhlf::PipelineColorBlendStateCreateInfo colorBlend(
-      false, vk::LogicOp::eNoOp, colorBlendAttachment,
+      false, vk::LogicOp::eNoOp, colorBlendAttachments,
       { 1.0f, 1.0f, 1.0f, 1.0f });
     vkhlf::PipelineDynamicStateCreateInfo dynamic(
       { vk::DynamicState::eViewport, vk::DynamicState::eScissor });

@@ -96,7 +96,7 @@ int main(){
   fragShader->addUniform(sga::DataType::Float3, "viewpos");
 
   // Prepare window
-  auto window = sga::Window::create(800, 600, "Cube");
+  auto window = sga::Window::create(800, 600, "Teapot");
   window->setFPSLimit(60);
   
   // Compute initial MVP

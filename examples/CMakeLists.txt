@@ -51,12 +51,7 @@ add_custom_target(
   copy-example-data ALL
   COMMAND cmake -E copy_directory ${CMAKE_SOURCE_DIR}/examples/data ${CMAKE_BINARY_DIR}/examples/data
   )
-  
-add_example(greet)
-add_example(image)
-add_example(image2)
-add_example(window)
-add_example(pipeline)
+
 add_example(vbo)
 add_example(fragTest1)
 add_example(sampler)

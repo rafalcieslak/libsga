@@ -27,7 +27,7 @@ int main(){
     return 1;
   }
   auto texture = sga::Image::create(w, h);
-  texture->putDataRaw(data, w*h*4);
+  texture->putData(std::vector<uint8_t>(data, data + w*h*4));
   
   fragShader->addOutput(sga::DataType::Float4, "outColor");
   fragShader->addSampler("tex");

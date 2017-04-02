@@ -18,7 +18,7 @@ int main(){
     return 1;
   }
   auto image0 = sga::Image::create(w, h);
-  image0->putDataRaw(data, w*h*4);
+  image0->putData(std::vector<uint8_t>(data, data + w*h*4));
   // Intermediate buffer
   auto image1 = sga::Image::create(1440, 900);
   // Final result
@@ -93,7 +93,8 @@ int main(){
 
 
   // Save image2 to file.
-  auto out = image2->getData();
+  std::vector<uint8_t> out(image2->getWidth() * image2->getHeight() * image2->getChannels());
+  image2->getData(out);
   stbi_write_png("output.png", image2->getWidth(), image2->getHeight(), 4, out.data(), 0);
 
   sga::terminate();

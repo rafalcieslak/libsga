@@ -13,6 +13,7 @@ class Window;
 struct FormatProperties{
   vk::Format vkFormat;
   DataType shaderDataType;
+  DataType transferDataType;
   size_t elemSize;
   size_t stride;
   std::array<vk::ComponentSwizzle, 4> swizzle;
@@ -24,9 +25,8 @@ class Image::Impl{
 public:
   Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format);
   
-  void putData(std::vector<uint8_t> data);
-  void putDataRaw(unsigned char* data, size_t size);
-  std::vector<uint8_t> getData();
+  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
+  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
 
   void copyOnto(
     std::shared_ptr<Image> target,
@@ -42,9 +42,8 @@ public:
 
   unsigned int getWidth() {return width;}
   unsigned int getHeight() {return height;}
-  
-  void fillWithPink();
-  void testContents();
+  unsigned int getChannels() {return channels;}
+  unsigned int getElems() {return width * height * channels;}
 
   void withLayout(vk::ImageLayout il, std::function<void()> f);
   
@@ -52,8 +51,8 @@ public:
   
   friend class Pipeline;
 private:
-  unsigned int width, height;
-  unsigned int channels;
+  const unsigned int width, height;
+  const unsigned int channels;
   ImageFormat userFormat;
   FormatProperties format;
   unsigned int N_elems;

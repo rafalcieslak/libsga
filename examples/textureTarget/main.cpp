@@ -31,13 +31,14 @@ int main(){
   auto image = sga::Image::create(1440, 900);
 
   auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setProgram(program);  
+  pipeline->setProgram(program);
   pipeline->setTarget({image});
 
   pipeline->drawFullQuad();
 
   // Save to file.
-  auto out = image->getData();
+  std::vector<uint8_t> out(image->getElems());
+  image->getData(out);
   stbi_write_png("output.png", image->getWidth(), image->getHeight(), 4, out.data(), 0);
   
   sga::terminate();

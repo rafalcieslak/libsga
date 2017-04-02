@@ -65,7 +65,7 @@ int main(int argc, char** argv){
         return 1;
       }
       images[i] = sga::Image::create(w, h);
-      images[i]->putDataRaw(data, w*h*4);
+      images[i]->putData(std::vector<uint8_t>(data, data + w*h*4));
     }else{
       images[i] = sga::Image::create(16,16); // Some empty texture.
     }

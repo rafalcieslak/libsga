@@ -123,7 +123,7 @@ int main(){
     return 1;
   }
   auto textureImage = sga::Image::create(w, h);
-  textureImage->putDataRaw(data, w*h*4);
+  textureImage->putData(std::vector<uint8_t>(data, data + w*h*4));
   
   data = stbi_load("examples/data/cube2.png", &w, &h, &n, 4);
   if(!data){
@@ -131,7 +131,7 @@ int main(){
     return 1;
   }
   auto textureImage2= sga::Image::create(w, h);
-  textureImage2->putDataRaw(data, w*h*4);
+  textureImage2->putData(std::vector<uint8_t>(data, data + w*h*4));
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};

@@ -2,6 +2,7 @@
 #define __SGA_IMAGE_HPP__
 
 #include "config.hpp"
+#include "layout.hpp"
 #include <vector>
 
 namespace sga{
@@ -25,16 +26,33 @@ public:
     return std::shared_ptr<Image>(new Image(width, height, ch, format));
   }
   ~Image();
+
+  void putData(std::vector<uint8_t> data){
+    putDataRaw(data.data(), data.size(), DataType::UInt, 1);
+  }
+  void putData(std::vector<uint16_t> data);
+  void putData(std::vector<uint32_t> data);
+  void putData(std::vector<int8_t> data);
+  void putData(std::vector<int16_t> data);
+  void putData(std::vector<int32_t> data);
+  void putData(std::vector<float> data);
   
-  void fillWithPink();
-  void testContents();
 
-  void putData(std::vector<uint8_t> data);
-  void putDataRaw(unsigned char * data, size_t size);
-  std::vector<uint8_t> getData();
-
+  void getData(std::vector<uint8_t>& data){
+    getDataRaw(data.data(), data.size(), DataType::UInt, 1);
+  }
+  void getData(std::vector<uint16_t>& data);
+  void getData(std::vector<uint32_t>& data);
+  void getData(std::vector<int8_t>& data);
+  void getData(std::vector<int16_t>& data);
+  void getData(std::vector<int32_t>& data);
+  void getData(std::vector<float>& data);
+  
+  
   unsigned int getWidth();
   unsigned int getHeight();
+  unsigned int getChannels();
+  unsigned int getElems();
   
   void copyOnto(
     std::shared_ptr<Image> target,
@@ -45,6 +63,10 @@ public:
   friend class Pipeline;
 private:
   Image(int width, int height, unsigned int ch, ImageFormat format);
+  
+  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
+  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
+  
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

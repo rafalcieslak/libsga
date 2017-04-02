@@ -93,7 +93,7 @@ int main(){
 
 
   // Save image2 to file.
-  std::vector<uint8_t> out(image2->getWidth() * image2->getHeight() * image2->getChannels());
+  std::vector<uint8_t> out(image2->getValuesN());
   image2->getData(out);
   stbi_write_png("output.png", image2->getWidth(), image2->getHeight(), 4, out.data(), 0);
 

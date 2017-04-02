@@ -14,7 +14,11 @@ struct FormatProperties{
   vk::Format vkFormat;
   DataType shaderDataType;
   DataType transferDataType;
-  size_t elemSize;
+
+  // The size of 1 pixel (incorporates the number of channels).
+  size_t pixelSize;
+
+  // Offset between subsequent pixels.
   size_t stride;
   std::array<vk::ComponentSwizzle, 4> swizzle;
 };
@@ -25,8 +29,8 @@ class Image::Impl{
 public:
   Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format);
   
-  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
-  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size);
+  void putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
+  void getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
 
   void copyOnto(
     std::shared_ptr<Image> target,
@@ -43,7 +47,7 @@ public:
   unsigned int getWidth() {return width;}
   unsigned int getHeight() {return height;}
   unsigned int getChannels() {return channels;}
-  unsigned int getElems() {return width * height * channels;}
+  unsigned int getValuesN() {return width * height * channels;}
 
   void withLayout(vk::ImageLayout il, std::function<void()> f);
   
@@ -55,7 +59,11 @@ private:
   const unsigned int channels;
   ImageFormat userFormat;
   FormatProperties format;
-  unsigned int N_elems;
+
+  // The number of pixels in this image.
+  unsigned int N_pixels() const {return width * height;}
+  // The number of values in this image. 
+  unsigned int N_values() const {return width * height * channels;}
   
   vk::ImageLayout current_layout;
   

@@ -14,8 +14,8 @@ namespace sga{
 Image::Image(int width, int height, unsigned int ch, ImageFormat format) : impl(std::make_unique<Image::Impl>(width, height, ch, format)) {}
 Image::~Image() = default;
 
-void Image::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size) {impl->putDataRaw(data, n, dtype, elem_size);}
-void Image::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size) {impl->getDataRaw(data, n, dtype, elem_size);}
+void Image::putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->putDataRaw(data, n, dtype, value_size);}
+void Image::getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->getDataRaw(data, n, dtype, value_size);}
 
 void Image::copyOnto(std::shared_ptr<Image> target,
                      int source_x, int source_y,
@@ -26,7 +26,7 @@ void Image::copyOnto(std::shared_ptr<Image> target,
 unsigned int Image::getWidth() {return impl->getWidth();}
 unsigned int Image::getHeight() {return impl->getHeight();}
 unsigned int Image::getChannels() {return impl->getChannels();}
-unsigned int Image::getElems() {return impl->getElems();}
+unsigned int Image::getValuesN() {return impl->getValuesN();}
 
 Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, ImageFormat f) :
   width(width), height(height), channels(ch) {
@@ -40,9 +40,38 @@ Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, Imag
   
   userFormat = f;
   format = getFormatProperties(channels, userFormat);
-  N_elems = width * height * ch;
   
-  prepareImage();
+  image = global::device->createImage(
+    vk::ImageCreateFlags(),
+    vk::ImageType::e2D,
+    format.vkFormat,
+    vk::Extent3D(width, height, 1),
+    1,
+    1,
+    vk::SampleCountFlagBits::e1,
+    vk::ImageTiling::eOptimal,
+    vk::ImageUsageFlagBits::eTransferDst |
+    vk::ImageUsageFlagBits::eTransferSrc |
+    vk::ImageUsageFlagBits::eColorAttachment | 
+    vk::ImageUsageFlagBits::eSampled ,
+    vk::SharingMode::eExclusive,
+    std::vector<uint32_t>(), // queue family indices
+    vk::ImageLayout::ePreinitialized,
+    vk::MemoryPropertyFlagBits::eDeviceLocal,
+    nullptr, nullptr
+    );
+
+  // Switch to any layout that may be restored (Preinitialized cannot be switched to), so that this->withLayout works correctly.
+  current_layout = vk::ImageLayout::ePreinitialized;
+  switchLayout(vk::ImageLayout::eGeneral);
+
+  // Clear image.
+  std::vector<uint8_t> data(N_pixels() * format.pixelSize, 0);
+  putDataRaw((char*)data.data(), data.size(), format.transferDataType, format.pixelSize/channels);
+
+  image_view = image->createImageView(vk::ImageViewType::e2D, format.vkFormat);
+  
+  out_dbg("Image prepared.");
 }
 
 const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat format){
@@ -97,41 +126,6 @@ const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat f
   return it->second;
 }
 
-void Image::Impl::prepareImage(){
-  
-  image = global::device->createImage(
-    vk::ImageCreateFlags(),
-    vk::ImageType::e2D,
-    format.vkFormat,
-    vk::Extent3D(width, height, 1),
-    1,
-    1,
-    vk::SampleCountFlagBits::e1,
-    vk::ImageTiling::eOptimal,
-    vk::ImageUsageFlagBits::eTransferDst |
-    vk::ImageUsageFlagBits::eTransferSrc |
-    vk::ImageUsageFlagBits::eColorAttachment | 
-    vk::ImageUsageFlagBits::eSampled ,
-    vk::SharingMode::eExclusive,
-    std::vector<uint32_t>(), // queue family indices
-    vk::ImageLayout::ePreinitialized,
-    vk::MemoryPropertyFlagBits::eDeviceLocal,
-    nullptr, nullptr
-    );
-
-  // Switch to any layout that may be restored (Preinitialized cannot be switched to), so that this->withLayout works correctly.
-  current_layout = vk::ImageLayout::ePreinitialized;
-  switchLayout(vk::ImageLayout::eGeneral);
-
-  // Clear image.
-  std::vector<uint8_t> data(width*height*format.elemSize, 0);
-  putDataRaw(data.data(), data.size(), format.transferDataType, format.elemSize/channels);
-
-  image_view = image->createImageView(vk::ImageViewType::e2D, format.vkFormat);
-  
-  out_dbg("Image prepared.");
-}
-
 void Image::Impl::switchLayout(vk::ImageLayout target_layout){
   if(target_layout == current_layout) return;
 
@@ -152,10 +146,10 @@ void Image::Impl::withLayout(vk::ImageLayout il, std::function<void()> f){
   switchLayout(orig_layout);
 }
 
-void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size){
-  if(N_elems != n)
-    ImageFormatError("InvalidPutDataSize", "Data for Image::putData has " + std::to_string(n) + " elements, expected " + std::to_string(N_elems) + ".").raise();
-  if(dtype != format.transferDataType || elem_size * channels != format.elemSize)
+void Image::Impl::putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size){
+  if(n != N_pixels() * format.pixelSize )
+    ImageFormatError("InvalidPutDataSize", "Data for Image::putData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
+  if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
     //TODO: State what would be the right variable to use for this image format
     ImageFormatError("InvalidPutDataType", "Data for Image::putData has type that does not match image format.").raise();
 
@@ -188,45 +182,50 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   // TODO: It might be better to test subresource layout (rowPitch, stride, etc) instead of using custom hardcoded values.
   // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
-  unsigned int i = 0;
-  if(elem_size == 1){
-    uint8_t* pdata = reinterpret_cast<uint8_t*>( mapped_data );
+  // This pointer walks over mapped memory.
+  uint8_t* __restrict__ q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  // This pointer walks over host memory.
+  uint8_t* __restrict__ q_data = reinterpret_cast<uint8_t*>(data);
+    
+  if(value_size == 1){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint8_t*)q_mapped;
+        auto p_data = (uint8_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          pdata[c] = data[i + c];
+          p_mapped[c] = p_data[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
-  }else if(elem_size == 2){
-    uint16_t* pdata = reinterpret_cast<uint16_t*>( mapped_data );
+  }else if(value_size == 2){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint16_t*)q_mapped;
+        auto p_data = (uint16_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          pdata[c] = data[i + c];
+          p_mapped[c] = p_data[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
-  }else if(elem_size == 4){
-    uint32_t* pdata = reinterpret_cast<uint32_t*>( mapped_data );
+  }else if(value_size == 4){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint32_t*)q_mapped;
+        auto p_data = (uint32_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          pdata[c] = data[i + c];
+          p_mapped[c] = p_data[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
   }else{
     assert(false);
   }
-  
-  assert(i == data_size);
   
   stagingImage->get<vkhlf::DeviceMemory>()->flush(0, data_size);
   stagingImage->get<vkhlf::DeviceMemory>()->unmap();
@@ -250,10 +249,10 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
     }); // with layout
 }
 
-void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t elem_size){
-  if(N_elems != n)
-    ImageFormatError("InvalidGetDataSize", "Data for Image::getData has " + std::to_string(n) + " elements, expected " + std::to_string(N_elems) + ".").raise();
-  if(dtype != format.transferDataType || elem_size * channels != format.elemSize)
+void Image::Impl::getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size){
+  if(n != N_pixels() * format.pixelSize )
+    ImageFormatError("InvalidGetDataSize", "Data for Image::getData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
+  if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
     //TODO: State what would be the right variable to use for this image format
     ImageFormatError("InvalidGetDataType", "Data for Image::getData has type that does not match image format.").raise();
   
@@ -302,44 +301,51 @@ void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   // TODO: It might be better to test subresource layout (rowPitch, stride, etc) instead of using custom hardcoded values.
   // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
-  unsigned int i = 0;
-  if(elem_size == 1){
-    uint8_t* pdata = reinterpret_cast<uint8_t*>( mapped_data );
+  // This pointer walks over mapped memory.
+  uint8_t* __restrict__ q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  // This pointer walks over host memory.
+  uint8_t* __restrict__ q_data = reinterpret_cast<uint8_t*>(data);
+    
+  if(value_size == 1){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint8_t*)q_mapped;
+        auto p_data = (uint8_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          data[i + c] = pdata[c];
+          p_data[c] = p_mapped[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
-  }else if(elem_size == 2){
-    uint16_t* pdata = reinterpret_cast<uint16_t*>( mapped_data );
+  }else if(value_size == 2){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint16_t*)q_mapped;
+        auto p_data = (uint16_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          data[i + c] = pdata[c];
+          p_data[c] = p_mapped[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
-  }else if(elem_size == 4){
-    uint32_t* pdata = reinterpret_cast<uint32_t*>( mapped_data );
+  }else if(value_size == 4){
     for (size_t y = 0; y < height; y++){
       for (size_t x = 0; x < width; x++){
+        auto p_mapped = (uint32_t*)q_mapped;
+        auto p_data = (uint32_t*)q_data;
         for(size_t c = 0; c < channels; c++){
-          data[i + c] = pdata[c];
+          p_data[c] = p_mapped[c];
         }
-        pdata += format.stride;
-        i += channels;
+        q_mapped += format.stride;
+        q_data += format.pixelSize;
       }
     }
   }else{
     assert(false);
   }
-  assert(i == data_size);
+  
   
   stagingImage->get<vkhlf::DeviceMemory>()->unmap();
 }

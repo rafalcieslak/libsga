@@ -37,7 +37,7 @@ int main(){
   pipeline->drawFullQuad();
 
   // Save to file.
-  std::vector<uint8_t> out(image->getElems());
+  std::vector<uint8_t> out(image->getValuesN());
   image->getData(out);
   stbi_write_png("output.png", image->getWidth(), image->getHeight(), 4, out.data(), 0);
   

@@ -42,7 +42,7 @@ function(add_example NAME)
   if(EXAMPLE_SHADERS)
     add_custom_command(
 	  TARGET ${NAME} POST_BUILD
-	  COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_SHADERS} "${PROJECT_BINARY_DIR}/examples/"
+	  COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_SHADERS} "${PROJECT_BINARY_DIR}/examples/data/${NAME}/"
     )
   endif()
 endfunction(add_example)

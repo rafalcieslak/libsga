@@ -50,7 +50,7 @@ void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
 
 unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
-void Window::setOnResize(std::function<void (double, double)> f) {impl->setOnResize(f);}
+void Window::setOnResize(std::function<void (unsigned int, unsigned int)> f) {impl->setOnResize(f);}
 
 // ====== IMPL ======
 
@@ -294,7 +294,7 @@ void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)>
   f_onMouseAny = f;
 };
 
-void Window::Impl::setOnResize(std::function<void (double, double)> f){
+void Window::Impl::setOnResize(std::function<void (unsigned int, unsigned int)> f){
   f_onResize = f;
 }
 

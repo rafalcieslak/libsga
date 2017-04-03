@@ -12,7 +12,8 @@ public:
   Impl(DataLayout layout, unsigned int size);
 
   unsigned int getSize() const;
-  
+
+  // TODO: Make sure data are written before any draw is performed.
   void putData(uint8_t* pData, size_t n);
   void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
 private:

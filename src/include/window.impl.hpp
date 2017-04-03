@@ -39,7 +39,7 @@ public:
 
   unsigned int getWidth() {return width;}
   unsigned int getHeight() {return height;}
-  void setOnResize(std::function<void(double, double)> f);
+  void setOnResize(std::function<void(unsigned int, unsigned int)> f);
   
   static void resizeCallback(GLFWwindow *window, int width, int height);
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
@@ -106,7 +106,7 @@ private:
   std::function<void(double, double)> f_onMouseMove;
   std::function<void(bool, bool)> f_onMouseButton;
   std::function<void(double, double, bool, bool)> f_onMouseAny;
-  std::function<void(double, double)> f_onResize;
+  std::function<void(unsigned int, unsigned int)> f_onResize;
   
   std::map<Key, std::function<void()>> fmap_onKeyDown;
   std::map<Key, std::function<void()>> fmap_onKeyUp;

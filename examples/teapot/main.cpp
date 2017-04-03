@@ -22,7 +22,7 @@ int main(){
 
   // Import model.
   Assimp::Importer aimporter;
-  std::string filepath =  "./examples/data/teapot/teapot-smooth.obj";
+  std::string filepath =  "./examples/data/teapot/teapot.obj";
   const aiScene* scene = aimporter.ReadFile(filepath, 
                                             aiProcess_Triangulate |
                                             aiProcess_GenNormals  |
@@ -58,7 +58,7 @@ int main(){
 
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
-      vec3 pos = in_position + vec3(0, -40, 0);
+      vec3 pos = in_position + vec3(0, -4, 0);
       gl_Position = u.MVP * vec4(pos,1);
       out_world_normal = in_normal;
       out_world_position = pos;
@@ -100,7 +100,7 @@ int main(){
   window->setFPSLimit(60);
   
   // Compute initial MVP
-  float distance = 120;
+  float distance = 12;
   glm::vec3 viewpos = {0,0,-distance};
   glm::mat4 camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
   glm::mat4 projection = glm::perspectiveFov(glm::radians(70.0), 800.0, 600.0, 0.2, distance * 2.1);

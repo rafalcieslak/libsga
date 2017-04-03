@@ -2,9 +2,6 @@
 
 #include <sga.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
-
 int main(){
   sga::init();
   auto window = sga::Window::create(800, 600, "Example window");
@@ -20,14 +17,7 @@ int main(){
   )");
 
   // Read image
-  int w,h,n;
-  unsigned char* data = stbi_load("examples/data/test_image.png", &w, &h, &n, 4);
-  if(!data){
-    std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
-    return 1;
-  }
-  auto texture = sga::Image::create(w, h);
-  texture->putData(std::vector<uint8_t>(data, data + w*h*4));
+  auto texture = sga::Image::createFromPNG("examples/data/test_image.png");
   
   fragShader->addOutput(sga::DataType::Float4, "outColor");
   fragShader->addSampler("tex");

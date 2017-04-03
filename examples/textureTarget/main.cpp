@@ -2,11 +2,6 @@
 
 #include <sga.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../common/stb_image_write.h"
-
 int main(){
   sga::init();
   
@@ -37,9 +32,7 @@ int main(){
   pipeline->drawFullQuad();
 
   // Save to file.
-  std::vector<uint8_t> out(image->getValuesN());
-  image->getData(out);
-  stbi_write_png("output.png", image->getWidth(), image->getHeight(), 4, out.data(), 0);
+  image->savePNG("output.png");
   
   sga::terminate();
 }

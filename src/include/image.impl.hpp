@@ -29,9 +29,13 @@ class Image::Impl{
 public:
   Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format);
   
-  void putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
-  void getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
+  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
 
+  void loadPNG(std::string filepath);
+  void loadPNGInternal(uint8_t* stbi_data);
+  void savePNG(std::string filepath);
+  
   void clear();
   
   void copyOnto(
@@ -54,6 +58,8 @@ public:
   void withLayout(vk::ImageLayout il, std::function<void()> f);
   
   void switchLayout(vk::ImageLayout il);
+
+  static std::unique_ptr<Image::Impl> createFromPNG(std::string png_path, ImageFormat format);
   
   friend class Pipeline;
 private:

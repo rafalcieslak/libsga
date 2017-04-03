@@ -65,6 +65,11 @@ struct ShaderParsingError : public ShaderCompilationError{
     : ShaderCompilationError("ShaderParsingError", information, description) {}
   virtual void raise_this() override { throw *this; }
 };
+struct FileAccessError : public SGAException{
+  FileAccessError(std::string name, std::string information, std::string description = "")
+    : SGAException(name, information, description) {}
+  virtual void raise_this() override { throw *this; }
+};
 
 }
 

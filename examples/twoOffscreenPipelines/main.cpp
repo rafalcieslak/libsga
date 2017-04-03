@@ -1,29 +1,16 @@
 #include <sga.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../common/stb_image_write.h"
-
 int main(){
   sga::init();
 
   // ==== Images ====
 
   // Source image
-  int w,h,n;
-  unsigned char* data = stbi_load("examples/data/test_image.png", &w, &h, &n, 4);
-  if(!data){
-    std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
-    return 1;
-  }
-  auto image0 = sga::Image::create(w, h);
-  image0->putData(std::vector<uint8_t>(data, data + w*h*4));
+  auto image0 = sga::Image::createFromPNG("examples/data/test_image.png");
   // Intermediate buffer
   auto image1 = sga::Image::create(1440, 900);
   // Final result
   auto image2 = sga::Image::create(1440, 900);
-
 
   //  ==== Pipeline 1 ==== (Ripple effect)
 
@@ -86,16 +73,12 @@ int main(){
   pipeline2->setSampler("image1", image1);
   pipeline2->setTarget({image2});
 
-
   // Perform render, using both pipelines in sequence
   pipeline1->drawFullQuad();
   pipeline2->drawFullQuad();
 
-
   // Save image2 to file.
-  std::vector<uint8_t> out(image2->getValuesN());
-  image2->getData(out);
-  stbi_write_png("output.png", image2->getWidth(), image2->getHeight(), 4, out.data(), 0);
+  image2->savePNG("output.png");
 
   sga::terminate();
 }

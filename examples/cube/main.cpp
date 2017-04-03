@@ -8,9 +8,6 @@
 #define SGA_USE_GLM
 #include <sga.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
-
 struct VertData{
   glm::vec3 pos;
   glm::vec3 normal;
@@ -115,23 +112,9 @@ int main(){
   fragShader->addUniform(sga::DataType::Float3, "lightpos");
   fragShader->addSampler("tex");
 
-  // Read image
-  int w,h,n;
-  unsigned char* data = stbi_load("examples/data/cube.png", &w, &h, &n, 4);
-  if(!data){
-    std::cout << "Opening texture ./data/cube.png failed: " << stbi_failure_reason() << std::endl;
-    return 1;
-  }
-  auto textureImage = sga::Image::create(w, h);
-  textureImage->putData(std::vector<uint8_t>(data, data + w*h*4));
-  
-  data = stbi_load("examples/data/cube2.png", &w, &h, &n, 4);
-  if(!data){
-    std::cout << "Opening texture ./data/cube2.png failed: " << stbi_failure_reason() << std::endl;
-    return 1;
-  }
-  auto textureImage2= sga::Image::create(w, h);
-  textureImage2->putData(std::vector<uint8_t>(data, data + w*h*4));
+  // Read images
+  auto textureImage  = sga::Image::createFromPNG("examples/data/cube.png");
+  auto textureImage2 = sga::Image::createFromPNG("examples/data/cube2.png");
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};

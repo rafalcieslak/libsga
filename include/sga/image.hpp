@@ -25,53 +25,58 @@ public:
   static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8){
     return std::shared_ptr<Image>(new Image(width, height, ch, format));
   }
+  static std::shared_ptr<Image> createFromPNG(std::string png_path, ImageFormat format = ImageFormat::NInt8){
+    return std::shared_ptr<Image>(new Image(png_path, format));
+  }
   ~Image();
 
   void putData(const std::vector<uint8_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::UInt, 1);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
   void putData(const std::vector<uint16_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::UInt, 2);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
   }
   void putData(const std::vector<uint32_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::UInt, 4);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
   }
   void putData(const std::vector<int8_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::SInt, 1);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
   void putData(const std::vector<int16_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::SInt, 2);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
   }
   void putData(const std::vector<int32_t>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::SInt, 4);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
   }
   void putData(const std::vector<float>& data){
-    putDataRaw((char*)data.data(), data.size(), DataType::Float, 4);
+    putDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
   }
   
 
   void getData(std::vector<uint8_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::UInt, 1);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
   void getData(std::vector<uint16_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::UInt, 2);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
   }
   void getData(std::vector<uint32_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::UInt, 4);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
   }
   void getData(std::vector<int8_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::SInt, 1);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
   void getData(std::vector<int16_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::SInt, 2);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
   }
   void getData(std::vector<int32_t>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::SInt, 4);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
   }
   void getData(std::vector<float>& data){
-    getDataRaw((char*)data.data(), data.size(), DataType::Float, 4);
+    getDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
   }
-  
+
+  void loadPNG(std::string filepath);
+  void savePNG(std::string filepath);
   
   unsigned int getWidth();
   unsigned int getHeight();
@@ -89,9 +94,10 @@ public:
   friend class Pipeline;
 private:
   Image(int width, int height, unsigned int ch, ImageFormat format);
+  Image(std::string png_path, ImageFormat format);
   
-  void putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
-  void getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
+  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
   
   class Impl;
   pimpl_unique_ptr<Impl> impl;

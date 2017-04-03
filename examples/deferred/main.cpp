@@ -11,9 +11,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
-
 struct ModelVertData{
   glm::vec3 pos;
   glm::vec3 normal;
@@ -55,14 +52,7 @@ int main(){
   std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   
   // Read texture image
-  int w,h,n;
-  unsigned char* data = stbi_load("examples/data/teapot/texture.png", &w, &h, &n, 4);
-  if(!data){
-    std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
-    return 1;
-  }
-  auto texture = sga::Image::create(w, h);
-  texture->putData(std::vector<uint8_t>(data, data + w*h*4));
+  auto texture = sga::Image::createFromPNG("examples/data/teapot/texture.png");
   
   // Prepare VBO
   auto modelVbo = sga::VBO::create({

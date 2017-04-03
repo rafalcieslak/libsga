@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include <sga/exceptions.hpp>
+#include "stbi.hpp"
 #include "window.impl.hpp"
 #include "global.hpp"
 #include "utils.hpp"
@@ -12,10 +13,13 @@
 namespace sga{
 
 Image::Image(int width, int height, unsigned int ch, ImageFormat format) : impl(std::make_unique<Image::Impl>(width, height, ch, format)) {}
+Image::Image(std::string png_path, ImageFormat format) : impl(Image::Impl::createFromPNG(png_path, format)) {}
 Image::~Image() = default;
 
-void Image::putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->putDataRaw(data, n, dtype, value_size);}
-void Image::getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->getDataRaw(data, n, dtype, value_size);}
+void Image::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {impl->putDataRaw(data, n, dtype, value_size);}
+void Image::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {impl->getDataRaw(data, n, dtype, value_size);}
+void Image::loadPNG(std::string filepath) {impl->loadPNG(filepath);}
+void Image::savePNG(std::string filepath) {impl->savePNG(filepath);}
 void Image::clear() {return impl->clear();}
 void Image::copyOnto(std::shared_ptr<Image> target,
                      int source_x, int source_y,
@@ -67,7 +71,7 @@ Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, Imag
 
   // Clear image.
   std::vector<uint8_t> data(N_pixels() * format.pixelSize, 0);
-  putDataRaw((char*)data.data(), data.size(), format.transferDataType, format.pixelSize/channels);
+  putDataRaw(data.data(), data.size(), format.transferDataType, format.pixelSize/channels);
 
   image_view = image->createImageView(vk::ImageViewType::e2D, format.vkFormat);
   
@@ -146,7 +150,7 @@ void Image::Impl::withLayout(vk::ImageLayout il, std::function<void()> f){
   switchLayout(orig_layout);
 }
 
-void Image::Impl::putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size){
+void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
   if(n != N_pixels() * format.pixelSize )
     ImageFormatError("InvalidPutDataSize", "Data for Image::putData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
   if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
@@ -249,7 +253,7 @@ void Image::Impl::putDataRaw(char * data, unsigned int n, DataType dtype, size_t
     }); // with layout
 }
 
-void Image::Impl::getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size){
+void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
   if(n != N_pixels() * format.pixelSize )
     ImageFormatError("InvalidGetDataSize", "Data for Image::getData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
   if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
@@ -439,6 +443,51 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
           vk::ImageLayout::eTransferDstOptimal, target_orig_layout);
       
     });
+}
+
+
+std::unique_ptr<Image::Impl> Image::Impl::createFromPNG(std::string filepath, ImageFormat format){
+  int w, h, n;
+  unsigned char* imagedata = stbi_load(filepath.c_str(), &w, &h, &n, 0);
+  if(!imagedata)
+    FileAccessError("ImageFileOpenFailed", "Failed to open PNG image \"" + filepath + "\": " + stbi_failure_reason()).raise();
+
+  auto res = std::make_unique<Image::Impl>(w, h, n, format);
+  res->loadPNGInternal(imagedata);
+  return res;
+}
+
+
+void Image::Impl::loadPNG(std::string filepath){
+  // Read image data.
+  int w, h, n;
+  unsigned char* imagedata = stbi_load(filepath.c_str(), &w, &h, &n, 0);
+  if(!imagedata)
+    FileAccessError("ImageFileOpenFailed", "Failed to open PNG image \"" + filepath + "\": " + stbi_failure_reason()).raise();
+  if((unsigned int)w != width || (unsigned int)h != height)
+    ImageFormatError("ImageOpenSizeMismatch", "The loaded image has different size than the target Image").raise();
+  if((unsigned int)n != channels)
+    ImageFormatError("ImageOpenChannelsMismatch", "The loaded image has different channel number than the target Image").raise();
+  loadPNGInternal(imagedata);
+}
+
+void Image::Impl::loadPNGInternal(uint8_t* stbi_data){
+  if(userFormat != ImageFormat::NInt8 && userFormat != ImageFormat::UInt8)
+    ImageFormatError("LoadPNGFormatMismatch", "Loading images from PNG supports only NInt8 and UInt8 images.").raise();
+  putDataRaw(stbi_data, width * height * channels, DataType::UInt, 1);
+}
+
+void Image::Impl::savePNG(std::string filepath){
+  if(userFormat != ImageFormat::NInt8 && userFormat != ImageFormat::UInt8)
+    ImageFormatError("LoadPNGFormatMismatch", "Saving images to PNG supports only NInt8 and UInt8 images.").raise();
+
+  // TODO: Support floats?
+  
+  std::vector<uint8_t> out(N_values());
+  getDataRaw(out.data(), getValuesN(), DataType::UInt, 1);
+  int res = stbi_write_png(filepath.c_str(), width, height, channels, out.data(), 0);
+  if (res != 0)
+    FileAccessError("ImageFileWriteFailed", "Writing to file \"" + filepath + "\" failed.");
 }
 
 } // namespace sga

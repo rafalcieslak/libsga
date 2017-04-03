@@ -46,6 +46,7 @@ public:
   // Window size
   unsigned int getWidth();
   unsigned int getHeight();
+  void setOnResize(std::function<void(double, double)> f);
   
   friend class Pipeline;
   friend class Image;

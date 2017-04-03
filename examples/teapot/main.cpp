@@ -138,6 +138,12 @@ int main(){
   window->setOnKeyDown(sga::Key::d3, [&](){
       pipeline->setRasterizerMode(sga::RasterizerMode::Points);
     });
+
+  window->setOnResize([&](double w, double h){
+      projection = glm::perspectiveFov(glm::radians(70.0), w, h, 0.2, distance * 2.1);
+      MVP = projection * camera;
+      pipeline->setUniform("MVP", MVP);
+    });
   
   window->setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP

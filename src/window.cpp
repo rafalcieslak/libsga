@@ -50,6 +50,7 @@ void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
 
 unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
+void Window::setOnResize(std::function<void (double, double)> f) {impl->setOnResize(f);}
 
 // ====== IMPL ======
 
@@ -148,7 +149,8 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   
   width = w;
   height = h;
-  // TODO: Call user handler for resize.
+
+  if(f_onResize) f_onResize(width,height);
 }
 
 void Window::Impl::nextFrame() {
@@ -291,6 +293,10 @@ void Window::Impl::setOnMouseButton(std::function<void(bool, bool)> f) {
 void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   f_onMouseAny = f;
 };
+
+void Window::Impl::setOnResize(std::function<void (double, double)> f){
+  f_onResize = f;
+}
 
 bool Window::Impl::isKeyPressed(sga::Key k){
   auto it = keyState.find(k);

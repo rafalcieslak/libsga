@@ -276,8 +276,9 @@ bool Pipeline::Impl::ensureValidity(){
       PipelineConfigError("OutputLayoutMismatch", "This pipeline is configured to use " + std::to_string(targetImages.size()) + " textures as the output, but the pixel shader provides " + std::to_string(outl.layout.size())+ " outputs.").raise();
     }
     for(unsigned int i = 0; i < outl.layout.size(); i++){
-      if(outl.layout[0] != sga::DataType::Float4){
-        PipelineConfigError("OutputLayoutMismatch", "All outputs from a pixel shader when rendering must be of Float4 type.").raise();
+      if(outl.layout[i] != targetImages[i]->impl->format.shaderDataType){
+        // TODO: Present type names to explain the error.
+        PipelineConfigError("OutputLayoutMismatch", "Shader output "  + std::to_string(i) + "type does match target image format.").raise();
     }
     }
   }

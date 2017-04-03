@@ -67,10 +67,10 @@ int main(){
   )");
   auto GfragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      out_position = vec4(in_world_position, 1.0);
-      out_normal = vec4(in_world_normal, 1.0);
+      out_position = in_world_position;
+      out_normal = in_world_normal;
       // Typicaly: Read material texture.
-      out_albedo = vec4(1.0, 145.0/255, 231.0/255, 1.0);
+      out_albedo = vec3(1.0, 145.0/255, 231.0/255);
     }
   )");
   GvertShader->addInput(sga::DataType::Float3, "in_position");
@@ -80,9 +80,9 @@ int main(){
   GvertShader->addUniform(sga::DataType::Mat4, "MVP");
   GfragShader->addInput(sga::DataType::Float3, "in_world_position");
   GfragShader->addInput(sga::DataType::Float3, "in_world_normal");
-  GfragShader->addOutput(sga::DataType::Float4, "out_position");
-  GfragShader->addOutput(sga::DataType::Float4, "out_normal");
-  GfragShader->addOutput(sga::DataType::Float4, "out_albedo");
+  GfragShader->addOutput(sga::DataType::Float3, "out_position");
+  GfragShader->addOutput(sga::DataType::Float3, "out_normal");
+  GfragShader->addOutput(sga::DataType::Float3, "out_albedo");
   auto program_gbuffer = sga::Program::createAndCompile(GvertShader, GfragShader);
 
   // Create buffers

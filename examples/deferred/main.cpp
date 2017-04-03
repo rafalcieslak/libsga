@@ -260,8 +260,11 @@ int main(){
     pipeline_lighting->setUniform("lightpos", lightpos);
     pipeline_lighting->setUniform("viewpos", viewpos);
 
+    pipeline_gbuffer->clear();
     pipeline_gbuffer->drawVBO(modelVbo);
+    pipeline_lighting->clear();
     pipeline_lighting->drawFullQuad();
+    pipeline_window->clear();
     pipeline_window->drawFullQuad();
 
     window->nextFrame();

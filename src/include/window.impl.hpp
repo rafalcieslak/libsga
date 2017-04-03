@@ -45,6 +45,8 @@ public:
   static void mousePositionCallback(GLFWwindow *window, double width, double height);
   static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
   static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+  void clearCurrentFrame();
 private:
   GLFWwindow* window;
   unsigned int width, height;

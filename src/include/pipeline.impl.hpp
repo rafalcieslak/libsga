@@ -20,6 +20,7 @@ public:
   void drawVBO(std::shared_ptr<VBO>);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
   void setClearColor(float r, float g, float b);
+  void clear();
   
   virtual void setProgram(std::shared_ptr<Program>);
 
@@ -48,6 +49,8 @@ protected:
   FaceDirection faceDirection = FaceDirection::Clockwise;
   PolygonMode polygonMode = PolygonMode::Triangles;
   RasterizerMode rasterizerMode = RasterizerMode::Filled;
+
+  void clearDepthImage();
   
   void cook();
   bool cooked = false;

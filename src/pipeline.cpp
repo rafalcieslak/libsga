@@ -27,6 +27,7 @@ void Pipeline::setTarget(std::shared_ptr<Window> target) {impl()->setTarget(targ
 void Pipeline::setTarget(std::vector<std::shared_ptr<Image>> images) {impl()->setTarget(images);}
 void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl()->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl()->setClearColor(r, g, b);}
+void Pipeline::clear() {impl()->clear();}
 void Pipeline::setProgram(std::shared_ptr<Program> p) {impl()->setProgram(p);}
 
 void Pipeline::setUniform(std::string name, std::initializer_list<float> floats){
@@ -328,21 +329,10 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
   cmdBuffer->copyBuffer(unisb, b_uniformBuffer, vk::BufferCopy(0, 0, b_uniformSize));
 
-  std::vector<vk::ClearValue> clearValues;
-  if(target_is_window){
-    clearValues.push_back( vk::ClearValue(clear_color) );
-  }else{
-    for(unsigned int i = 0; i < targetImages.size(); i++){
-      (void)i;
-      clearValues.push_back( vk::ClearValue(clear_color) );
-    }
-  }
-  clearValues.push_back( vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) );
-  
   cmdBuffer->beginRenderPass(
     c_renderPass, framebuffer,
     vk::Rect2D({ 0, 0 }, extent),
-    clearValues,
+    {},
     vk::SubpassContents::eInline);
   cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
   cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
@@ -364,6 +354,21 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   if(target_is_window){
     targetWindow->impl->currentFrameRendered = true;
    }
+}
+
+void Pipeline::Impl::clear(){
+  if(!ensureValidity()) return;
+
+  if(target_is_window){
+    targetWindow->impl->clearCurrentFrame();
+  }else{
+    for(const auto& i : targetImages){
+      i->clear();
+    }
+    // No need to clear the depth buffer if it wasn't craeted yet.
+    if(renderpass_prepared)
+      clearDepthImage();
+  }
 }
 
 void Pipeline::Impl::prepare_unibuffers(){
@@ -456,15 +461,14 @@ void Pipeline::Impl::prepare_renderpass(){
   for(const auto& i : targetImages){
     attachmentDescriptions.push_back(vk::AttachmentDescription(
                                        {}, i->impl->format.vkFormat, vk::SampleCountFlagBits::e1,
-                                       vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // color
+                                       vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore, // color
                                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
-                                       // TODO: Use color attachment optimal layout
                                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal
                                        ));
   }
   attachmentDescriptions.push_back(vk::AttachmentDescription(
                                      {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
-                                     vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // depth
+                                     vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore, // depth
                                      vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
                                      vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal
                                      ));
@@ -516,11 +520,27 @@ void Pipeline::Impl::prepare_renderpass(){
                                            vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA },
                                          { vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1 });
   iviews.push_back(iv);
+
+  clearDepthImage();
   
   // Prepare framebuffer
   rp_framebuffer = global::device->createFramebuffer(rp_renderpass, iviews, rp_image_target_extent, 1);
   
   renderpass_prepared = true;
+}
+
+void Pipeline::Impl::clearDepthImage(){
+  // Clear depth image.
+  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+      auto image = rp_depthimage;
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+      cmdBuffer->clearDepthStencilImage(image, vk::ImageLayout::eTransferDstOptimal, 1.0f, 0, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1));
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,
+        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    });
 }
 
 void Pipeline::Impl::cook(){

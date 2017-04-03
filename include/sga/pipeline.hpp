@@ -82,6 +82,8 @@ public:
       clearing the target surface before at the beginning of a render. */
   void setClearColor(float r, float g, float b);
 
+  void clear();
+  
   void setProgram(std::shared_ptr<Program>);
 
   void setSampler(std::string, std::shared_ptr<Image>,

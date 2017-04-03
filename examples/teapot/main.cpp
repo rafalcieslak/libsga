@@ -32,9 +32,10 @@ int main(){
               << aimporter.GetErrorString() << std::endl;
     return 1;
   }
-  std::vector<VertData> vertices;
+  std::vector<std::shared_ptr<sga::VBO>> vbos;
   for(unsigned int m = 0; m < scene->mNumMeshes; m++){
     const aiMesh* mesh = scene->mMeshes[m];
+    std::vector<VertData> vertices;
     for(unsigned int f = 0; f < mesh->mNumFaces; f++){
       aiFace face = mesh->mFaces[f];
       for(unsigned int v = 0; v < 3; v++){
@@ -46,15 +47,15 @@ int main(){
           });
       }
     }
+    // Prepare VBO
+    auto vbo = sga::VBO::create({
+        sga::DataType::Float3,
+          sga::DataType::Float3},
+      vertices.size());
+    vbo->write(vertices);
+    vbos.push_back(vbo);
+    std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   }
-  std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
-  
-  // Prepare VBO
-  auto vbo = sga::VBO::create({
-      sga::DataType::Float3,
-      sga::DataType::Float3},
-    vertices.size());
-  vbo->write(vertices);
 
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
@@ -160,8 +161,10 @@ int main(){
   
   // Main loop
   while(window->isOpen()){
+    pipeline->clear();
     pipeline->setUniform("viewpos", viewpos);
-    pipeline->drawVBO(vbo);
+    pipeline->drawVBO(vbos[0]);
+    pipeline->drawVBO(vbos[1]);
     window->nextFrame();
   }
   

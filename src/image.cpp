@@ -16,7 +16,7 @@ Image::~Image() = default;
 
 void Image::putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->putDataRaw(data, n, dtype, value_size);}
 void Image::getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size) {impl->getDataRaw(data, n, dtype, value_size);}
-
+void Image::clear() {return impl->clear();}
 void Image::copyOnto(std::shared_ptr<Image> target,
                      int source_x, int source_y,
                      int target_x, int target_y,
@@ -346,8 +346,20 @@ void Image::Impl::getDataRaw(char * data, unsigned int n, DataType dtype, size_t
     assert(false);
   }
   
-  
   stagingImage->get<vkhlf::DeviceMemory>()->unmap();
+}
+
+void Image::Impl::clear(){
+  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+      std::array<int, 4> cc({0,0,0,0});
+      cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
+        vk::ImageLayout::eTransferDstOptimal, current_layout);
+    });
 }
 
 static void correct_bounds(

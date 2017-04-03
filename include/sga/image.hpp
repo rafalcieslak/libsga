@@ -77,6 +77,8 @@ public:
   unsigned int getHeight();
   unsigned int getChannels();
   unsigned int getValuesN();
+
+  void clear();
   
   void copyOnto(
     std::shared_ptr<Image> target,

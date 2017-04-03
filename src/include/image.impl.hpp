@@ -32,6 +32,8 @@ public:
   void putDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
   void getDataRaw(char * data, unsigned int n, DataType dtype, size_t value_size);
 
+  void clear();
+  
   void copyOnto(
     std::shared_ptr<Image> target,
     int source_x = 0, int source_y = 0,

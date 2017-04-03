@@ -88,13 +88,13 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
     renderPass = global::device->createRenderPass(
       { vk::AttachmentDescription( // attachment 0
           {}, colorFormat, vk::SampleCountFlagBits::e1,
-          vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // color
+          vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore, // color
           vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
           vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR
           ),
         vk::AttachmentDescription( // attachment 1
           {}, depthFormat, vk::SampleCountFlagBits::e1,
-          vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, // depth
+          vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore, // depth
           vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
           vk::ImageLayout::eUndefined,vk::ImageLayout::eDepthStencilAttachmentOptimal
           )
@@ -138,7 +138,10 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
       surface,
       colorFormat, 
       depthFormat,
-      renderPass)
+      renderPass,
+      // TODO: TransferDst is not guaranteed to be supported!
+      // See: https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html#_surface_queries
+      vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
     );
   out_dbg("Performed window resize to " + std::to_string(w) + "x" + std::to_string(h));
   frameno = 0;
@@ -146,6 +149,8 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   //std::cout << w << " " << h << std::endl;
   //std::cout << width << " " << height << std::endl;
   //std::cout << "===" << std::endl;
+
+  clearCurrentFrame();
   
   width = w;
   height = h;
@@ -205,6 +210,9 @@ void Window::Impl::nextFrame() {
   auto fence = global::device->createFence(false);
   framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
   fence->wait(UINT64_MAX);
+
+  // Clear the new frame
+  clearCurrentFrame();
   
   // Compute time deltas
   lastFrameDelta = now - lastFrameTime;
@@ -220,6 +228,31 @@ void Window::Impl::nextFrame() {
   totalFrameNo++;
   
   glfwPollEvents();
+}
+
+void Window::Impl::clearCurrentFrame(){
+  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+      // Clear the new frame.
+      auto image = framebufferSwapchain->getColorImage();
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+      std::array<int, 4> cc({0,0,0,0});
+      cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
+        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal);
+
+      // Clear the depth buffer.
+      image = framebufferSwapchain->getDepthImage();
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,
+        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+      cmdBuffer->clearDepthStencilImage(image, vk::ImageLayout::eTransferDstOptimal, 1.0f, 0, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1));
+      vkhlf::setImageLayout(
+        cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,
+        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    });
 }
 
 void Window::Impl::setFPSLimit(double fps){

@@ -229,7 +229,7 @@ void Program::Impl::compile_internal() {
   // Emit full sources.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
     S.fullSource = preamble + S.attrCode + uniformCode + samplerCode + S.source;
-    out_dbg("=== FULL SHADER SOURCE ===\n" + S.fullSource);
+    //out_dbg("=== FULL SHADER SOURCE ===\n" + S.fullSource);
   }
   
   // Extract metadata.

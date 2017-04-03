@@ -42,6 +42,7 @@ int main(){
   window->setFPSLimit(60);
 
   while(window->isOpen()){
+    pipeline->clear();
     pipeline->drawFullQuad();
     window->nextFrame();
   }

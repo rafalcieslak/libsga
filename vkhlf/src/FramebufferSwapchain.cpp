@@ -41,6 +41,7 @@ namespace vkhlf {
         vk::Format surfaceFormat,
         vk::Format depthFormat,
         std::shared_ptr<RenderPass> const& renderPass,
+        vk::ImageUsageFlags usageFlags,
         std::shared_ptr<DeviceMemoryAllocator> const& deviceMemoryAllocator,
         std::shared_ptr<Allocator> const& swapchainAllocator,
         std::shared_ptr<Allocator> const& imageAllocator,
@@ -76,7 +77,7 @@ namespace vkhlf {
             : surfaceCapabilities.currentTransform;
 
         m_swapchain = device->createSwapchain(surface, desiredNumberOfSwapChainImages, surfaceFormat, m_extent, 1,
-            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive, {}, preTransform,
+            usageFlags, vk::SharingMode::eExclusive, {}, preTransform,
             vk::CompositeAlphaFlagBitsKHR::eOpaque, swapchainPresentMode, true, nullptr, swapchainAllocator);
 
         m_colorImages = m_swapchain->getImages();

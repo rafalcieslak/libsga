@@ -40,6 +40,7 @@ namespace vkhlf {
             vk::Format surfaceFormat,
             vk::Format depthFormat,
             std::shared_ptr<RenderPass> const& renderPass,
+            vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
             std::shared_ptr<DeviceMemoryAllocator> const& deviceMemoryAllocator = nullptr,
             std::shared_ptr<Allocator> const& swapchainAllocator = nullptr,
             std::shared_ptr<Allocator> const& imageAllocator = nullptr,

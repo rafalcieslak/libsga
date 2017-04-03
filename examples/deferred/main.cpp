@@ -73,17 +73,13 @@ int main(){
       out_world_normal = in_normal;
       out_world_position = pos;
       out_texUV = in_texUV;
-    }
-  )");
+    })");
   auto GfragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
       out_position = in_world_position;
       out_normal = in_world_normal;
-      // Typicaly: Read material texture.
-      // out_albedo = vec3(1.0, 145.0/255, 231.0/255);
       out_albedo = texture(tex, in_texUV).xyz;
-    }
-  )");
+    })");
   GvertShader->addInput(sga::DataType::Float3, "in_position");
   GvertShader->addInput(sga::DataType::Float3, "in_normal");
   GvertShader->addInput(sga::DataType::Float2, "in_texUV");
@@ -129,8 +125,7 @@ int main(){
       vec3 s = vec3(0.8) * pow(max(0, dot(R, E)), 20.0);
 
       out_color = vec4((a + d + s) * 0.86, 1.0);
-    }
-  )");
+    })");
   LfragShader->addOutput(sga::DataType::Float4, "out_color");
   LfragShader->addSampler("buffer_position");
   LfragShader->addSampler("buffer_normal");
@@ -167,8 +162,7 @@ int main(){
         if(here.x >= 0.5 && here.y >= 0.5)
           out_color = texture(result_image, texpos);
       }
-    }
-  )");
+    })");
   WfragShader->addOutput(sga::DataType::Float4, "out_color");
   WfragShader->addSampler("buffer_position");
   WfragShader->addSampler("buffer_normal");
@@ -218,8 +212,7 @@ int main(){
       pipeline_window->setSampler("buffer_position", buffer_position);
       pipeline_window->setSampler("buffer_normal", buffer_normal);
       pipeline_window->setSampler("buffer_albedo", buffer_albedo);
-      pipeline_window->setSampler("result_image", result_image);
-      
+      pipeline_window->setSampler("result_image", result_image); 
     });
   
   float view_phi = 0.0;
@@ -259,7 +252,6 @@ int main(){
 
     window->nextFrame();
   }
-  
   sga::terminate();
 }
 

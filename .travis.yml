@@ -4,7 +4,10 @@ compiler:
   - gcc
 dist: trusty
 sudo: required
+git:
+  submodules: false
 before_install:
+  - git submodule update --init
   - sudo apt-get -qq update
   - sudo apt-get install -y libvulkan-dev xorg-dev libglm-dev libassimp-dev
 script:

@@ -6,6 +6,10 @@
 
 #define SGA_USE_GLM
 #include <sga.hpp>
+#include "../common/common.hpp"
+
+#define _USE_MATH_DEFINES // Silly MSVC
+#include <cmath>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -22,7 +26,7 @@ int main(){
 
   // Load model data.
   Assimp::Importer aimporter;
-  std::string filepath =  "./examples/data/teapot/teapot-smooth.obj";
+  std::string filepath =  EXAMPLE_DATA_DIR "teapot/teapot-smooth.obj";
   const aiScene* scene = aimporter.ReadFile(filepath, 
                                             aiProcess_Triangulate |
                                             aiProcess_GenNormals  |
@@ -52,7 +56,7 @@ int main(){
   std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   
   // Read texture image
-  auto texture = sga::Image::createFromPNG("examples/data/teapot/texture.png");
+  auto texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "/teapot/texture.png");
   
   // Prepare VBO
   auto modelVbo = sga::VBO::create({

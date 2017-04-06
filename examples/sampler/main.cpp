@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include <sga.hpp>
+#include "../common/common.hpp"
 
 int main(){
   sga::init();
@@ -17,7 +18,7 @@ int main(){
   )");
 
   // Read image
-  auto texture = sga::Image::createFromPNG("examples/data/test_image.png");
+  auto texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "test_image.png");
   
   fragShader->addOutput(sga::DataType::Float4, "outColor");
   fragShader->addSampler("tex");

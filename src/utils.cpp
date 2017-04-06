@@ -172,7 +172,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
                                 vk::DebugReportFlagBitsEXT::eError |
                                 vk::DebugReportFlagBitsEXT::eDebug
     );
-  global::debugReportCallback = global::instance->createDebugReportCallback(flags, &debugReportCallback);
+  global::debugReportCallback = global::instance->createDebugReportCallback(flags, (PFN_vkDebugReportCallbackEXT)&debugReportCallback);
 
   // Choose a physical device.
   if(!pickPhysicalDevice()){

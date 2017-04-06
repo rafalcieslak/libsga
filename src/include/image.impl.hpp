@@ -3,6 +3,7 @@
 
 #include <sga/image.hpp>
 #include <sga/layout.hpp>
+#include <functional>
 
 #include <vkhlf/vkhlf.h>
 

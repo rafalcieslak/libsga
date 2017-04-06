@@ -22,70 +22,70 @@ enum class ImageFormat{
 
 class Image{
 public:
-  static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8){
+  SGA_API static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8){
     return std::shared_ptr<Image>(new Image(width, height, ch, format));
   }
-  static std::shared_ptr<Image> createFromPNG(std::string png_path, ImageFormat format = ImageFormat::NInt8){
+  SGA_API static std::shared_ptr<Image> createFromPNG(std::string png_path, ImageFormat format = ImageFormat::NInt8){
     return std::shared_ptr<Image>(new Image(png_path, format));
   }
-  ~Image();
+  SGA_API ~Image();
 
-  void putData(const std::vector<uint8_t>& data){
+  SGA_API void putData(const std::vector<uint8_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
-  void putData(const std::vector<uint16_t>& data){
+  SGA_API void putData(const std::vector<uint16_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
   }
-  void putData(const std::vector<uint32_t>& data){
+  SGA_API void putData(const std::vector<uint32_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
   }
-  void putData(const std::vector<int8_t>& data){
+  SGA_API void putData(const std::vector<int8_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
-  void putData(const std::vector<int16_t>& data){
+  SGA_API void putData(const std::vector<int16_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
   }
-  void putData(const std::vector<int32_t>& data){
+  SGA_API void putData(const std::vector<int32_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
   }
-  void putData(const std::vector<float>& data){
+  SGA_API void putData(const std::vector<float>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
   }
   
 
-  void getData(std::vector<uint8_t>& data){
+  SGA_API void getData(std::vector<uint8_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
-  void getData(std::vector<uint16_t>& data){
+  SGA_API void getData(std::vector<uint16_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
   }
-  void getData(std::vector<uint32_t>& data){
+  SGA_API void getData(std::vector<uint32_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
   }
-  void getData(std::vector<int8_t>& data){
+  SGA_API void getData(std::vector<int8_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
-  void getData(std::vector<int16_t>& data){
+  SGA_API void getData(std::vector<int16_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
   }
-  void getData(std::vector<int32_t>& data){
+  SGA_API void getData(std::vector<int32_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
   }
-  void getData(std::vector<float>& data){
+  SGA_API void getData(std::vector<float>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
   }
 
-  void loadPNG(std::string filepath);
-  void savePNG(std::string filepath);
+  SGA_API void loadPNG(std::string filepath);
+  SGA_API void savePNG(std::string filepath);
   
-  unsigned int getWidth();
-  unsigned int getHeight();
-  unsigned int getChannels();
-  unsigned int getValuesN();
+  SGA_API unsigned int getWidth();
+  SGA_API unsigned int getHeight();
+  SGA_API unsigned int getChannels();
+  SGA_API unsigned int getValuesN();
 
-  void clear();
+  SGA_API void clear();
   
-  void copyOnto(
+  SGA_API void copyOnto(
     std::shared_ptr<Image> target,
     int source_x = 0, int source_y = 0,
     int target_x = 0, int target_y = 0,
@@ -93,11 +93,11 @@ public:
 
   friend class Pipeline;
 private:
-  Image(int width, int height, unsigned int ch, ImageFormat format);
-  Image(std::string png_path, ImageFormat format);
+  SGA_API Image(int width, int height, unsigned int ch, ImageFormat format);
+  SGA_API Image(std::string png_path, ImageFormat format);
   
-  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
-  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  SGA_API void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  SGA_API void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
   
   class Impl;
   pimpl_unique_ptr<Impl> impl;

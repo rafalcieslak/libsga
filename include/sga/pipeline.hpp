@@ -1,6 +1,7 @@
 #ifndef __SGA_PIPELINE_HPP__
 #define __SGA_PIPELINE_HPP__
 
+#include <array>
 #include "config.hpp"
 #include "window.hpp"
 #include "layout.hpp"
@@ -56,44 +57,44 @@ enum class RasterizerMode{
 */
 class Pipeline{
 public:
-  ~Pipeline();
+  SGA_API ~Pipeline();
 
   /** Creates a new unconfigured Pipeline. */
-  static std::shared_ptr<Pipeline> create(){
+  SGA_API static std::shared_ptr<Pipeline> create(){
     return std::shared_ptr<Pipeline>(new Pipeline());
   }
   
   /** Configures the pipeline to render onto the provided window. */
-  void setTarget(std::shared_ptr<Window> window);
+  SGA_API void setTarget(std::shared_ptr<Window> window);
   
-  void setTarget(std::shared_ptr<Image> image) {setTarget({image});}
-  void setTarget(std::initializer_list<std::shared_ptr<Image>> images) {
+  SGA_API void setTarget(std::shared_ptr<Image> image) {setTarget({image});}
+  SGA_API void setTarget(std::initializer_list<std::shared_ptr<Image>> images) {
     setTarget(std::vector<std::shared_ptr<Image>>(images));
   }
-  void setTarget(std::vector<std::shared_ptr<Image>> images);
+  SGA_API void setTarget(std::vector<std::shared_ptr<Image>> images);
   
   /** Performs rendering using vertex data from the provided VBO. This method
       blocks until rendering completes. Before rendering pipeline configuration
       is valdiated, and you will be notified of any errors or
       inconsistencies. */
-  void drawVBO(std::shared_ptr<VBO>);
+  SGA_API void drawVBO(std::shared_ptr<VBO>);
 
   /** Configures the clear color of this pipeline, i.e. the color used for
       clearing the target surface before at the beginning of a render. */
-  void setClearColor(float r, float g, float b);
+  SGA_API void setClearColor(float r, float g, float b);
 
-  void clear();
+  SGA_API void clear();
   
-  void setProgram(std::shared_ptr<Program>);
+  SGA_API void setProgram(std::shared_ptr<Program>);
 
-  void setSampler(std::string, std::shared_ptr<Image>,
+  SGA_API void setSampler(std::string, std::shared_ptr<Image>,
                   SamplerInterpolation interpolation = SamplerInterpolation::Linear,
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
 
-  void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
+  SGA_API void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
   
-  void setPolygonMode(PolygonMode p);
-  void setRasterizerMode(RasterizerMode r);
+  SGA_API void setPolygonMode(PolygonMode p);
+  SGA_API void setRasterizerMode(RasterizerMode r);
   
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided
@@ -102,41 +103,41 @@ public:
       uniform (`u.sga*`). Using these methods is insanely fast. All changes are
       cached and writes are postponed until next render. */
   #include "pipeline.uniforms.inc"
-  void setUniform(std::string name, std::initializer_list<float> floats);
+  SGA_API void setUniform(std::string name, std::initializer_list<float> floats);
   //@}
 protected:
-  Pipeline();
-  void setUniform(DataType dt, std::string name, char* pData, size_t size);
+  SGA_API Pipeline();
+  SGA_API void setUniform(DataType dt, std::string name, char* pData, size_t size);
   
   class Impl;
   pimpl_unique_ptr<Impl> impl_;
-  Impl* impl() {return impl_.get();}
-  const Impl* impl() const {return impl_.get();}
-  Pipeline(pimpl_unique_ptr<Impl> &&impl);
+  SGA_API Impl* impl() {return impl_.get();}
+  SGA_API const Impl* impl() const {return impl_.get();}
+  SGA_API Pipeline(pimpl_unique_ptr<Impl> &&impl);
 };
 
 /* A simplified pipeline, which runs the pixel shader over the entire target area. */
 class FullQuadPipeline : public Pipeline{
 public:
-  ~FullQuadPipeline();
-  static std::shared_ptr<FullQuadPipeline> create(){
+  SGA_API ~FullQuadPipeline();
+  SGA_API static std::shared_ptr<FullQuadPipeline> create(){
     return std::shared_ptr<FullQuadPipeline>(new FullQuadPipeline());
   }
   
-  void drawFullQuad();
+  SGA_API void drawFullQuad();
   
-  void setProgram(std::shared_ptr<Program>);
+  SGA_API void setProgram(std::shared_ptr<Program>);
 
   // Forbid some functions from Pipeline which make no sense for FullQuadPipeline
-  void drawVBO(std::shared_ptr<VBO>) = delete;
-  void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise) = delete;
-  void setPolygonMode(PolygonMode p) = delete;
-  void setRasterizerMode(RasterizerMode r) = delete;
+  SGA_API void drawVBO(std::shared_ptr<VBO>) = delete;
+  SGA_API void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise) = delete;
+  SGA_API void setPolygonMode(PolygonMode p) = delete;
+  SGA_API void setRasterizerMode(RasterizerMode r) = delete;
   
 protected:
-  FullQuadPipeline();
+  SGA_API FullQuadPipeline();
   class Impl;
-  Impl* impl();
+  SGA_API Impl* impl();
   const Impl* impl() const;
 };
 

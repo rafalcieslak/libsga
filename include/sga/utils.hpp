@@ -1,16 +1,18 @@
 #ifndef __SGA_UTILS_HPP__
 #define __SGA_UTILS_HPP__
 
+#include "config.hpp"
+
 namespace sga{
 
 /** Displays some basic info about libSGA status to the standard output. */
-void info();
+SGA_API void info();
 
 /** Returns the number of seconds elapsed since SGA was initialized, as a
  * double-precision floating point value. You may find it convenient to use this
  * function for timing and animation in your application. The same value is
  * available for shaders via the `u.sgaTime` uniform. */
-double getTime();
+SGA_API double getTime();
 
 enum class VerbosityLevel{
   Quiet = 0, /// SGA will never use standard output.
@@ -44,12 +46,12 @@ enum class ErrorStrategy{
 
     If you call init(), you must call terminate() before your application
     closes! */
-void init(VerbosityLevel level = VerbosityLevel::Verbose,
+SGA_API void init(VerbosityLevel level = VerbosityLevel::Verbose,
           ErrorStrategy stragety = ErrorStrategy::MessageThrow);
 
 /** Deinitializes SGA. You MUST call terminate() before your application exits,
     if you called init() before. */
-void terminate();
+SGA_API void terminate();
 
 } // namespace sga
 

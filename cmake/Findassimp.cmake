@@ -19,7 +19,8 @@ if (WIN32)
 	find_path(
 		ASSIMP_INCLUDE_DIR
 		NAMES assimp/scene.h
-		PATHS
+		HINTS
+			$ENV{ASSIMP_SDK}/include
 			$ENV{PROGRAMFILES}/include
 			${ASSIMP_ROOT_DIR}/include
 		DOC "The directory where assimp/scene.h resides")
@@ -28,7 +29,9 @@ if (WIN32)
 	find_library(
 		ASSIMP_LIBRARY
 		NAMES assimp
-		PATHS
+		HINTS
+			$ENV{ASSIMP_SDK}/lib/x64
+			$ENV{ASSIMP_SDK}/lib/x86
 			$ENV{PROGRAMFILES}/lib
 			${ASSIMP_ROOT_DIR}/lib)
 else()

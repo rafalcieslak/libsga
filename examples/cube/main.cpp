@@ -7,6 +7,7 @@
 
 #define SGA_USE_GLM
 #include <sga.hpp>
+#include "../common/common.hpp"
 
 struct VertData{
   glm::vec3 pos;
@@ -113,8 +114,8 @@ int main(){
   fragShader->addSampler("tex");
 
   // Read images
-  auto textureImage  = sga::Image::createFromPNG("examples/data/cube.png");
-  auto textureImage2 = sga::Image::createFromPNG("examples/data/cube2.png");
+  auto textureImage  = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube.png");
+  auto textureImage2 = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube2.png");
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};

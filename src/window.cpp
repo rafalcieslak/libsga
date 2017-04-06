@@ -237,7 +237,7 @@ void Window::Impl::clearCurrentFrame(){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-      std::array<int, 4> cc({0,0,0,0});
+      std::array<int, 4> cc = {0,0,0,0};
       cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,

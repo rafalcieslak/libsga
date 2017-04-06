@@ -11,6 +11,7 @@
 
 #define SGA_USE_GLM
 #include <sga.hpp>
+#include "../common/common.hpp"
 
 struct VertData{
   glm::vec3 pos;
@@ -22,7 +23,7 @@ int main(){
 
   // Import model.
   Assimp::Importer aimporter;
-  std::string filepath =  "./examples/data/teapot/teapot.obj";
+  std::string filepath =  EXAMPLE_DATA_DIR "teapot/teapot.obj";
   const aiScene* scene = aimporter.ReadFile(filepath, 
                                             aiProcess_Triangulate |
                                             aiProcess_GenNormals  |

@@ -187,9 +187,9 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
   // This pointer walks over mapped memory.
-  uint8_t* __restrict__ q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
   // This pointer walks over host memory.
-  uint8_t* __restrict__ q_data = reinterpret_cast<uint8_t*>(data);
+  uint8_t* RESTRICT q_data = reinterpret_cast<uint8_t*>(data);
     
   if(value_size == 1){
     for (size_t y = 0; y < height; y++){
@@ -306,9 +306,9 @@ void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
   // This pointer walks over mapped memory.
-  uint8_t* __restrict__ q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
   // This pointer walks over host memory.
-  uint8_t* __restrict__ q_data = reinterpret_cast<uint8_t*>(data);
+  uint8_t* RESTRICT q_data = reinterpret_cast<uint8_t*>(data);
     
   if(value_size == 1){
     for (size_t y = 0; y < height; y++){
@@ -358,7 +358,7 @@ void Image::Impl::clear(){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-      std::array<int, 4> cc({0,0,0,0});
+      std::array<int, 4> cc = {0,0,0,0};
       cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,

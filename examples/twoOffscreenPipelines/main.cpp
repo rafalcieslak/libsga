@@ -1,4 +1,5 @@
 #include <sga.hpp>
+#include "../common/common.hpp"
 
 int main(){
   sga::init();
@@ -6,7 +7,7 @@ int main(){
   // ==== Images ====
 
   // Source image
-  auto image0 = sga::Image::createFromPNG("examples/data/test_image.png");
+  auto image0 = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "test_image.png");
   // Intermediate buffer
   auto image1 = sga::Image::create(1440, 900);
   // Final result

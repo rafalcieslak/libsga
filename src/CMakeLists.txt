@@ -11,6 +11,7 @@ include_directories(SYSTEM ${VkHLF_INCLUDE_DIRS})
 
 add_library(sga SHARED ${LIBSGA_SOURCES})
 set_target_properties(sga PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(sga PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 target_link_libraries(sga
   PRIVATE -Wl,--no-as-needed # This forces a runtime link dependency to libvulkan.so

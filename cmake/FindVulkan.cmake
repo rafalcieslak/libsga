@@ -34,17 +34,17 @@ if(WIN32)
     PATHS
       "$ENV{VULKAN_SDK}/Include"
     )
-
+	
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     find_library(Vulkan_LIBRARY
       NAMES vulkan-1
       PATHS
-        "$ENV{VULKAN_SDK}/Bin")
+        "$ENV{VULKAN_SDK}/Lib")
   elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
     find_library(Vulkan_LIBRARY
       NAMES vulkan-1
       PATHS
-        "$ENV{VULKAN_SDK}/Bin32")
+        "$ENV{VULKAN_SDK}/Lib32")
   endif()
 else()
     find_path(Vulkan_INCLUDE_DIR

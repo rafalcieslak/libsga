@@ -1,6 +1,8 @@
 #ifndef __SGA_LAYOUT_HPP__
 #define __SGA_LAYOUT_HPP__
 
+#include "config.hpp"
+
 #include <memory>
 #include <vector>
 #include <initializer_list>
@@ -17,21 +19,21 @@ enum class DataType{
 
 class DataLayout{
 public:
-  ~DataLayout();
-  DataLayout() {}
-  DataLayout(std::initializer_list<DataType> types);
-  size_t byteSize() const;
+  SGA_API ~DataLayout();
+  SGA_API DataLayout() {}
+  SGA_API DataLayout(std::initializer_list<DataType> types);
+  SGA_API size_t byteSize() const;
   
   // TODO: This should be hidden from API.
-  size_t UBOsize() const;
+  SGA_API size_t UBOsize() const;
   
   std::vector<DataType> layout;
 
-  DataLayout& extend(DataType dt);
+  SGA_API DataLayout& extend(DataType dt);
 
-  bool operator ==(const DataLayout& other);
-  bool operator !=(const DataLayout& other);
-  operator bool();
+  SGA_API bool operator ==(const DataLayout& other);
+  SGA_API bool operator !=(const DataLayout& other);
+  SGA_API operator bool();
 };
 
 } // namespace sga

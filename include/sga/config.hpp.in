@@ -8,6 +8,18 @@
 #include <glm/glm.hpp>
 #endif
 
+#if defined(WIN32) || defined(_WIN32)
+# if defined(LIBSGA_EXPORTS)
+#  define SGA_API __declspec(dllexport)
+# else
+#  define SGA_API __declspec(dllimport)
+# endif
+# define RESTRICT
+#else
+# define SGA_API
+# define RESTRICT __restrict__
+#endif
+
 #include <memory>
 #if __cpp_lib_experimental_propagate_const >= 201505
   #include <experimental/propagate_const>

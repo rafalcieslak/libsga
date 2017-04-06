@@ -14,42 +14,42 @@ class VBOImpl;
 
 class VBO{
 public:
-  ~VBO();
+  SGA_API ~VBO();
 
-  DataLayout getLayout() const;
-  size_t getDataSize() const;
-  unsigned int getSize() const;
+  SGA_API DataLayout getLayout() const;
+  SGA_API size_t getDataSize() const;
+  SGA_API unsigned int getSize() const;
   
   // Non-Interleaving write.
   template <typename T>
-  void write(std::vector<T> data){
+  SGA_API void write(std::vector<T> data){
     putData((uint8_t*)data.data(), data.size(), sizeof(T));
   }
 
   // Interleaving write.
   template <typename... Ts>
-  void write(std::tuple<std::vector<Ts>...> data){
+  SGA_API void write(std::tuple<std::vector<Ts>...> data){
     std::cout << "interleaved write UNIMPLEMENTED!!!" << std::endl;;
   }
 
   // At least 2 args.
   template <typename T, typename... Ts>
-  void write(T arg1, Ts... args){
+  SGA_API void write(T arg1, Ts... args){
     write(std::tuple<T, Ts...>(arg1, args...));
   }
 
-  static std::shared_ptr<VBO> create(DataLayout layout, unsigned int size) {
+  SGA_API static std::shared_ptr<VBO> create(DataLayout layout, unsigned int size) {
     return std::shared_ptr<VBO>(new VBO(layout, size));
   }
   
   friend class Pipeline;
 private:
-  VBO(DataLayout layout, unsigned int n);
+  SGA_API VBO(DataLayout layout, unsigned int n);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 
-  void putData(uint8_t* pData, size_t n);
-  void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
+  SGA_API void putData(uint8_t* pData, size_t n);
+  SGA_API void putData(uint8_t* pData, size_t n_elem, size_t elem_size);
 };
 
 } // namespace sga

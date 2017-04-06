@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <functional>
 
 #include "config.hpp"
 #include "keys.hpp"
@@ -11,47 +12,47 @@ namespace sga{
 
 class Window{
 public:
-  ~Window();
+  SGA_API ~Window();
   
-  static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
+  SGA_API static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
     return std::shared_ptr<Window>(new Window(width, height, title));
   }
 
   // Frame display and statistics
-  void nextFrame();
-  void setFPSLimit(double fps);
-  float getLastFrameDelta() const;
-  float getAverageFPS() const;
-  unsigned int getFrameNo() const;
+  SGA_API void nextFrame();
+  SGA_API void setFPSLimit(double fps);
+  SGA_API float getLastFrameDelta() const;
+  SGA_API float getAverageFPS() const;
+  SGA_API unsigned int getFrameNo() const;
 
   // Window state
-  bool isOpen();
-  void close();
+  SGA_API bool isOpen();
+  SGA_API void close();
 
   // Fullscreen options
-  bool isFullscreen();
-  void setFullscreen(bool fullscreen);
-  void toggleFullscreen();
+  SGA_API bool isFullscreen();
+  SGA_API void setFullscreen(bool fullscreen);
+  SGA_API void toggleFullscreen();
   
   // Keyboard support
-  bool isKeyPressed(Key k);
-  void setOnKeyDown(Key k, std::function<void()>);
-  void setOnKeyUp(Key k, std::function<void()>);
+  SGA_API bool isKeyPressed(Key k);
+  SGA_API void setOnKeyDown(Key k, std::function<void()>);
+  SGA_API void setOnKeyUp(Key k, std::function<void()>);
 
   // Mouse support
-  void setOnMouseMove(std::function<void(double, double)> f);
-  void setOnMouseButton(std::function<void(bool, bool)> f);
-  void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
+  SGA_API void setOnMouseMove(std::function<void(double, double)> f);
+  SGA_API void setOnMouseButton(std::function<void(bool, bool)> f);
+  SGA_API void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
 
   // Window size
-  unsigned int getWidth();
-  unsigned int getHeight();
-  void setOnResize(std::function<void(unsigned int, unsigned int)> f);
+  SGA_API unsigned int getWidth();
+  SGA_API unsigned int getHeight();
+  SGA_API void setOnResize(std::function<void(unsigned int, unsigned int)> f);
   
   friend class Pipeline;
   friend class Image;
 private:
-  Window(unsigned int width, unsigned int height, std::string title);
+  SGA_API Window(unsigned int width, unsigned int height, std::string title);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

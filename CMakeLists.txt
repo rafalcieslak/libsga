@@ -55,15 +55,28 @@ endif()
 # variables for building with external libraries.
 add_subdirectory(external)
 
-# Global definitions
-add_definitions(--std=c++14)
+set(CMAKE_CXX_STANDARD 14)
 
-if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
-  add_definitions( -O3 )
-endif()
-if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-  add_definitions( -Wall -Wextra -g)
-endif()
+add_definitions(-DLIBSGA_EXPORTS)
+
+# Global definitions
+if(WIN32)
+  if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" "/MP")
+    add_definitions( /O3 )
+  endif()
+  if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" "/MP")
+    add_definitions( /Yg)
+  endif()
+else(WIN32)
+  if((${CMAKE_BUILD_TYPE} MATCHES "Release"))
+    add_definitions( -O3 )
+  endif()
+  if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+    add_definitions( -Wall -Wextra -g)
+  endif()
+endif(WIN32)
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/sga/config.hpp.in

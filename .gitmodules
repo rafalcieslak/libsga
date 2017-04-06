@@ -2,14 +2,11 @@
 	path = external/glslang
 	url = https://github.com/rafalcieslak/glslang
 	branch = libsga
-	shallow = true
 [submodule "external/glfw"]
 	path = external/glfw
 	url = https://github.com/rafalcieslak/glfw
 	branch = libsga
-	shallow = true
 [submodule "external/vkhlf"]
 	path = external/vkhlf
 	url = https://github.com/rafalcieslak/vkhlf
 	branch = libsga
-	shallow = true

@@ -44,7 +44,7 @@
 # define _stricmp strcasecmp
 #endif
 
-
+/*
 #if defined(VK_OS_WINDOWS)
 // microsoft specific storage-class defines
 # if defined(VKHLF_EXPORTS)
@@ -55,6 +55,9 @@
 #else
 # define VKHLF_API
 #endif
+*/
+// Temporarily disabled dllexports to make header compatible with a static lib
+#define VKHLF_API
 
 #include <assert.h>
 #include <sstream>

@@ -114,8 +114,8 @@ int main(){
   fragShader->addSampler("tex");
 
   // Read images
-  auto textureImage  = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube.png");
-  auto textureImage2 = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube2.png");
+  auto textureImage  = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube.png", sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
+  auto textureImage2 = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube2.png", sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
 
   // Compute initial MVP
   glm::vec3 viewpos = {0,0,-4};

@@ -48,7 +48,7 @@ function(add_example NAME)
   add_executable(${TARGET_NAME} ${EXAMPLE_SOURCES})
   target_link_libraries(${TARGET_NAME} sga)
   target_link_libraries(${TARGET_NAME} ${REQ_LIBRARIES})
-  message("Linking ${TARGET_NAME} with ${REQ_LIBRARIES}")
+  # message("Linking ${TARGET_NAME} with ${REQ_LIBRARIES}")
   set_target_properties(${TARGET_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
   if(EXAMPLE_SHADERS)
     add_custom_command(

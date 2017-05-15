@@ -83,6 +83,24 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/sga/config.hpp
   @ONLY)
 
+# Release targets
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-windows.sh")
+endif("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-linux.sh")
+endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+
+add_custom_target(
+  release
+  COMMAND sh ${PACKAGING_SCRIPT} ${PROJECT_VERSION_SHORT}
+)
+add_dependencies(
+  release
+  sga
+  doc
+)
+
 
 add_subdirectory(src)
 add_subdirectory(doc)

@@ -45,7 +45,9 @@ Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, Imag
   userFormat = f;
   format = getFormatProperties(channels, userFormat);
 
-  // TODO: Check if this format supports mipmaps!!!
+  if(hasMipmaps() && !format.supports_blit){
+    ImageFormatError("MipmapsUnsupported", "This format does not support mipmaps").raise();
+  }
   
   unsigned int mipsno = hasMipmaps() ? getDesiredMipsNo() : 1;
   image = global::device->createImage(
@@ -95,41 +97,41 @@ const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat f
 #define cs1 vk::ComponentSwizzle::eOne
 #define cs0 vk::ComponentSwizzle::eZero
   static std::map<std::pair<unsigned int, ImageFormat>, FormatProperties> m = {
-    {{1,ImageFormat::SInt8},  {vk::Format::eR8Sint,    DataType::SInt,  DataType::SInt,  1, 1, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::NInt8},  {vk::Format::eR8Unorm,   DataType::Float, DataType::UInt,  1, 1, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::UInt8},  {vk::Format::eR8Uint,    DataType::UInt,  DataType::UInt,  1, 1, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::SInt16}, {vk::Format::eR16Sint,   DataType::SInt,  DataType::SInt,  2, 2, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::UInt16}, {vk::Format::eR16Uint,   DataType::UInt,  DataType::UInt,  2, 2, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::SInt32}, {vk::Format::eR32Sint,   DataType::SInt,  DataType::SInt,  4, 4, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::UInt32}, {vk::Format::eR32Uint,   DataType::UInt,  DataType::UInt,  4, 4, {csR, cs0, cs0, cs1}}},
-    {{1,ImageFormat::Float},  {vk::Format::eR32Sfloat, DataType::Float, DataType::Float, 4, 4, {csR, cs0, cs0, cs1}}},
+    {{1,ImageFormat::SInt8},  {vk::Format::eR8Sint,    DataType::SInt,  DataType::SInt,  1, 1, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::NInt8},  {vk::Format::eR8Unorm,   DataType::Float, DataType::UInt,  1, 1, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::UInt8},  {vk::Format::eR8Uint,    DataType::UInt,  DataType::UInt,  1, 1, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::SInt16}, {vk::Format::eR16Sint,   DataType::SInt,  DataType::SInt,  2, 2, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::UInt16}, {vk::Format::eR16Uint,   DataType::UInt,  DataType::UInt,  2, 2, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::SInt32}, {vk::Format::eR32Sint,   DataType::SInt,  DataType::SInt,  4, 4, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::UInt32}, {vk::Format::eR32Uint,   DataType::UInt,  DataType::UInt,  4, 4, {csR, cs0, cs0, cs1}, true}},
+    {{1,ImageFormat::Float},  {vk::Format::eR32Sfloat, DataType::Float, DataType::Float, 4, 4, {csR, cs0, cs0, cs1}, true}},
                               
-    {{2,ImageFormat::SInt8},  {vk::Format::eR8G8Sint,     DataType::SInt2,  DataType::SInt,  2, 2, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::NInt8},  {vk::Format::eR8G8Unorm,    DataType::Float2, DataType::UInt,  2, 2, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::UInt8},  {vk::Format::eR8G8Uint,     DataType::UInt2,  DataType::UInt,  2, 2, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::SInt16}, {vk::Format::eR16G16Sint,   DataType::SInt2,  DataType::SInt,  4, 4, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::UInt16}, {vk::Format::eR16G16Uint,   DataType::UInt2,  DataType::UInt,  4, 4, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::SInt32}, {vk::Format::eR32G32Sint,   DataType::SInt2,  DataType::SInt,  8, 8, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::UInt32}, {vk::Format::eR32G32Uint,   DataType::UInt2,  DataType::UInt,  8, 8, {csR, csG, cs0, cs1}}},
-    {{2,ImageFormat::Float},  {vk::Format::eR32G32Sfloat, DataType::Float2, DataType::Float, 8, 8, {csR, csG, cs0, cs1}}},
+    {{2,ImageFormat::SInt8},  {vk::Format::eR8G8Sint,     DataType::SInt2,  DataType::SInt,  2, 2, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::NInt8},  {vk::Format::eR8G8Unorm,    DataType::Float2, DataType::UInt,  2, 2, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::UInt8},  {vk::Format::eR8G8Uint,     DataType::UInt2,  DataType::UInt,  2, 2, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::SInt16}, {vk::Format::eR16G16Sint,   DataType::SInt2,  DataType::SInt,  4, 4, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::UInt16}, {vk::Format::eR16G16Uint,   DataType::UInt2,  DataType::UInt,  4, 4, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::SInt32}, {vk::Format::eR32G32Sint,   DataType::SInt2,  DataType::SInt,  8, 8, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::UInt32}, {vk::Format::eR32G32Uint,   DataType::UInt2,  DataType::UInt,  8, 8, {csR, csG, cs0, cs1}, true}},
+    {{2,ImageFormat::Float},  {vk::Format::eR32G32Sfloat, DataType::Float2, DataType::Float, 8, 8, {csR, csG, cs0, cs1}, true}},
                               
-    {{3,ImageFormat::SInt8},  {vk::Format::eR8G8B8A8Sint,       DataType::SInt3,  DataType::SInt,   3,  4, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::NInt8},  {vk::Format::eR8G8B8A8Unorm,      DataType::Float3, DataType::UInt,   3,  4, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::UInt8},  {vk::Format::eR8G8B8A8Uint,       DataType::UInt3,  DataType::UInt,   3,  4, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::SInt16}, {vk::Format::eR16G16B16A16Sint,   DataType::SInt3,  DataType::SInt,   6,  8, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::UInt16}, {vk::Format::eR16G16B16A16Uint,   DataType::UInt3,  DataType::UInt,   6,  8, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::SInt32}, {vk::Format::eR32G32B32A32Sint,   DataType::SInt3,  DataType::SInt,  12, 16, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::UInt32}, {vk::Format::eR32G32B32A32Uint,   DataType::UInt3,  DataType::UInt,  12, 16, {csR, csG, csB, cs1}}},
-    {{3,ImageFormat::Float},  {vk::Format::eR32G32B32A32Sfloat, DataType::Float3, DataType::Float, 12, 16, {csR, csG, csB, cs1}}},
-                                                                                                  
-    {{4,ImageFormat::SInt8},  {vk::Format::eR8G8B8A8Sint,       DataType::SInt4,  DataType::SInt,   4,  4, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::NInt8},  {vk::Format::eR8G8B8A8Unorm,      DataType::Float4, DataType::UInt,   4,  4, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::UInt8},  {vk::Format::eR8G8B8A8Uint,       DataType::UInt4,  DataType::UInt,   4,  4, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::SInt16}, {vk::Format::eR16G16B16A16Sint,   DataType::SInt4,  DataType::SInt,   8,  8, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::UInt16}, {vk::Format::eR16G16B16A16Uint,   DataType::UInt4,  DataType::UInt,   8,  8, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::SInt32}, {vk::Format::eR32G32B32A32Sint,   DataType::SInt4,  DataType::SInt,  16, 16, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::UInt32}, {vk::Format::eR32G32B32A32Uint,   DataType::UInt4,  DataType::UInt,  16, 16, {csR, csG, csB, csA}}},
-    {{4,ImageFormat::Float},  {vk::Format::eR32G32B32A32Sfloat, DataType::Float4, DataType::Float, 16, 16, {csR, csG, csB, csA}}},
+    {{3,ImageFormat::SInt8},  {vk::Format::eR8G8B8A8Sint,       DataType::SInt3,  DataType::SInt,   3,  4, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::NInt8},  {vk::Format::eR8G8B8A8Unorm,      DataType::Float3, DataType::UInt,   3,  4, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::UInt8},  {vk::Format::eR8G8B8A8Uint,       DataType::UInt3,  DataType::UInt,   3,  4, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::SInt16}, {vk::Format::eR16G16B16A16Sint,   DataType::SInt3,  DataType::SInt,   6,  8, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::UInt16}, {vk::Format::eR16G16B16A16Uint,   DataType::UInt3,  DataType::UInt,   6,  8, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::SInt32}, {vk::Format::eR32G32B32A32Sint,   DataType::SInt3,  DataType::SInt,  12, 16, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::UInt32}, {vk::Format::eR32G32B32A32Uint,   DataType::UInt3,  DataType::UInt,  12, 16, {csR, csG, csB, cs1}, true}},
+    {{3,ImageFormat::Float},  {vk::Format::eR32G32B32A32Sfloat, DataType::Float3, DataType::Float, 12, 16, {csR, csG, csB, cs1}, true}},
+
+    {{4,ImageFormat::SInt8},  {vk::Format::eR8G8B8A8Sint,       DataType::SInt4,  DataType::SInt,   4,  4, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::NInt8},  {vk::Format::eR8G8B8A8Unorm,      DataType::Float4, DataType::UInt,   4,  4, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::UInt8},  {vk::Format::eR8G8B8A8Uint,       DataType::UInt4,  DataType::UInt,   4,  4, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::SInt16}, {vk::Format::eR16G16B16A16Sint,   DataType::SInt4,  DataType::SInt,   8,  8, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::UInt16}, {vk::Format::eR16G16B16A16Uint,   DataType::UInt4,  DataType::UInt,   8,  8, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::SInt32}, {vk::Format::eR32G32B32A32Sint,   DataType::SInt4,  DataType::SInt,  16, 16, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::UInt32}, {vk::Format::eR32G32B32A32Uint,   DataType::UInt4,  DataType::UInt,  16, 16, {csR, csG, csB, csA}, true}},
+    {{4,ImageFormat::Float},  {vk::Format::eR32G32B32A32Sfloat, DataType::Float4, DataType::Float, 16, 16, {csR, csG, csB, csA}, true}},
   };
   auto it = m.find({channels,format});
   if(it == m.end()){
@@ -260,6 +262,8 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
             );
         }); // execute one time commands
     }); // with layout
+
+  regenerateMips();
 }
 
 void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
@@ -373,6 +377,7 @@ void Image::Impl::clear(){
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eTransferDstOptimal, current_layout);
     });
+  regenerateMips();
 }
 
 static void correct_bounds(
@@ -452,6 +457,8 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
           vk::ImageLayout::eTransferDstOptimal, target_orig_layout);
       
     });
+
+  target->impl->regenerateMips();
 }
 
 
@@ -463,7 +470,6 @@ std::unique_ptr<Image::Impl> Image::Impl::createFromPNG(std::string filepath, Im
 
   auto res = std::make_unique<Image::Impl>(w, h, n, format, filtermode);
   res->loadPNGInternal(imagedata);
-  res->regenerateMips();
   return res;
 }
 

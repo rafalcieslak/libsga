@@ -218,11 +218,11 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
     // TODO: Store device limits somewhere globally.
     max_anisotropy = global::physicalDevice->getProperties().limits.maxSamplerAnisotropy;
     enable_anisotropy = true;
-    out_msg("Anisotropic sampler! " + std::to_string(max_anisotropy));
+    out_dbg("Anisotropic sampler, level: " + std::to_string(max_anisotropy));
     /* FALLTHROGH */
   case ImageFilterMode::MipMapped:
     maxLod = image->impl->getDesiredMipsNo();
-    out_msg("Mipmapped sampler! " + std::to_string(maxLod));
+    out_dbg("Mipmapped sampler, lods:" + std::to_string(maxLod));
     break;
   }
   
@@ -373,7 +373,12 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   
   if(target_is_window){
     targetWindow->impl->currentFrameRendered = true;
-   }
+  }else{
+    // Recalculate mipmaps in each target image.
+    for(auto img : targetImages){
+      img->impl->regenerateMips();
+    }
+  }
 }
 
 void Pipeline::Impl::clear(){

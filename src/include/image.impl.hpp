@@ -22,6 +22,9 @@ struct FormatProperties{
   // Offset between subsequent pixels.
   size_t stride;
   std::array<vk::ComponentSwizzle, 4> swizzle;
+
+  // Does the format supports DST_BLIT and SRC_BLIT?
+  bool supports_blit;
 };
 
 const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat format);

@@ -27,7 +27,7 @@ void info(){
   }
 }
 
-
+extern "C"{
 static VkBool32 debugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t, const char*, const char* pMessage, void*)
   {
     if(!pMessage) return VK_FALSE;
@@ -41,6 +41,7 @@ static VkBool32 debugReportCallback(VkDebugReportFlagsEXT flags, VkDebugReportOb
     out_dbg("Vulkan validation layer " + namemap[flags] + ": " + pMessage);
     return flags | VK_DEBUG_REPORT_ERROR_BIT_EXT;
 }
+} // extern "C"
 
 static std::map<vk::PhysicalDeviceType, int> deviceTypeScores{
   {vk::PhysicalDeviceType::eDiscreteGpu, 1000},

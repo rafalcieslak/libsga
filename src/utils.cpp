@@ -55,9 +55,17 @@ static int rateDevice(std::shared_ptr<vkhlf::PhysicalDevice> dev){
   auto properties = dev->getProperties();
   // auto features = dev->getFeatures();
 
+  std::vector<vk::QueueFamilyProperties> props = dev->getQueueFamilyProperties();
+
+  // TODO: glfwGetPhysicalDevicePresentationSupport checks support of a
+  // particular queue family index. The one that supports direct rendering does
+  // not necessarily has to be the zeroth! Other values must be queried as well,
+  // and a matching value must be selected afterwards as the queue index we're
+  // going to use.
+  
   // Discard devices that are not sutable for presentation
   if(!glfwGetPhysicalDevicePresentationSupport(static_cast<vk::Instance>(*global::instance), static_cast<vk::PhysicalDevice>(*dev), 0))
-    return 0;
+   return 0;
 
   // Geometry shader is not really required, but it's a good example of how rateDevice may inspect devices.
   // if(!features.geometryShader) return 0;

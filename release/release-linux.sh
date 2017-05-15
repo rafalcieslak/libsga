@@ -21,7 +21,7 @@ mkdir -p $SDKDIR/include
 cp libsga.so $SDKDIR
 
 # Header files
-find ../include/ -name "*.hpp" -exec install -D {} $SDKDIR/include/{} \;
+find ../include/ -name "*.hpp" -or -name "*.inc" -exec install -D {} $SDKDIR/include/{} \;
 
 # HTML docs
 cp -r doc/html $SDKDIR/doc

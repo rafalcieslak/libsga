@@ -377,6 +377,10 @@ void Window::Impl::keyCallback(GLFWwindow* window, int key, int, int action, int
   // Update keyState map.
   wd->keyState[k] = (action == GLFW_PRESS);
 
+  // Ignore key repeat events
+  if(action == GLFW_REPEAT)
+    return;
+  
   // Trigger registered user function.
   const auto& fmap = (action == GLFW_PRESS) ? wd->fmap_onKeyDown : wd->fmap_onKeyUp;
   auto it = fmap.find(k);

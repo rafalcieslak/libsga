@@ -1,0 +1,36 @@
+libSGA
+   Copyright 2017 Rafał Cieślak
+
+The libSGA library, its source files and documentation are published under the
+terms of the zlib license.
+
+Some data files in ./examples/data/ were created by other parties and may be
+subject to different terms, see ./examples/data/LICENSE file for details.
+
+Some scripts in ./cmake are borrowed from other projects, and may be subject to
+different terms, see ./cmake/COPYRIGHT.txt for details.
+
+libSGA itself and all its source, documentation, example and auxiculary files
+are made available under the following terms:
+
+
+zlib License
+
+libSGA (C) 2017 Rafał Cieślak
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+

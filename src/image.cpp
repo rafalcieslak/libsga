@@ -162,7 +162,7 @@ void Image::Impl::withLayout(vk::ImageLayout il, std::function<void()> f){
 }
 
 void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
-  if(n != N_pixels() * format.pixelSize )
+  if(n != N_pixels() * format.pixelSize)
     ImageFormatError("InvalidPutDataSize", "Data for Image::putData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
   if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
     //TODO: State what would be the right variable to use for this image format

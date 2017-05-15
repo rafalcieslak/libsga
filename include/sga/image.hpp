@@ -36,26 +36,27 @@ public:
   }
   SGA_API ~Image();
 
+  // TODO: Refactor these to use sizeof(datatype)
   SGA_API void putData(const std::vector<uint8_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
   SGA_API void putData(const std::vector<uint16_t>& data){
-    putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
+    putDataRaw((uint8_t*)data.data(), data.size()*2, DataType::UInt, 2);
   }
   SGA_API void putData(const std::vector<uint32_t>& data){
-    putDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
+    putDataRaw((uint8_t*)data.data(), data.size()*4, DataType::UInt, 4);
   }
   SGA_API void putData(const std::vector<int8_t>& data){
     putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
   SGA_API void putData(const std::vector<int16_t>& data){
-    putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
+    putDataRaw((uint8_t*)data.data(), data.size()*2, DataType::SInt, 2);
   }
   SGA_API void putData(const std::vector<int32_t>& data){
-    putDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
+    putDataRaw((uint8_t*)data.data(), data.size()*4, DataType::SInt, 4);
   }
   SGA_API void putData(const std::vector<float>& data){
-    putDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
+    putDataRaw((uint8_t*)data.data(), data.size()*4, DataType::Float, 4);
   }
   
 
@@ -63,22 +64,22 @@ public:
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 1);
   }
   SGA_API void getData(std::vector<uint16_t>& data){
-    getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 2);
+    getDataRaw((uint8_t*)data.data(), data.size()*2, DataType::UInt, 2);
   }
   SGA_API void getData(std::vector<uint32_t>& data){
-    getDataRaw((uint8_t*)data.data(), data.size(), DataType::UInt, 4);
+    getDataRaw((uint8_t*)data.data(), data.size()*4, DataType::UInt, 4);
   }
   SGA_API void getData(std::vector<int8_t>& data){
     getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 1);
   }
   SGA_API void getData(std::vector<int16_t>& data){
-    getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 2);
+    getDataRaw((uint8_t*)data.data(), data.size()*2, DataType::SInt, 2);
   }
   SGA_API void getData(std::vector<int32_t>& data){
-    getDataRaw((uint8_t*)data.data(), data.size(), DataType::SInt, 4);
+    getDataRaw((uint8_t*)data.data(), data.size()*4, DataType::SInt, 4);
   }
   SGA_API void getData(std::vector<float>& data){
-    getDataRaw((uint8_t*)data.data(), data.size(), DataType::Float, 4);
+    getDataRaw((uint8_t*)data.data(), data.size()*4, DataType::Float, 4);
   }
 
   SGA_API void loadPNG(std::string filepath);

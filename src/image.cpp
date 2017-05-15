@@ -12,8 +12,8 @@
 
 namespace sga{
 
-Image::Image(int width, int height, unsigned int ch, ImageFormat format) : impl(std::make_unique<Image::Impl>(width, height, ch, format)) {}
-Image::Image(std::string png_path, ImageFormat format) : impl(Image::Impl::createFromPNG(png_path, format)) {}
+Image::Image(int width, int height, unsigned int ch, ImageFormat format, ImageFilterMode filtermode) : impl(std::make_unique<Image::Impl>(width, height, ch, format, filtermode)) {}
+Image::Image(std::string png_path, ImageFormat format, ImageFilterMode filtermode) : impl(Image::Impl::createFromPNG(png_path, format, filtermode)) {}
 Image::~Image() = default;
 
 void Image::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {impl->putDataRaw(data, n, dtype, value_size);}
@@ -32,8 +32,8 @@ unsigned int Image::getHeight() {return impl->getHeight();}
 unsigned int Image::getChannels() {return impl->getChannels();}
 unsigned int Image::getValuesN() {return impl->getValuesN();}
 
-Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, ImageFormat f) :
-  width(width), height(height), channels(ch) {
+Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, ImageFormat f, ImageFilterMode filtermode) :
+  width(width), height(height), channels(ch), filtermode(filtermode) {
   if(!global::initialized){
     SystemError("NotInitialized", "libSGA was not initialized, please call sga::init() first!").raise();
   }
@@ -44,13 +44,16 @@ Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, Imag
   
   userFormat = f;
   format = getFormatProperties(channels, userFormat);
+
+  // TODO: Check if this format supports mipmaps!!!
   
+  unsigned int mipsno = hasMipmaps() ? getDesiredMipsNo() : 1;
   image = global::device->createImage(
     vk::ImageCreateFlags(),
     vk::ImageType::e2D,
     format.vkFormat,
     vk::Extent3D(width, height, 1),
-    1,
+    mipsno,
     1,
     vk::SampleCountFlagBits::e1,
     vk::ImageTiling::eOptimal,
@@ -73,9 +76,15 @@ Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, Imag
   std::vector<uint8_t> data(N_pixels() * format.pixelSize, 0);
   putDataRaw(data.data(), data.size(), format.transferDataType, format.pixelSize/channels);
 
-  image_view = image->createImageView(vk::ImageViewType::e2D, format.vkFormat);
+  regenerateMips();
+
+  vk::ComponentMapping components = { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA };
+  vk::ImageSubresourceRange subresRange = { vk::ImageAspectFlagBits::eColor, 0, mipsno, 0, 1 };
+  image_view = image->createImageView(vk::ImageViewType::e2D, format.vkFormat, components, subresRange);
   
   out_dbg("Image prepared.");
+
+  //TODO: Do not let the user use an image that has no data.
 }
 
 const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat format){
@@ -134,10 +143,10 @@ void Image::Impl::switchLayout(vk::ImageLayout target_layout){
   if(target_layout == current_layout) return;
 
   //out_dbg("Image requires layout switch.");
+  vk::ImageSubresourceRange subresRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
   executeOneTimeCommands([&](auto cmdBuffer){
       vkhlf::setImageLayout(
-        cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
-        current_layout, target_layout);
+        cmdBuffer, image, subresRange, current_layout, target_layout);
     });
 
   current_layout = target_layout;
@@ -162,7 +171,7 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
     image->getType(),
     image->getFormat(),
     image->getExtent(),
-    image->getMipLevels(),
+    1,
     image->getArrayLayers(),
     image->getSamples(),
     vk::ImageTiling::eLinear,
@@ -446,14 +455,15 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
 }
 
 
-std::unique_ptr<Image::Impl> Image::Impl::createFromPNG(std::string filepath, ImageFormat format){
+std::unique_ptr<Image::Impl> Image::Impl::createFromPNG(std::string filepath, ImageFormat format, ImageFilterMode filtermode){
   int w, h, n;
   unsigned char* imagedata = stbi_load(filepath.c_str(), &w, &h, &n, 0);
   if(!imagedata)
     FileAccessError("ImageFileOpenFailed", "Failed to open PNG image \"" + filepath + "\": " + stbi_failure_reason()).raise();
 
-  auto res = std::make_unique<Image::Impl>(w, h, n, format);
+  auto res = std::make_unique<Image::Impl>(w, h, n, format, filtermode);
   res->loadPNGInternal(imagedata);
+  res->regenerateMips();
   return res;
 }
 
@@ -488,6 +498,60 @@ void Image::Impl::savePNG(std::string filepath){
   int res = stbi_write_png(filepath.c_str(), width, height, channels, out.data(), 0);
   if (res != 0)
     FileAccessError("ImageFileWriteFailed", "Writing to file \"" + filepath + "\" failed.");
+}
+
+unsigned int Image::Impl::getDesiredMipsNo() const{
+  return floor(log2(std::max(width, height))) + 1;
+}
+
+void Image::Impl::regenerateMips(){
+  if(!hasMipmaps())
+    return;
+
+  unsigned int mipsno = getDesiredMipsNo();
+  out_dbg("Regenerating image mipmaps (" + std::to_string(mipsno) + " levels)");
+
+  switchLayout(vk::ImageLayout::eTransferSrcOptimal);
+
+  executeOneTimeCommands([&](auto cmdBuffer){
+      for (unsigned int i = 1; i < mipsno; i++){
+        vk::ImageBlit imageBlit;
+        
+        // Source
+        imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        imageBlit.srcSubresource.layerCount = 1;
+        imageBlit.srcSubresource.mipLevel = i-1;
+        imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+        imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+        imageBlit.srcOffsets[1].z = 1;
+        
+        // Destination
+        imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        imageBlit.dstSubresource.layerCount = 1;
+        imageBlit.dstSubresource.mipLevel = i;
+        imageBlit.dstOffsets[1].x = int32_t(width >> i);
+        imageBlit.dstOffsets[1].y = int32_t(height >> i);
+        imageBlit.dstOffsets[1].z = 1;
+        
+        vk::ImageSubresourceRange mipSubresRange = { vk::ImageAspectFlagBits::eColor, i, 1, 0, 1 };
+        
+        // Transiton current mip level to transfer dest
+        vkhlf::setImageLayout(cmdBuffer, image, mipSubresRange, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+
+        cmdBuffer->blitImage(
+          image, vk::ImageLayout::eTransferSrcOptimal,
+          image, vk::ImageLayout::eTransferDstOptimal,
+          {imageBlit}, vk::Filter::eLinear);
+        
+        // Transiton current mip level to transfer source for read in next iteration
+        vkhlf::setImageLayout(cmdBuffer, image, mipSubresRange, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal);
+      }
+
+      // Transition all mip levels to shader read.
+      vk::ImageSubresourceRange allSubresRange = { vk::ImageAspectFlagBits::eColor, 0, mipsno, 0, 1 };
+      vkhlf::setImageLayout(cmdBuffer, image, allSubresRange, vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+      current_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    }); // executeOneTimeCommands
 }
 
 } // namespace sga

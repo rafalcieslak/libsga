@@ -8,4 +8,4 @@
 #define EXAMPLE_DATA_DIR "examples/data/"
 #endif
 
-#endif __EXAMPLES_COMMON_HPP__
+#endif // __EXAMPLES_COMMON_HPP__

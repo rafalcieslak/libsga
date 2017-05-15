@@ -20,13 +20,19 @@ enum class ImageFormat{
   Float,
 };
 
+enum class ImageFilterMode{
+  None,
+  MipMapped,
+  Anisotropic
+};
+
 class Image{
 public:
-  SGA_API static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8){
-    return std::shared_ptr<Image>(new Image(width, height, ch, format));
+  SGA_API static std::shared_ptr<Image> create(int width, int height, unsigned int ch = 4, ImageFormat format = ImageFormat::NInt8, ImageFilterMode filtermode = ImageFilterMode::None){
+    return std::shared_ptr<Image>(new Image(width, height, ch, format, filtermode));
   }
-  SGA_API static std::shared_ptr<Image> createFromPNG(std::string png_path, ImageFormat format = ImageFormat::NInt8){
-    return std::shared_ptr<Image>(new Image(png_path, format));
+  SGA_API static std::shared_ptr<Image> createFromPNG(std::string png_path, ImageFormat format = ImageFormat::NInt8, ImageFilterMode filtermode = ImageFilterMode::None){
+    return std::shared_ptr<Image>(new Image(png_path, format, filtermode));
   }
   SGA_API ~Image();
 
@@ -93,8 +99,8 @@ public:
 
   friend class Pipeline;
 private:
-  SGA_API Image(int width, int height, unsigned int ch, ImageFormat format);
-  SGA_API Image(std::string png_path, ImageFormat format);
+  SGA_API Image(int width, int height, unsigned int ch, ImageFormat format, ImageFilterMode filtermode);
+  SGA_API Image(std::string png_path, ImageFormat format, ImageFilterMode filtermode);
   
   SGA_API void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
   SGA_API void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);

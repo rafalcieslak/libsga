@@ -205,15 +205,35 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
   case SamplerWarpMode::Repeat: amode = vk::SamplerAddressMode::eRepeat;         break;
   case SamplerWarpMode::Mirror: amode = vk::SamplerAddressMode::eMirroredRepeat; break;
   }
+
+  float minLod = 0.0f, maxLod = 0.0f;
+  float max_anisotropy = 0.0f;
+  bool enable_anisotropy = false;
+
+  switch(image->impl->filtermode){
+  case ImageFilterMode::None:
+  default:
+    break;
+  case ImageFilterMode::Anisotropic:
+    // TODO: Store device limits somewhere globally.
+    max_anisotropy = global::physicalDevice->getProperties().limits.maxSamplerAnisotropy;
+    enable_anisotropy = true;
+    out_msg("Anisotropic sampler! " + std::to_string(max_anisotropy));
+    /* FALLTHROGH */
+  case ImageFilterMode::MipMapped:
+    maxLod = image->impl->getDesiredMipsNo();
+    out_msg("Mipmapped sampler! " + std::to_string(maxLod));
+    break;
+  }
   
   auto& sdata = it->second;
   sdata.image = image;
   sdata.sampler = global::device->createSampler(
     filter, filter,
-    vk::SamplerMipmapMode::eNearest,
+    vk::SamplerMipmapMode::eLinear,
     amode, amode, amode,
-    0.0f, false, 0.0f, false,
-    vk::CompareOp::eNever, 0.0f, 0.0f,
+    0.0f, enable_anisotropy, max_anisotropy, false,
+    vk::CompareOp::eNever, minLod, maxLod,
     vk::BorderColor::eFloatOpaqueWhite, false);
 
   

@@ -28,7 +28,7 @@ const FormatProperties& getFormatProperties(unsigned int channels, ImageFormat f
 
 class Image::Impl{
 public:
-  Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format);
+  Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format, ImageFilterMode filtermode);
   
   void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
   void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
@@ -60,7 +60,7 @@ public:
   
   void switchLayout(vk::ImageLayout il);
 
-  static std::unique_ptr<Image::Impl> createFromPNG(std::string png_path, ImageFormat format);
+  static std::unique_ptr<Image::Impl> createFromPNG(std::string png_path, ImageFormat format, ImageFilterMode filtermode);
   
   friend class Pipeline;
 private:
@@ -68,6 +68,10 @@ private:
   const unsigned int channels;
   ImageFormat userFormat;
   FormatProperties format;
+  ImageFilterMode filtermode;
+  bool hasMipmaps(){
+    return filtermode == ImageFilterMode::MipMapped || filtermode == ImageFilterMode::Anisotropic;
+  }
 
   // The number of pixels in this image.
   unsigned int N_pixels() const {return width * height;}
@@ -79,6 +83,9 @@ private:
   std::shared_ptr<vkhlf::Image> image;
   std::shared_ptr<vkhlf::ImageView> image_view;
   void prepareImage();
+
+  void regenerateMips();
+  unsigned int getDesiredMipsNo() const;
 };
 
 } // namespace sga

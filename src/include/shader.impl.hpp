@@ -48,13 +48,15 @@ public:
   friend class FullQuadPipeline;
 private:
   struct ShaderData{
-    std::string source, attrCode, fullSource;
+    std::string autoSource, source, attrCode, fullSource;
     std::vector<std::pair<DataType, std::string>> inputAttr, outputAttr, uniforms;
     std::vector<std::string> samplers;
     DataLayout inputLayout, outputLayout;
   };
   ShaderData VS;
   ShaderData FS;
+  
+  std::string prepareErrorDescrip(std::string infoLog, const ShaderData& sd) const;
 
   bool compiled = false;
   bool isFullQuad = false;

@@ -21,6 +21,8 @@ size_t align(size_t base, unsigned int alignment);
 
 bool isVariableNameValid(std::string);
 
+std::vector<std::string> SplitString(std::string str, std::string delimiter, bool skip_empty);
+  
 } // namespace sga
 
 #endif // __UTILS_HPP__

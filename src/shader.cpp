@@ -2,6 +2,7 @@
 #include "shader.impl.hpp"
 
 #include <iostream>
+#include <regex>
 
 #include <vkhlf/vkhlf.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
@@ -228,23 +229,99 @@ void Program::Impl::compile_internal() {
   
   // Emit full sources.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
-    S.fullSource = preamble + S.attrCode + uniformCode + samplerCode + S.source;
+    S.autoSource = preamble + S.attrCode + uniformCode + samplerCode;
+    S.fullSource = S.autoSource + S.source;
     //out_dbg("=== FULL SHADER SOURCE ===\n" + S.fullSource);
   }
   
   // Extract metadata.
   c_inputLayout = VS.inputLayout;
   c_outputLayout = FS.outputLayout;
-  
+
   // Compile to SPIRV.
-  c_VS_shader = global::device->createShaderModule(
-    compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, VS.fullSource)
-    );
-  c_FS_shader = global::device->createShaderModule(
-    compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, FS.fullSource)
-    );
+  try{
+    c_VS_shader = global::device->createShaderModule(
+      compileGLSLToSPIRV(vk::ShaderStageFlagBits::eVertex, VS.fullSource)
+      );
+  }catch(ShaderParsingError spe){
+    ShaderParsingError("ShaderParsingError", "While parsing vertex shader:\n" + prepareErrorDescrip(spe.desc, VS)).raise();
+  }catch(ShaderLinkingError sle){
+    ShaderLinkingError("ShaderLinkingError", "While linking vertex shader:\n" + prepareErrorDescrip(sle.desc, VS)).raise();
+  }
+  try{
+    c_FS_shader = global::device->createShaderModule(
+      compileGLSLToSPIRV(vk::ShaderStageFlagBits::eFragment, FS.fullSource)
+      );
+  }catch(ShaderParsingError spe){
+    ShaderParsingError("ShaderParsingError", "While parsing fragment shader:\n" + prepareErrorDescrip(spe.desc, FS)).raise();
+  }catch(ShaderLinkingError sle){
+    ShaderLinkingError("ShaderLinkingError", "While linking fragment shader:\n" + prepareErrorDescrip(sle.desc, FS)).raise();
+  }
   
   compiled = true;
+}
+
+/* This function converts glslang-returned error message into somewhing
+ * hopefully more meaningful for the end user. */
+std::string Program::Impl::prepareErrorDescrip(std::string infoLog, const ShaderData& sd) const{
+  auto logLines = SplitString(infoLog, "\n", true);
+  auto shaderAutoLines = SplitString(sd.autoSource, "\n", false);
+  auto shaderUserLines = SplitString(sd.source, "\n", false);
+  unsigned int userLineOffset = shaderAutoLines.size();
+  std::string descrip;
+  unsigned int last_lineno = -1;
+  for(std::string line : logLines){
+    std::smatch m, m2;
+    if(std::regex_match(line, std::regex("^Warning, version.*"))){
+      // Ignore this line.
+    }else if(std::regex_match(line, m, std::regex("^ERROR: ([0-9]+):([0-9]+):\\s*([^:]*)\\s*:\\s*(.*)"))){
+      //out_msg("Error on line " + m[2].str());
+      //unsigned int fileno = std::stoi(m[1].str());
+      unsigned int lineno = std::stoi(m[2].str());
+      std::string name = m[3].str();
+      std::string desc = m[4].str();
+
+      // Trim name
+      if(std::regex_match(name, m2, std::regex("^'([^']*)'\\s*")))
+        name = m2[1];
+      
+      desc[0] = std::toupper(desc[0]);
+
+      if(lineno < userLineOffset){
+        descrip += line;
+        descrip += "This appears to be a bug in libSGA generated code.\n";
+      }else{
+        unsigned int userlineno = lineno - userLineOffset;
+        std::string userLine;
+        if(userlineno >= shaderUserLines.size()){
+          descrip += "This error message may be a bug in glslang.\n";
+          userLine = "";
+        }else{
+          userLine = shaderUserLines[userlineno];
+        }
+        if(std::regex_match(line, std::regex(".*compilation terminated.*"))){
+          // Ignore this line.
+        }else{
+          if(lineno == last_lineno){
+            // We've just printed that line of code, don't repeat it.
+            
+            // TODO: *MAYBE* it would make sense to only print the first error
+            // on a line, because the following ones tend to be completely
+            // bonkers.
+          }else{
+            descrip += "Line " + std::to_string(userlineno + 1) + ":  " + userLine + "\n";
+          }
+          descrip += name + ": " + desc + "\n";
+        }
+      }
+      last_lineno = lineno;
+    }else if(std::regex_match(line, m, std::regex("^ERROR: [0-9]+ compilation errors.*"))){
+        // Ignore this line.
+    }else{
+      descrip += line + "\n";
+    }
+  }
+  return descrip;
 }
 
 // === GLSL compiler interface to glslang. Mostly based on vkhlf. === 
@@ -388,23 +465,22 @@ std::vector<uint32_t> GLSLToSPIRVCompiler::compile(vk::ShaderStageFlagBits stage
   // Enable SPIR-V and Vulkan rules when parsing GLSL
   EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
-  if (!shader.parse(&m_resource, 100, false, messages))
-    {
-      // TODO: Parse error details?
-      std::string infoLog = shader.getInfoLog();
-      std::string infoDebugLog = shader.getInfoDebugLog();
-      ShaderParsingError(infoLog, infoDebugLog).raise();
-    }
+  if (!shader.parse(&m_resource, 100, false, messages)){
+    std::string infoLog = shader.getInfoLog();
+    std::string infoDebugLog = shader.getInfoDebugLog();
+    // Will be processed by sga::Program
+    throw ShaderParsingError("", infoLog);
+  }
 
   glslang::TProgram program;
   program.addShader(&shader);
 
-  if (!program.link(messages))
-    {
-      std::string infoLog = program.getInfoLog();
-      std::string infoDebugLog = program.getInfoDebugLog();
-      ShaderLinkingError(infoLog, infoDebugLog).raise();
-    }
+  if (!program.link(messages)){
+    std::string infoLog = program.getInfoLog();
+    std::string infoDebugLog = program.getInfoDebugLog();
+    // Will be processed by sga::Program
+    throw ShaderLinkingError("", infoLog);
+  }
 
   //program.buildReflection();
   //program.dumpReflection();

@@ -96,6 +96,9 @@ public:
   SGA_API void setPolygonMode(PolygonMode p);
   SGA_API void setRasterizerMode(RasterizerMode r);
   
+  SGA_API void resetViewport();
+  SGA_API void setViewport(float left, float top, float right, float bottom);
+  
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided
       value. The uniform name must correspond to a uniform previously declared

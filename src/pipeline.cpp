@@ -48,6 +48,8 @@ void Pipeline::setFaceCull(FaceCullMode fcm, FaceDirection fd){
 void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl()->setRasterizerMode(r);}
 void Pipeline::setPolygonMode(sga::PolygonMode p){impl()->setPolygonMode(p);}
 
+void Pipeline::resetViewport(){ impl()->resetViewport(); }
+void Pipeline::setViewport(float left, float top, float right, float bottom){ impl()->setViewport(left, top, right, bottom); }
 
 FullQuadPipeline::FullQuadPipeline() :
   Pipeline(std::make_unique<FullQuadPipeline::Impl>()){
@@ -74,30 +76,35 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   cooked = false;
   target_is_window = true;
   targetWindow = tgt;
-  {
-    // Drop references to image targets
-    targetImages = std::vector<std::shared_ptr<Image>>();
-    rp_renderpass = nullptr;
-    rp_framebuffer = nullptr;
-    renderpass_prepared = false;
-  }
+  // Drop references to image targets
+  targetImages = std::vector<std::shared_ptr<Image>>();
+  rp_renderpass = nullptr;
+  rp_framebuffer = nullptr;
+  renderpass_prepared = false;
+  
+  resetViewport();
 }
 
 void Pipeline::Impl::setTarget(std::vector<std::shared_ptr<Image>> images){
   // Ensure images are not used for sampling.
   for(const auto& i : images){
+    if(!i){
+      PipelineConfigError("InvalidTargetImage", "NULL image was passed as a pipeline target.");
+    }
     for(const auto& sp : s_samplers){
       if(sp.second.image == i){
         PipelineConfigError("InvalidTargetImageUsage", "An image cannot be both render target and sampler source in the same pipeline.");
       }
     }
   }
-  
+
   cooked = false;
   target_is_window = false;
   targetImages = images;
   renderpass_prepared = false;
   targetWindow = nullptr;
+  
+  resetViewport();
 }
 
 void Pipeline::Impl::setClearColor(float r, float g, float b){
@@ -117,6 +124,25 @@ void Pipeline::Impl::setPolygonMode(PolygonMode p) {
 void Pipeline::Impl::setRasterizerMode(RasterizerMode r) {
   rasterizerMode = r;
   cooked = false;
+}
+
+void Pipeline::Impl::resetViewport(){
+  vp_top = vp_left = 0.0f;
+  if(target_is_window && targetWindow){
+    auto extent = targetWindow->impl->getCurrentFramebuffer().second;
+    vp_right = extent.width;
+    vp_bottom = extent.height;
+  }else if(!target_is_window && targetImages[0]){
+    vp_right = targetImages[0]->getWidth();
+    vp_bottom = targetImages[0]->getHeight();
+  }
+}
+
+void Pipeline::Impl::setViewport(float left, float top, float right, float bottom){
+  vp_left = left;
+  vp_top = top;
+  vp_right = right;
+  vp_bottom = bottom;
 }
 
 void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
@@ -260,6 +286,9 @@ void Pipeline::Impl::updateStandardUniforms(){
   }
   float e[2] = {(float)extent.width, (float)extent.height};
   setUniform(DataType::Float2, "sgaResolution", (char*)&e, sizeof(e), true);
+
+  float vp[4] = {vp_left, vp_top, vp_right-vp_left, vp_bottom-vp_top};
+  setUniform(DataType::Float4, "sgaViewport", (char*)&vp, sizeof(vp), true);
 }
 
 void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
@@ -349,16 +378,18 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
   cmdBuffer->copyBuffer(unisb, b_uniformBuffer, vk::BufferCopy(0, 0, b_uniformSize));
 
+  vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
+                  {(unsigned int)ceil(vp_right - vp_left), (unsigned int)ceil(vp_bottom - vp_top)});
   cmdBuffer->beginRenderPass(
     c_renderPass, framebuffer,
-    vk::Rect2D({ 0, 0 }, extent),
+    area,
     {},
     vk::SubpassContents::eInline);
   cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
   cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
   cmdBuffer->bindVertexBuffer(0, buffer, 0);
-  cmdBuffer->setViewport(0, vk::Viewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f));
-  cmdBuffer->setScissor(0, vk::Rect2D({ 0, 0 }, extent));
+  cmdBuffer->setViewport(0, vk::Viewport(vp_left, vp_top, vp_right, vp_bottom, 0.0f, 1.0f));
+  cmdBuffer->setScissor(0, area);
   cmdBuffer->draw(uint32_t(n), 1, 0, 0);
   cmdBuffer->endRenderPass();
   cmdBuffer->end();

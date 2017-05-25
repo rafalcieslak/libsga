@@ -35,6 +35,9 @@ public:
   void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
   void setPolygonMode(PolygonMode p);
   void setRasterizerMode(RasterizerMode r);
+
+  void resetViewport();
+  void setViewport(float left, float top, float right, float bottom);
   
   bool ensureValidity();
 protected:
@@ -50,6 +53,8 @@ protected:
   PolygonMode polygonMode = PolygonMode::Triangles;
   RasterizerMode rasterizerMode = RasterizerMode::Filled;
 
+  float vp_top = 0.0f, vp_bottom = 0.0f, vp_left = 0.0f, vp_right = 0.0f;
+  
   void clearDepthImage();
   
   void cook();

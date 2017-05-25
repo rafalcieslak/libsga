@@ -94,6 +94,7 @@ void Shader::Impl::addSampler(std::string name){
 void Shader::Impl::addStandardUniforms(){
   addUniform(DataType::Float, "sgaTime", true);
   addUniform(DataType::Float2, "sgaResolution", true);
+  addUniform(DataType::Float4, "sgaViewport", true);
 }
 
 // ====== Program impl ======
@@ -233,6 +234,7 @@ void Program::Impl::compile_internal() {
   std::string extraCode = R"(
     #define sgaWindowPixel (gl_FragCoord.xy)
     #define sgaWindowCoords (gl_FragCoord.xy/sgaResolution)
+    #define sgaViewportCoords ((gl_FragCoord.xy - sgaViewport.xy)/sgaViewport.zw)
   )";
 
   // Verify attributes inferface.

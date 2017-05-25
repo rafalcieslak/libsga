@@ -61,7 +61,7 @@ int main(){
   auto textShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 coords = sgaWindowCoords;
+      vec2 coords = sgaViewportCoords;
       float q = texture(glyph, coords).r;
       outColor = vec4(q,q,q,1);
     }
@@ -76,6 +76,8 @@ int main(){
   textPipeline->setProgram(textProgram);
   textPipeline->setTarget(window);
 
+  textPipeline->setViewport(50,50,300,350);
+  
   while(window->isOpen()){
     textPipeline->clear();
 

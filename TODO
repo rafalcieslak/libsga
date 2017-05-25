@@ -27,3 +27,6 @@ Examples:
 
 Feature-level bugs:
  - Function naming: Polygon vs Primitive
+ - Rename sgaWindowCoords to something not specific to a window, as the target may be a texture not a window
+ - Rename sga*Coords to sga*Coord
+ 

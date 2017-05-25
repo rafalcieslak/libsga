@@ -1,0 +1,22 @@
+Core features:
+ - Consider hardware antialiasing options
+ - Data structure and arrays description
+ - Configurable per-output pipeline clear color
+ - Configurable depth buffer properties
+ - Viewport/scissor configuration
+ - Indiced vertex mode
+
+Build process:
+ - Automatic release packaging on windows
+
+Examples:
+ - Basic text rendering
+ - 3D movement with mouselook+WASD
+ - Different materials on a scene
+ - Shadow maps
+ - Toon shader
+ - Interactive 3D function plot
+ - Port terrain heightmap (?)
+
+Feature-level bugs:
+ - Function naming: Polygon vs Primitive

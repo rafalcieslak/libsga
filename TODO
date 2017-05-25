@@ -5,9 +5,15 @@ Core features:
  - Configurable depth buffer properties
  - Viewport/scissor configuration
  - Indiced vertex mode
+ - Consider moving shader_ptrs from outside sga classes to inside pimpl pointer
+   (the proxy class would be a stateless shared reference to the impl object).
 
 Build process:
  - Automatic release packaging on windows
+
+Documentation:
+ - Describe examples
+ - Specify what exactly gets reset on target change.
 
 Examples:
  - Basic text rendering
@@ -17,6 +23,7 @@ Examples:
  - Toon shader
  - Interactive 3D function plot
  - Port terrain heightmap (?)
+ - Fisheye rendering
 
 Feature-level bugs:
  - Function naming: Polygon vs Primitive

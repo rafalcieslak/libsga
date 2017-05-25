@@ -49,6 +49,7 @@ find_package(Doxygen) # optional (for doc generation)
 
 find_package(GLM) # optional (for some example programs)
 find_package(assimp) # optional (for some example programs)
+find_package(Freetype) # optional (for some example programs)
 
 if(NOT Vulkan_FOUND)
   message(SEND_ERROR "Unable to find Vulkan installed on this system.")

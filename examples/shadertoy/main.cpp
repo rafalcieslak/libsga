@@ -8,7 +8,7 @@
 
 std::string fragMain = R"(
   void main() {
-    mainImage(outColor, vec2(gl_FragCoord.x, u.sgaResolution.y - gl_FragCoord.y));
+    mainImage(outColor, vec2(gl_FragCoord.x, sgaResolution.y - gl_FragCoord.y));
   }
 )";
 
@@ -39,9 +39,9 @@ int main(int argc, char** argv){
   std::string fragSource = buffer.str();
   
   // Prepare shadertoy shader
-  fragSource = ReplaceString(fragSource, "iGlobalTime", "u.sgaTime");
-  fragSource = ReplaceString(fragSource, "iResolution", "u.sgaResolution");
-  fragSource = ReplaceString(fragSource, "iMouse", "u.stoyMouse");
+  fragSource = ReplaceString(fragSource, "iGlobalTime", "sgaTime");
+  fragSource = ReplaceString(fragSource, "iResolution", "sgaResolution");
+  fragSource = ReplaceString(fragSource, "iMouse", "stoyMouse");
   fragSource += fragMain;
 
   // Prepare SGA

@@ -81,8 +81,8 @@ int main(){
 
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
-      gl_Position = u.MVP * vec4(in_position,1);
-      out_normal = in_normal; //(u.MVP * vec4(in_position,0) ).xyz;
+      gl_Position = MVP * vec4(in_position,1);
+      out_normal = in_normal; //(MVP * vec4(in_position,0) ).xyz;
       out_texuv = in_texuv;
       out_position = in_position;
 
@@ -91,7 +91,7 @@ int main(){
   )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      vec3 dir_to_light = normalize(u.lightpos - in_position);
+      vec3 dir_to_light = normalize(lightpos - in_position);
       float q = max(0.2, dot(dir_to_light, in_normal));
       out_color = texture(tex, in_texuv) * q;
     }

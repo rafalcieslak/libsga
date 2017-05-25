@@ -61,7 +61,7 @@ int main(){
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
       vec3 pos = in_position + vec3(0, -4, 0);
-      gl_Position = u.MVP * vec4(pos,1);
+      gl_Position = MVP * vec4(pos,1);
       out_world_normal = in_normal;
       out_world_position = pos;
     }
@@ -69,9 +69,9 @@ int main(){
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
       vec3 N = normalize(in_world_normal);
-      vec3 L = normalize(u.lightpos - in_world_position);
+      vec3 L = normalize(lightpos - in_world_position);
       vec3 R = normalize(-reflect(L, N));
-      vec3 E = normalize(u.viewpos - in_world_position);
+      vec3 E = normalize(viewpos - in_world_position);
 
       vec3 Kd = vec3(1.0, 145.0/255, 231.0/255);
       vec3 Ks = vec3(1.0);

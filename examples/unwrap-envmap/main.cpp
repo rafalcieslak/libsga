@@ -10,7 +10,7 @@
  * displays it in equirectangular format. For each pixel of the output, it
  * samples 64 points on the input image. This is beacause of a non-affine
  * wrapping transform from polar to cartesian coordinates. Multisampling ensures
- * proper surface area integration, and is still very fast on a GPU. */
+ * proper surface area integration, and is still very fast on a GP */
 
 #define SS_SCALE 8
 
@@ -38,11 +38,11 @@ int main(){
     return texture(lightprobe, p/2 + vec2(0.5)).xyz;
   }
   void main(){
-    vec2 coords = gl_FragCoord.xy / u.sgaResolution;
+    vec2 coords = sgaWindowCoords;
     float phi = coords.x * 2 * PI, theta = (1.0 - coords.y) * PI;
-    phi += u.phi_offset;
-    if(abs(u.phi_offset) < 0.0000001)
-      phi += 0.2 * u.sgaTime;
+    phi += phi_offset;
+    if(abs(phi_offset) < 0.0000001)
+      phi += 0.2 * sgaTime;
     float scale = 0.12;
     vec3 dir = vec3(sin(theta)*cos(phi), cos(theta), sin(theta)*sin(phi));
     dir = normalize(dir);
@@ -92,7 +92,7 @@ int main(){
   // Downsample program
   auto downsample_shader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      outColor = texture(image, gl_FragCoord.xy/u.sgaResolution);
+      outColor = texture(image, sgaWindowCoords);
     }
   )");
   downsample_shader->addOutput(sga::DataType::Float4, "outColor");

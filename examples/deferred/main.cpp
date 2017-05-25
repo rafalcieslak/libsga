@@ -73,7 +73,7 @@ int main(){
   auto GvertShader = sga::VertexShader::createFromSource(R"(
     void main(){
       vec3 pos = in_position + vec3(0, -4, 0);
-      gl_Position = u.MVP * vec4(pos,1);
+      gl_Position = MVP * vec4(pos,1);
       out_world_normal = in_normal;
       out_world_position = pos;
       out_texUV = in_texUV;
@@ -115,14 +115,14 @@ int main(){
   // Lighting program
   auto LfragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      vec2 here = gl_FragCoord.xy / u.sgaResolution;
+      vec2 here = sgaWindowCoords;
       vec3 position = texture(buffer_position, here).xyz;
       vec3 normal   = normalize(texture(buffer_normal,   here).xyz);
       vec3 albedo   = texture(buffer_albedo,   here).xyz;
 
-      vec3 L = normalize(u.lightpos - position);
+      vec3 L = normalize(lightpos - position);
       vec3 R = -reflect(L, normal);
-      vec3 E = normalize(u.viewpos - position);
+      vec3 E = normalize(viewpos - position);
 
       vec3 a = albedo * 0.08;
       vec3 d = albedo * max(0, dot(L, normal));
@@ -152,9 +152,9 @@ int main(){
   // Window program
   auto WfragShader = sga::FragmentShader::createFromSource(R"(
     void main(){
-      vec2 here = gl_FragCoord.xy / u.sgaResolution;
+      vec2 here = sgaWindowCoords;
       vec2 texpos = mod(here, vec2(0.5)) * 2.0;
-      if(u.demo == 0){
+      if(demo == 0){
          out_color = texture(result_image, here); 
       }else{
         if(here.x < 0.5 && here.y < 0.5)

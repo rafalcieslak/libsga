@@ -10,11 +10,11 @@ int main(){
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 coords = gl_FragCoord.xy / u.sgaResolution.xy;
+      vec2 coords = sgaWindowCoords;
       coords.xy -= 0.5;
-      coords *= (-cos(u.sgaTime / 2.0) + 1.01) * 60;
-      coords.x += 0.2 * sin(u.sgaTime);
-      coords.y += 0.2 * cos(u.sgaTime);
+      coords *= (-cos(sgaTime / 2.0) + 1.01) * 60;
+      coords.x += 0.2 * sin(sgaTime);
+      coords.y += 0.2 * cos(sgaTime);
       coords.xy += 0.5;
       outColor = texture(tex, coords);
     }

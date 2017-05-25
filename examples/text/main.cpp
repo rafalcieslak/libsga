@@ -61,7 +61,7 @@ int main(){
   auto textShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 coords = gl_FragCoord.xy / u.sgaResolution.xy;
+      vec2 coords = sgaWindowCoords;
       float q = texture(glyph, coords).r;
       outColor = vec4(q,q,q,1);
     }

@@ -8,7 +8,7 @@ int main(){
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      outColor = vec4(gl_FragCoord.xy / u.sgaResolution, 0, 1);
+      outColor = vec4(sgaWindowCoords, 0, 1);
       vec2 screenPos = gl_FragCoord.xy;
       if( int(screenPos.x) % 50 < 3 ){
         outColor.rgb = vec3(0);

@@ -187,11 +187,16 @@ void Program::Impl::compile_internal() {
   for(const auto& p : uniforms){
     offset = align(offset, getDataTypeGLSLstd140Alignment(p.second));
     c_uniformOffsets[p.first] = std::make_pair(offset, p.second);
-    uniformCode += "  " + getDataTypeGLSLName(p.second) + " " + p.first + ";\n";
+    uniformCode += "  " + getDataTypeGLSLName(p.second) + " sgaUniform_" + p.first + ";\n";
     offset += getDataTypeSize(p.second);
   }
   uniformCode += "} u;\n\n";
   c_uniformSize = offset;
+
+  // Prepare uniform macros
+  for(const auto& p : uniforms){
+    uniformCode += "#define " + p.first + " u.sgaUniform_" + p.first + "\n";
+  }
 
   // Prepare samplers.
   std::set<std::string> sampler_names;
@@ -223,13 +228,20 @@ void Program::Impl::compile_internal() {
     }
   }
 
+  // Prepare extra macros
+  // TODO: Viewport Coords
+  std::string extraCode = R"(
+    #define sgaWindowPixel (gl_FragCoord.xy)
+    #define sgaWindowCoords (gl_FragCoord.xy/sgaResolution)
+  )";
+
   // Verify attributes inferface.
   if(VS.outputLayout != FS.inputLayout)
     ProgramConfigError("ShaderInterfaceMismatch", "Vertex shader output does not match fragment shader input.");
   
   // Emit full sources.
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
-    S.autoSource = preamble + S.attrCode + uniformCode + samplerCode;
+    S.autoSource = preamble + S.attrCode + uniformCode + samplerCode + extraCode;
     S.fullSource = S.autoSource + S.source;
     //out_dbg("=== FULL SHADER SOURCE ===\n" + S.fullSource);
   }

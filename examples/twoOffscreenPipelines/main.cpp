@@ -18,10 +18,10 @@ int main(){
   auto fragShader1 = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 dx = vec2(1.0 / u.sgaResolution.x, 0);
-      vec2 dy = vec2(0, 1.0 / u.sgaResolution.y);
-      vec2 here = gl_FragCoord.xy / u.sgaResolution;
-      float disthere = length(gl_FragCoord.xy - u.sgaResolution/2) / 30.0;
+      vec2 dx = vec2(1.0 / sgaResolution.x, 0);
+      vec2 dy = vec2(0, 1.0 / sgaResolution.y);
+      vec2 here = sgaWindowCoords;
+      float disthere = length(gl_FragCoord.xy - sgaResolution/2) / 30.0;
       float offset = pow(sin(disthere), 3);
       vec2 center = vec2(0.5, 0.5);
       vec2 dir = here - center;
@@ -46,9 +46,9 @@ int main(){
   auto fragShader2 = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 dx = vec2(1.0 / u.sgaResolution.x, 0);
-      vec2 dy = vec2(0, 1.0 / u.sgaResolution.y);
-      vec2 here = gl_FragCoord.xy / u.sgaResolution;
+      vec2 dx = vec2(1.0 / sgaResolution.x, 0);
+      vec2 dy = vec2(0, 1.0 / sgaResolution.y);
+      vec2 here = sgaWindowCoords;
       vec3 q0 = texture(image1, here - dx - dy).xyz;
       vec3 q1 = texture(image1, here      - dy).xyz;
       vec3 q2 = texture(image1, here + dx - dy).xyz;

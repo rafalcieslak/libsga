@@ -193,50 +193,55 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   size_t data_size = width * height * format.stride;
   char* mapped_data = (char*)stagingImage->get<vkhlf::DeviceMemory>()->map(0, data_size);
   
-
-  // TODO: It might be better to test subresource layout (rowPitch, stride, etc) instead of using custom hardcoded values.
-  // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
+  vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
   // This pointer walks over mapped memory.
-  uint8_t* RESTRICT q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped_row = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped_px;
   // This pointer walks over host memory.
   uint8_t* RESTRICT q_data = reinterpret_cast<uint8_t*>(data);
     
   if(value_size == 1){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint8_t*)q_mapped;
+        auto p_mapped = (uint8_t*)q_mapped_px;
         auto p_data = (uint8_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_mapped[c] = p_data[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else if(value_size == 2){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint16_t*)q_mapped;
+        auto p_mapped = (uint16_t*)q_mapped_px;
         auto p_data = (uint16_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_mapped[c] = p_data[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else if(value_size == 4){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint32_t*)q_mapped;
+        auto p_mapped = (uint32_t*)q_mapped_px;
         auto p_data = (uint32_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_mapped[c] = p_data[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else{
     assert(false);
@@ -316,48 +321,56 @@ void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   
 
   // TODO: It might be better to test subresource layout (rowPitch, stride, etc) instead of using custom hardcoded values.
-  // vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
+  
+  vk::SubresourceLayout layout = stagingImage->getSubresourceLayout(vk::ImageAspectFlagBits::eColor, 0, 0);
 
   // This pointer walks over mapped memory.
-  uint8_t* RESTRICT q_mapped = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped_row = reinterpret_cast<uint8_t*>(mapped_data);
+  uint8_t* RESTRICT q_mapped_px;
   // This pointer walks over host memory.
   uint8_t* RESTRICT q_data = reinterpret_cast<uint8_t*>(data);
     
   if(value_size == 1){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint8_t*)q_mapped;
+        auto p_mapped = (uint8_t*)q_mapped_px;
         auto p_data = (uint8_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_data[c] = p_mapped[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else if(value_size == 2){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint16_t*)q_mapped;
+        auto p_mapped = (uint16_t*)q_mapped_px;
         auto p_data = (uint16_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_data[c] = p_mapped[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else if(value_size == 4){
     for (size_t y = 0; y < height; y++){
+      q_mapped_px = q_mapped_row;
       for (size_t x = 0; x < width; x++){
-        auto p_mapped = (uint32_t*)q_mapped;
+        auto p_mapped = (uint32_t*)q_mapped_px;
         auto p_data = (uint32_t*)q_data;
         for(size_t c = 0; c < channels; c++){
           p_data[c] = p_mapped[c];
         }
-        q_mapped += format.stride;
+        q_mapped_px += format.stride;
         q_data += format.pixelSize;
       }
+      q_mapped_row += layout.rowPitch;
     }
   }else{
     assert(false);

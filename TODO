@@ -3,10 +3,10 @@ Core features:
  - Data structure and arrays description
  - Configurable per-output pipeline clear color
  - Configurable depth buffer properties
- - Viewport/scissor configuration
  - Indiced vertex mode
  - Consider moving shader_ptrs from outside sga classes to inside pimpl pointer
    (the proxy class would be a stateless shared reference to the impl object).
+ - Non-resizable windows
 
 Build process:
  - Automatic release packaging on windows
@@ -16,7 +16,6 @@ Documentation:
  - Specify what exactly gets reset on target change.
 
 Examples:
- - Basic text rendering
  - 3D movement with mouselook+WASD
  - Different materials on a scene
  - Shadow maps

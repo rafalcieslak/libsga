@@ -10,28 +10,23 @@
 
 FT_Library ft;
 FT_Face face;
-unsigned int fontsize = 162;
+unsigned int fontsize = 32;
 
 const std::string font_path = EXAMPLE_DATA_DIR "open_sans/OpenSans-Regular.ttf";
-
-const std::string text = R"(
-This is some text.
-)";
 
 int main(){
   sga::init();
 
+  // Load font data.
   FT_Init_FreeType(&ft);
   int error = FT_New_Face(ft, font_path.c_str(), 0, &face);
   if(error){
     std::cout << "Unable to open font " << font_path << std::endl;
     return -1;
   }
-
   FT_Set_Pixel_Sizes(face, 0, fontsize);
-
   struct GlyphData{
-    FT_GlyphSlot glyph;
+    FT_Glyph_Metrics metrics;
     std::shared_ptr<sga::Image> image;
   };
   std::map<char, GlyphData> glyphs;
@@ -49,21 +44,19 @@ int main(){
       image = sga::Image::create(w, h, 1);
       std::vector<uint8_t> buffer(bitmap.buffer, bitmap.buffer + w*h);
       image->putData(buffer);
-      //std::cout << "Glyph " << c << " w: " << w << ", h: " << h << ", p: " << bitmap.pitch << std::endl;
     }
-    glyphs[c] = {glyph, image};
+    glyphs[c] = {glyph->metrics, image};
   }
 
-
-  auto window = sga::Window::create(800, 600, "Teapot");
+  auto window = sga::Window::create(800, 200, "Font");
   window->setFPSLimit(60);
   
   auto textShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
-      vec2 coords = sgaViewportCoords;
-      float q = texture(glyph, coords).r;
-      outColor = vec4(q,q,q,1);
+      float q = texture(glyph, sgaViewportCoords).r;
+      vec3 color = vec3(0.4,0.8,0.2) * q;
+      outColor = vec4(color,1);
     }
   )");
 
@@ -77,17 +70,46 @@ int main(){
   textPipeline->setTarget(window);
 
   textPipeline->setViewport(50,50,300,350);
-  
+
+  int basex = 20;
+    
   while(window->isOpen()){
     textPipeline->clear();
 
-    char c = '%';
-    auto it = glyphs.find(c);
-    if(it != glyphs.end()){
-      const GlyphData& glyph = glyphs[c];
-      
-      textPipeline->setSampler("glyph", glyph.image, sga::SamplerInterpolation::Nearest);
-      textPipeline->drawFullQuad();
+    char text_buffer[800];
+    sprintf(text_buffer, R"(
+This example demonstrates rendering text with
+Freetype. It has been running for %.2fs.
+Each frame the entire text is rendered again, 
+character by character. Average FPS: %.2fs.
+)", sga::getTime(), window->getAverageFPS());
+    
+    // Cursor coordinates;
+    float x = basex, y = 0;
+  
+    for(char c : std::string(text_buffer)){
+      auto it = glyphs.find(c);
+      if(it != glyphs.end()){
+        const GlyphData& glyph = glyphs[c];
+        
+        if(!isspace(c) && glyph.image){
+          float charx = x + glyph.metrics.horiBearingX / 64.0f;
+          float chary = y - glyph.metrics.horiBearingY / 64.0f;
+          float charw = glyph.image->getWidth();
+          float charh = glyph.image->getHeight();
+          
+          textPipeline->setViewport(charx, chary, charx + charw, chary + charh);
+          textPipeline->setSampler("glyph", glyph.image, sga::SamplerInterpolation::Nearest);
+          textPipeline->drawFullQuad();
+        }
+
+        x += glyph.metrics.horiAdvance / 64.0f;
+      }
+      if(c == '\n'){
+        y += face->size->metrics.height / 64.0f;
+        x = basex;
+      }
+
     }
     window->nextFrame();
   }

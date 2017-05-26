@@ -42,6 +42,7 @@ int main(){
   sga::Program program = sga::Program::createAndCompile(vertShader, fragShader);
   
   sga::Window window(800, 600, "Triangle");
+  window.setFPSLimit(60);
   
   sga::Pipeline pipeline;
   pipeline.setProgram(program);

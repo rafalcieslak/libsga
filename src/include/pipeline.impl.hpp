@@ -54,7 +54,10 @@ protected:
   PolygonMode polygonMode = PolygonMode::Triangles;
   RasterizerMode rasterizerMode = RasterizerMode::Filled;
 
+  bool vp_set = false;
   float vp_top = 0.0f, vp_bottom = 0.0f, vp_left = 0.0f, vp_right = 0.0f;
+  // If vp_set is false, this function sets vp_* according to target size.
+  void prepareVp(); 
   
   void clearDepthImage();
   

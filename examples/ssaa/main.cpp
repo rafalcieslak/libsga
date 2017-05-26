@@ -120,10 +120,10 @@ int main(){
   program->setFragmentShader(fragShader);
   program->compile();
 
-  auto image = sga::Image::create(window->getWidth()*SSAA_RATIO,
-                                  window->getHeight()*SSAA_RATIO,
-                                  4, sga::ImageFormat::NInt8,
-                                  sga::ImageFilterMode::MipMapped);
+  sga::Image image(window->getWidth()*SSAA_RATIO,
+                   window->getHeight()*SSAA_RATIO,
+                   4, sga::ImageFormat::NInt8,
+                   sga::ImageFilterMode::MipMapped);
   
   // Configure main pipeline
   auto pipeline = sga::Pipeline::create();

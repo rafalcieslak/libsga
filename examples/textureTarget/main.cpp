@@ -23,16 +23,16 @@ int main(){
 
   auto program = sga::Program::createAndCompile(fragShader);
 
-  auto image = sga::Image::create(1440, 900);
+  sga::Image image(1440, 900);
 
   auto pipeline = sga::FullQuadPipeline::create();
   pipeline->setProgram(program);
-  pipeline->setTarget({image});
+  pipeline->setTarget(image);
 
   pipeline->drawFullQuad();
 
   // Save to file.
-  image->savePNG("output.png");
+  image.savePNG("output.png");
   
   sga::terminate();
 }

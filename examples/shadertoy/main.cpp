@@ -55,7 +55,7 @@ int main(int argc, char** argv){
 
   // Load images
   stbi_set_flip_vertically_on_load(1);
-  std::array<std::shared_ptr<sga::Image>,4> images;
+  std::vector<sga::Image> images;
   for(int i = 0; i < 4; i++){
     if(i < (int)textures.size()){
       int w,h,n;
@@ -64,10 +64,10 @@ int main(int argc, char** argv){
         std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
         return 1;
       }
-      images[i] = sga::Image::create(w, h);
-      images[i]->putData(std::vector<uint8_t>(data, data + w*h*4));
+      images.push_back(sga::Image(w, h));
+      images.back().putData(std::vector<uint8_t>(data, data + w*h*4));
     }else{
-      images[i] = sga::Image::create(16,16); // Some empty texture.
+      images.push_back(sga::Image(16,16)); // Some empty texture.
     }
   }
   

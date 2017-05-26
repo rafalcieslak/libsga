@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "window.hpp"
 #include "layout.hpp"
+#include "image.hpp"
 
 namespace sga{
 
@@ -67,11 +68,11 @@ public:
   /** Configures the pipeline to render onto the provided window. */
   SGA_API void setTarget(std::shared_ptr<Window> window);
   
-  SGA_API void setTarget(std::shared_ptr<Image> image) {setTarget({image});}
-  SGA_API void setTarget(std::initializer_list<std::shared_ptr<Image>> images) {
-    setTarget(std::vector<std::shared_ptr<Image>>(images));
+  SGA_API void setTarget(Image image) {setTarget({image});}
+  SGA_API void setTarget(std::initializer_list<Image> images) {
+    setTarget(std::vector<Image>(images));
   }
-  SGA_API void setTarget(std::vector<std::shared_ptr<Image>> images);
+  SGA_API void setTarget(std::vector<Image> images);
   
   /** Performs rendering using vertex data from the provided VBO. This method
       blocks until rendering completes. Before rendering pipeline configuration
@@ -87,7 +88,7 @@ public:
   
   SGA_API void setProgram(std::shared_ptr<Program>);
 
-  SGA_API void setSampler(std::string, std::shared_ptr<Image>,
+  SGA_API void setSampler(std::string, const Image&,
                   SamplerInterpolation interpolation = SamplerInterpolation::Linear,
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
 

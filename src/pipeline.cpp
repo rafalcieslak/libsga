@@ -24,7 +24,7 @@ Pipeline::Pipeline(pimpl_unique_ptr<Impl> &&impl) : impl_(std::move(impl)) {}
 Pipeline::~Pipeline() = default;
 
 void Pipeline::setTarget(std::shared_ptr<Window> target) {impl()->setTarget(target);}
-void Pipeline::setTarget(std::vector<std::shared_ptr<Image>> images) {impl()->setTarget(images);}
+void Pipeline::setTarget(std::vector<Image> images) {impl()->setTarget(images);}
 void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl()->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl()->setClearColor(r, g, b);}
 void Pipeline::clear() {impl()->clear();}
@@ -37,7 +37,7 @@ void Pipeline::setUniform(DataType dt, std::string name, char* pData, size_t siz
   impl()->setUniform(dt, name, pData, size);
 }
 
-void Pipeline::setSampler(std::string s, std::shared_ptr<Image> i,
+void Pipeline::setSampler(std::string s, const Image& i,
                           SamplerInterpolation in, SamplerWarpMode wm){
   impl()->setSampler(s,i,in,wm);
 }
@@ -77,7 +77,7 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   target_is_window = true;
   targetWindow = tgt;
   // Drop references to image targets
-  targetImages = std::vector<std::shared_ptr<Image>>();
+  targetImages = std::vector<std::shared_ptr<Image::Impl>>();
   rp_renderpass = nullptr;
   rp_framebuffer = nullptr;
   renderpass_prepared = false;
@@ -85,22 +85,21 @@ void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
   resetViewport();
 }
 
-void Pipeline::Impl::setTarget(std::vector<std::shared_ptr<Image>> images){
-  // Ensure images are not used for sampling.
-  for(const auto& i : images){
-    if(!i){
-      PipelineConfigError("InvalidTargetImage", "NULL image was passed as a pipeline target.");
-    }
+void Pipeline::Impl::setTarget(std::vector<Image> images){
+  targetImages.clear();
+  for(const Image& i : images){
+    const auto image = i.impl;
+    // Ensure images are not used for sampling.
     for(const auto& sp : s_samplers){
-      if(sp.second.image == i){
+      if(sp.second.image == image){
         PipelineConfigError("InvalidTargetImageUsage", "An image cannot be both render target and sampler source in the same pipeline.");
       }
     }
+    targetImages.push_back(image);
   }
 
   cooked = false;
   target_is_window = false;
-  targetImages = images;
   renderpass_prepared = false;
   targetWindow = nullptr;
   
@@ -201,12 +200,13 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   memcpy(b_uniformArea + offset, pData, size);
 }
 
-void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, SamplerInterpolation interpolation, SamplerWarpMode warp_mode){
+void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, SamplerInterpolation interpolation, SamplerWarpMode warp_mode){
   if(!program)
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
-
-  // Ensure image is not a render target.
+  std::shared_ptr<Image::Impl> image = image_ref.impl;
   
+  
+  // Ensure image is not a render target.
   for(const auto& i : targetImages){
     if(image == i){
       PipelineConfigError("InvalidSamplerImageUsage", "An image cannot be both sampler source and render target in the same pipeline.");
@@ -236,7 +236,7 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
   float max_anisotropy = 0.0f;
   bool enable_anisotropy = false;
 
-  switch(image->impl->filtermode){
+  switch(image->filtermode){
   case ImageFilterMode::None:
   default:
     break;
@@ -247,7 +247,7 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
     out_dbg("Anisotropic sampler, level: " + std::to_string(max_anisotropy));
     /* FALLTHROGH */
   case ImageFilterMode::MipMapped:
-    maxLod = image->impl->getDesiredMipsNo();
+    maxLod = image->getDesiredMipsNo();
     out_dbg("Mipmapped sampler, lods:" + std::to_string(maxLod));
     break;
   }
@@ -267,7 +267,7 @@ void Pipeline::Impl::setSampler(std::string name, std::shared_ptr<Image> image, 
   wdss.push_back(vkhlf::WriteDescriptorSet(
                    d_descriptorSet, sdata.bindno, 0, 1,
                    vk::DescriptorType::eCombinedImageSampler,
-                   vkhlf::DescriptorImageInfo(sdata.sampler, image->impl->image_view, vk::ImageLayout::eGeneral),
+                   vkhlf::DescriptorImageInfo(sdata.sampler, image->image_view, vk::ImageLayout::eGeneral),
                    nullptr
                    ));
   global::device->updateDescriptorSets(wdss, nullptr);
@@ -326,7 +326,7 @@ bool Pipeline::Impl::ensureValidity(){
       PipelineConfigError("OutputLayoutMismatch", "This pipeline is configured to use " + std::to_string(targetImages.size()) + " textures as the output, but the pixel shader provides " + std::to_string(outl.layout.size())+ " outputs.").raise();
     }
     for(unsigned int i = 0; i < outl.layout.size(); i++){
-      if(outl.layout[i] != targetImages[i]->impl->format.shaderDataType){
+      if(outl.layout[i] != targetImages[i]->format.shaderDataType){
         // TODO: Present type names to explain the error.
         PipelineConfigError("OutputLayoutMismatch", "Shader output "  + std::to_string(i) + "type does match target image format.").raise();
     }
@@ -348,14 +348,14 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
   // Configure layout for target images.
   for(const auto& i : targetImages){
-    i->impl->switchLayout(vk::ImageLayout::eColorAttachmentOptimal);
+    i->switchLayout(vk::ImageLayout::eColorAttachmentOptimal);
   }
 
   // Ensure all samplers are set and configure their layout
   for(const auto & s: s_samplers){
     if(!s.second.sampler)
       PipelineConfigError("SamplerNotSet", "This pipeline cannot render, sampler \"" + s.first + "\" was not bound to an image.").raise();
-    s.second.image->impl->switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+    s.second.image->switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
   }
 
   // TODO: ensure all uniforms are set!
@@ -407,7 +407,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   }else{
     // Recalculate mipmaps in each target image.
     for(auto img : targetImages){
-      img->impl->regenerateMips();
+      img->regenerateMips();
     }
   }
 }
@@ -516,7 +516,7 @@ void Pipeline::Impl::prepare_renderpass(){
   std::vector<vk::AttachmentDescription> attachmentDescriptions;
   for(const auto& i : targetImages){
     attachmentDescriptions.push_back(vk::AttachmentDescription(
-                                       {}, i->impl->format.vkFormat, vk::SampleCountFlagBits::e1,
+                                       {}, i->format.vkFormat, vk::SampleCountFlagBits::e1,
                                        vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore, // color
                                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
                                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal
@@ -544,7 +544,7 @@ void Pipeline::Impl::prepare_renderpass(){
   std::vector<std::shared_ptr<vkhlf::ImageView>> iviews;
   for(const auto& i : targetImages){
     // TODO: Consider image format
-    auto iv = i->impl->image->createImageView(vk::ImageViewType::e2D, i->impl->format.vkFormat,
+    auto iv = i->image->createImageView(vk::ImageViewType::e2D, i->format.vkFormat,
                                             { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG,
                                               vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA },
                                             { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });

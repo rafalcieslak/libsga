@@ -7,6 +7,7 @@
 
 #include <sga/vbo.hpp>
 #include <sga/shader.hpp>
+#include <sga/image.hpp>
 
 namespace sga{
 
@@ -15,7 +16,7 @@ public:
   Impl();
   virtual ~Impl();
   void setTarget(std::shared_ptr<Window> tgt);
-  void setTarget(std::vector<std::shared_ptr<Image>> images);
+  void setTarget(std::vector<Image> images);
   
   void drawVBO(std::shared_ptr<VBO>);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
@@ -28,8 +29,8 @@ public:
   void setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard=false);
   void updateStandardUniforms();
 
-  void setSampler(std::string, std::shared_ptr<Image>,
-                  SamplerInterpolation interpolation = SamplerInterpolation::Linear,
+  void setSampler(std::string, const Image&,
+                  SamplerInterpolation intefrpolation = SamplerInterpolation::Linear,
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
   
   void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
@@ -43,7 +44,7 @@ public:
 protected:
   bool target_is_window;
   std::shared_ptr<Window> targetWindow;
-  std::vector<std::shared_ptr<Image>> targetImages;
+  std::vector<std::shared_ptr<Image::Impl>> targetImages;
   std::shared_ptr<Image> depthTarget;
 
   std::shared_ptr<Program> program;
@@ -81,7 +82,7 @@ protected:
     SamplerData() {}
     SamplerData(int b) : bindno(b) {}
     int bindno;
-    mutable std::shared_ptr<Image> image;
+    mutable std::shared_ptr<Image::Impl> image;
     mutable std::shared_ptr<vkhlf::Sampler> sampler;
     
     bool operator<(const SamplerData& other) {return bindno < other.bindno;}

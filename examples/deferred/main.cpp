@@ -56,7 +56,7 @@ int main(){
   std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   
   // Read texture image
-  auto texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "/teapot/texture.png");
+  sga::Image texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "/teapot/texture.png");
   
   // Prepare VBO
   auto modelVbo = sga::VBO::create({
@@ -101,9 +101,9 @@ int main(){
   auto program_gbuffer = sga::Program::createAndCompile(GvertShader, GfragShader);
 
   // Create buffers
-  auto buffer_position = sga::Image::create(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
-  auto buffer_normal   = sga::Image::create(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
-  auto buffer_albedo   = sga::Image::create(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_position(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_normal(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_albedo(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
   
   // G-buffer pipeline
   auto pipeline_gbuffer = sga::Pipeline::create();
@@ -139,7 +139,7 @@ int main(){
   auto program_lighting = sga::Program::createAndCompile(LfragShader);
 
   // Result image
-  auto result_image = sga::Image::create(800,600);
+  sga::Image result_image(800,600);
 
   // Lighting pipeline
   auto pipeline_lighting = sga::FullQuadPipeline::create();
@@ -203,10 +203,10 @@ int main(){
 
   window->setOnResize([&](unsigned int w, unsigned int h){
       // Recreate internediate and target images.
-      buffer_position = sga::Image::create(w,h, 3, sga::ImageFormat::Float);
-      buffer_normal   = sga::Image::create(w,h, 3, sga::ImageFormat::Float);
-      buffer_albedo   = sga::Image::create(w,h, 3, sga::ImageFormat::Float);
-      result_image = sga::Image::create(w,h);
+      buffer_position = sga::Image(w,h, 3, sga::ImageFormat::Float);
+      buffer_normal   = sga::Image(w,h, 3, sga::ImageFormat::Float);
+      buffer_albedo   = sga::Image(w,h, 3, sga::ImageFormat::Float);
+      result_image = sga::Image(w,h);
       // Reset samplers and render targets
       pipeline_gbuffer->setTarget({buffer_position, buffer_normal, buffer_albedo});
       pipeline_lighting->setSampler("buffer_position", buffer_position);

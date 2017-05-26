@@ -24,10 +24,10 @@
 #if __cpp_lib_experimental_propagate_const >= 201505
   #include <experimental/propagate_const>
   template <typename T>
-  using pimpl_unique_ptr = std::experimental::propagate_const<std::unique_ptr<T>>;
+  using pimpl_unique_ptr = std::experimental::propagate_const<std::shared_ptr<T>>;
 #else
   template <typename T>
-  using pimpl_unique_ptr = std::unique_ptr<T>;
+  using pimpl_unique_ptr = std::shared_ptr<T>;
 #endif
 
 #endif // __SGA_CONFIG_HPP__

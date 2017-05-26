@@ -9,9 +9,9 @@ int main(){
   // Source image
   auto image0 = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "test_image.png");
   // Intermediate buffer
-  auto image1 = sga::Image::create(1440, 900);
+  sga::Image image1(1440, 900);
   // Final result
-  auto image2 = sga::Image::create(1440, 900);
+  sga::Image image2(1440, 900);
 
   //  ==== Pipeline 1 ==== (Ripple effect)
 
@@ -79,7 +79,7 @@ int main(){
   pipeline2->drawFullQuad();
 
   // Save image2 to file.
-  image2->savePNG("output.png");
+  image2.savePNG("output.png");
 
   sga::terminate();
 }

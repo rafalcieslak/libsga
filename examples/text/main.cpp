@@ -41,7 +41,7 @@ int main(){
       FT_Bitmap_Init(&bitmap);
       FT_Bitmap_Convert(ft, &glyph->bitmap, &bitmap, 1);
       unsigned int w = bitmap.width, h = bitmap.rows;
-      image = sga::Image::create(w, h, 1);
+      image = std::make_shared<sga::Image>(sga::Image(w, h, 1));
       std::vector<uint8_t> buffer(bitmap.buffer, bitmap.buffer + w*h);
       image->putData(buffer);
     }
@@ -99,7 +99,7 @@ character by character. Average FPS: %.2fs.
           float charh = glyph.image->getHeight();
           
           textPipeline->setViewport(charx, chary, charx + charw, chary + charh);
-          textPipeline->setSampler("glyph", glyph.image, sga::SamplerInterpolation::Nearest);
+          textPipeline->setSampler("glyph", *glyph.image, sga::SamplerInterpolation::Nearest);
           textPipeline->drawFullQuad();
         }
 

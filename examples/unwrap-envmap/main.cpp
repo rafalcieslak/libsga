@@ -24,8 +24,8 @@ int main(){
   int w,h,n;
   float *file_data = stbi_loadf(filepath.c_str(), &w, &h, &n, 4);
   std::vector<float> data(file_data, file_data + w*h*4);
-  auto lightprobe_image = sga::Image::create(w,h,4,sga::ImageFormat::Float,sga::ImageFilterMode::None);
-  lightprobe_image->putData(data);
+  sga::Image lightprobe_image(w,h,4,sga::ImageFormat::Float,sga::ImageFilterMode::None);
+  lightprobe_image.putData(data);
   free(file_data);
 
   // TODO: Compute scaling factor as partition of data floats, and pass it as uniform.
@@ -55,10 +55,10 @@ int main(){
   fragShader->addUniform(sga::DataType::Float, "phi_offset");
   fragShader->addSampler("lightprobe");
 
-  auto image = sga::Image::create(window->getWidth()*SS_SCALE,
-                                  window->getHeight()*SS_SCALE,
-                                  4, sga::ImageFormat::NInt8,
-                                  sga::ImageFilterMode::MipMapped);
+  sga::Image image(window->getWidth()*SS_SCALE,
+                   window->getHeight()*SS_SCALE,
+                   4, sga::ImageFormat::NInt8,
+                   sga::ImageFilterMode::MipMapped);
   
   auto program = sga::Program::createAndCompile(fragShader);
   auto pipeline = sga::FullQuadPipeline::create();

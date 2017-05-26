@@ -15,15 +15,15 @@ class Pipeline::Impl{
 public:
   Impl();
   virtual ~Impl();
-  void setTarget(std::shared_ptr<Window> tgt);
+  void setTarget(const Window& tgt);
   void setTarget(std::vector<Image> images);
   
-  void drawVBO(std::shared_ptr<VBO>);
+  void drawVBO(const VBO&);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
   void setClearColor(float r, float g, float b);
   void clear();
   
-  virtual void setProgram(std::shared_ptr<Program>);
+  virtual void setProgram(const Program&);
 
   void setUniform(std::string name, std::initializer_list<float> floats);  
   void setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard=false);
@@ -43,11 +43,11 @@ public:
   bool ensureValidity();
 protected:
   bool target_is_window;
-  std::shared_ptr<Window> targetWindow;
+  std::shared_ptr<Window::Impl> targetWindow;
   std::vector<std::shared_ptr<Image::Impl>> targetImages;
-  std::shared_ptr<Image> depthTarget;
+  std::shared_ptr<Image::Impl> depthTarget;
 
-  std::shared_ptr<Program> program;
+  std::shared_ptr<Program::Impl> program;
   
   FaceCullMode faceCullMode = FaceCullMode::None;
   FaceDirection faceDirection = FaceDirection::Clockwise;
@@ -108,10 +108,10 @@ public:
   
   void drawFullQuad();
   
-  void setProgram(std::shared_ptr<Program>) override;
+  void setProgram(const Program&) override;
 
 protected:
-  std::shared_ptr<VBO> vbo;
+  VBO vbo;
 };
 
 } // namespace sga

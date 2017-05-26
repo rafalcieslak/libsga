@@ -14,7 +14,7 @@ namespace sga{
 // ====== Glue layer ======
 
 Window::Window(unsigned int width, unsigned int height, std::string title) :
-  impl(std::make_unique<Window::Impl>(width, height, title)) {}
+  impl(std::make_shared<Window::Impl>(width, height, title)) {}
 Window::~Window() = default;
 
 void Window::nextFrame() {impl->nextFrame();}

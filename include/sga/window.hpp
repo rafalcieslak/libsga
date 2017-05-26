@@ -12,11 +12,8 @@ namespace sga{
 
 class Window{
 public:
+  SGA_API Window(unsigned int width, unsigned int height, std::string title);
   SGA_API ~Window();
-  
-  SGA_API static std::shared_ptr<Window> create(unsigned int width, unsigned int height, std::string title) {
-    return std::shared_ptr<Window>(new Window(width, height, title));
-  }
 
   // Frame display and statistics
   SGA_API void nextFrame();
@@ -52,7 +49,6 @@ public:
   friend class Pipeline;
   friend class Image;
 private:
-  SGA_API Window(unsigned int width, unsigned int height, std::string title);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

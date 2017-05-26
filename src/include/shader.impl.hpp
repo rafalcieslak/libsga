@@ -37,8 +37,8 @@ public:
 class Program::Impl{
 public:
   Impl();
-  void setVertexShader(std::shared_ptr<VertexShader> vs);
-  void setFragmentShader(std::shared_ptr<FragmentShader> vs);
+  void setVertexShader(VertexShader vs);
+  void setFragmentShader(FragmentShader vs);
   
   void compile();
   void compileFullQuad();

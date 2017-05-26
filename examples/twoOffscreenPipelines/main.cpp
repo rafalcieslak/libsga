@@ -31,14 +31,14 @@ int main(){
     }
   )");
 
-  fragShader1->addOutput(sga::DataType::Float4, "outColor");
-  fragShader1->addSampler("image0");
+  fragShader1.addOutput(sga::DataType::Float4, "outColor");
+  fragShader1.addSampler("image0");
 
   auto program1 = sga::Program::createAndCompile(fragShader1);
-  auto pipeline1 = sga::FullQuadPipeline::create();
-  pipeline1->setProgram(program1);
-  pipeline1->setSampler("image0", image0);
-  pipeline1->setTarget({image1});
+  sga::FullQuadPipeline pipeline1;
+  pipeline1.setProgram(program1);
+  pipeline1.setSampler("image0", image0);
+  pipeline1.setTarget({image1});
 
 
   //  ==== Pipeline 2 ==== (Border highlight)
@@ -65,18 +65,18 @@ int main(){
     }
   )");
 
-  fragShader2->addOutput(sga::DataType::Float4, "outColor");
-  fragShader2->addSampler("image1");
+  fragShader2.addOutput(sga::DataType::Float4, "outColor");
+  fragShader2.addSampler("image1");
 
   auto program2 = sga::Program::createAndCompile(fragShader2);
-  auto pipeline2 = sga::FullQuadPipeline::create();
-  pipeline2->setProgram(program2);
-  pipeline2->setSampler("image1", image1);
-  pipeline2->setTarget({image2});
+  sga::FullQuadPipeline pipeline2;
+  pipeline2.setProgram(program2);
+  pipeline2.setSampler("image1", image1);
+  pipeline2.setTarget({image2});
 
   // Perform render, using both pipelines in sequence
-  pipeline1->drawFullQuad();
-  pipeline2->drawFullQuad();
+  pipeline1.drawFullQuad();
+  pipeline2.drawFullQuad();
 
   // Save image2 to file.
   image2.savePNG("output.png");

@@ -48,8 +48,8 @@ int main(){
     glyphs[c] = {glyph->metrics, image};
   }
 
-  auto window = sga::Window::create(800, 200, "Font");
-  window->setFPSLimit(60);
+  sga::Window window(800, 200, "Font");
+  window.setFPSLimit(60);
   
   auto textShader = sga::FragmentShader::createFromSource(R"(
     void main()
@@ -60,21 +60,21 @@ int main(){
     }
   )");
 
-  textShader->addSampler("glyph");
-  textShader->addOutput(sga::DataType::Float4, "outColor");
+  textShader.addSampler("glyph");
+  textShader.addOutput(sga::DataType::Float4, "outColor");
   
   auto textProgram = sga::Program::createAndCompile(textShader);
-  auto textPipeline = sga::FullQuadPipeline::create();
+  sga::FullQuadPipeline textPipeline;
 
-  textPipeline->setProgram(textProgram);
-  textPipeline->setTarget(window);
+  textPipeline.setProgram(textProgram);
+  textPipeline.setTarget(window);
 
-  textPipeline->setViewport(50,50,300,350);
+  textPipeline.setViewport(50,50,300,350);
 
   int basex = 20;
     
-  while(window->isOpen()){
-    textPipeline->clear();
+  while(window.isOpen()){
+    textPipeline.clear();
 
     char text_buffer[800];
     sprintf(text_buffer, R"(
@@ -82,7 +82,7 @@ This example demonstrates rendering text with
 Freetype. It has been running for %.2fs.
 Each frame the entire text is rendered again, 
 character by character. Average FPS: %.2fs.
-)", sga::getTime(), window->getAverageFPS());
+)", sga::getTime(), window.getAverageFPS());
     
     // Cursor coordinates;
     float x = basex, y = 0;
@@ -98,9 +98,9 @@ character by character. Average FPS: %.2fs.
           float charw = glyph.image->getWidth();
           float charh = glyph.image->getHeight();
           
-          textPipeline->setViewport(charx, chary, charx + charw, chary + charh);
-          textPipeline->setSampler("glyph", *glyph.image, sga::SamplerInterpolation::Nearest);
-          textPipeline->drawFullQuad();
+          textPipeline.setViewport(charx, chary, charx + charw, chary + charh);
+          textPipeline.setSampler("glyph", *glyph.image, sga::SamplerInterpolation::Nearest);
+          textPipeline.drawFullQuad();
         }
 
         x += glyph.metrics.horiAdvance / 64.0f;
@@ -111,7 +111,7 @@ character by character. Average FPS: %.2fs.
       }
 
     }
-    window->nextFrame();
+    window.nextFrame();
   }
   sga::terminate();
 }

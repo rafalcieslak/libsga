@@ -5,7 +5,7 @@
 
 int main(){
   sga::init();
-  auto window = sga::Window::create(800, 600, "Example window");
+  sga::Window window(800, 600, "Example window");
   
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
@@ -21,27 +21,31 @@ int main(){
   )");
 
   // Read image
-  auto texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "test_image.png", sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
+  auto texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "test_image.png",
+                                           sga::ImageFormat::NInt8,
+                                           sga::ImageFilterMode::Anisotropic);
   
-  fragShader->addOutput(sga::DataType::Float4, "outColor");
-  fragShader->addSampler("tex");
+  fragShader.addOutput(sga::DataType::Float4, "outColor");
+  fragShader.addSampler("tex");
 
   auto program = sga::Program::createAndCompile(fragShader);
 
-  auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(window);
-  pipeline->setSampler("tex", texture, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  sga::FullQuadPipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(window);
+  pipeline.setSampler("tex", texture,
+                      sga::SamplerInterpolation::Linear,
+                      sga::SamplerWarpMode::Repeat);
   
-  window->setFPSLimit(60);
+  window.setFPSLimit(60);
 
-  window->setOnKeyDown(sga::Key::Escape, [&](){ window->close(); });
-  window->setOnKeyDown(sga::Key::F11, [&](){ window->toggleFullscreen(); });
+  window.setOnKeyDown(sga::Key::Escape, [&](){ window.close(); });
+  window.setOnKeyDown(sga::Key::F11, [&](){ window.toggleFullscreen(); });
 
-  while(window->isOpen()){
-    pipeline->clear();
-    pipeline->drawFullQuad();
-    window->nextFrame();
+  while(window.isOpen()){
+    pipeline.clear();
+    pipeline.drawFullQuad();
+    window.nextFrame();
   }
   sga::terminate();
 }

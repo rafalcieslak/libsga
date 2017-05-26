@@ -19,16 +19,16 @@ namespace sga{
 
 /// ====== GLUE ======
 
-Pipeline::Pipeline() : impl_(std::make_unique<Pipeline::Impl>()) {}
+Pipeline::Pipeline() : impl_(std::make_shared<Pipeline::Impl>()) {}
 Pipeline::Pipeline(pimpl_unique_ptr<Impl> &&impl) : impl_(std::move(impl)) {}
 Pipeline::~Pipeline() = default;
 
-void Pipeline::setTarget(std::shared_ptr<Window> target) {impl()->setTarget(target);}
+void Pipeline::setTarget(const Window& target) {impl()->setTarget(target);}
 void Pipeline::setTarget(std::vector<Image> images) {impl()->setTarget(images);}
-void Pipeline::drawVBO(std::shared_ptr<VBO> vbo) {impl()->drawVBO(vbo);}
+void Pipeline::drawVBO(const VBO& vbo) {impl()->drawVBO(vbo);}
 void Pipeline::setClearColor(float r, float g, float b) {impl()->setClearColor(r, g, b);}
 void Pipeline::clear() {impl()->clear();}
-void Pipeline::setProgram(std::shared_ptr<Program> p) {impl()->setProgram(p);}
+void Pipeline::setProgram(const Program& p) {impl()->setProgram(p);}
 
 void Pipeline::setUniform(std::string name, std::initializer_list<float> floats){
   impl()->setUniform(name, floats);
@@ -60,7 +60,7 @@ FullQuadPipeline::Impl* FullQuadPipeline::impl(){
   return dynamic_cast<FullQuadPipeline::Impl*>(Pipeline::impl());
 }
 
-void FullQuadPipeline::setProgram(std::shared_ptr<Program> p) {impl()->setProgram(p);}
+void FullQuadPipeline::setProgram(const Program& p) {impl()->setProgram(p);}
 void FullQuadPipeline::drawFullQuad() {impl()->drawFullQuad();}
   
 
@@ -72,10 +72,10 @@ Pipeline::Impl::Impl(){
 Pipeline::Impl::~Impl(){
 }
 
-void Pipeline::Impl::setTarget(std::shared_ptr<Window> tgt){
+void Pipeline::Impl::setTarget(const Window& tgt){
   cooked = false;
   target_is_window = true;
-  targetWindow = tgt;
+  targetWindow = tgt.impl;
   // Drop references to image targets
   targetImages = std::vector<std::shared_ptr<Image::Impl>>();
   rp_renderpass = nullptr;
@@ -128,7 +128,7 @@ void Pipeline::Impl::setRasterizerMode(RasterizerMode r) {
 void Pipeline::Impl::resetViewport(){
   vp_top = vp_left = 0.0f;
   if(target_is_window && targetWindow){
-    auto extent = targetWindow->impl->getCurrentFramebuffer().second;
+    auto extent = targetWindow->getCurrentFramebuffer().second;
     vp_right = extent.width;
     vp_bottom = extent.height;
   }else if(!target_is_window && targetImages[0]){
@@ -144,11 +144,12 @@ void Pipeline::Impl::setViewport(float left, float top, float right, float botto
   vp_bottom = bottom;
 }
 
-void Pipeline::Impl::setProgram(std::shared_ptr<Program> p){
-  if(p && !p->impl->compiled)
+void Pipeline::Impl::setProgram(const Program& p_){
+  auto p = p_.impl;
+  if(p && !p->compiled)
     PipelineConfigError("ProgramNotCompiled", "The program passed to the pipeline was not compiled.",
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
-  if(p->impl->isFullQuad)
+  if(p->isFullQuad)
     PipelineConfigError("InvalidProgramType", "This pipeline does not support full quad programs.").raise();
     
   program = p;
@@ -189,7 +190,7 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   prepare_unibuffers();
   
   // Lookup offset.
-  const auto& off_map = program->impl->c_uniformOffsets;
+  const auto& off_map = program->c_uniformOffsets;
   auto it = off_map.find(name);
   if(it == off_map.end())
     PipelineConfigError("NoUniform", "Uniform \"" + name + "\" does not exist.").raise();
@@ -279,7 +280,7 @@ void Pipeline::Impl::updateStandardUniforms(){
   
   vk::Extent2D extent;
   if(target_is_window){
-    extent = targetWindow->impl->getCurrentFramebuffer().second;
+    extent = targetWindow->getCurrentFramebuffer().second;
   }else{
     prepare_renderpass();
     extent = rp_image_target_extent;
@@ -291,17 +292,18 @@ void Pipeline::Impl::updateStandardUniforms(){
   setUniform(DataType::Float4, "sgaViewport", (char*)&vp, sizeof(vp), true);
 }
 
-void Pipeline::Impl::drawVBO(std::shared_ptr<VBO> vbo){
+void Pipeline::Impl::drawVBO(const VBO& vbo_){
+  auto vbo = vbo_.impl;
   if(!ensureValidity()) return;
 
   // Extra VBO-specific validity check
-  if(vbo->getLayout() != program->impl->c_inputLayout){
+  if(vbo->layout != program->c_inputLayout){
     PipelineConfigError("VertexLayoutMismatch", "VBO layout does not match pipeline input layout!").raise();
   }
   
   cook();
   updateStandardUniforms();
-  drawBuffer(vbo->impl->buffer, vbo->getSize());
+  drawBuffer(vbo->buffer, vbo->getSize());
 }
 
 bool Pipeline::Impl::ensureValidity(){
@@ -312,7 +314,7 @@ bool Pipeline::Impl::ensureValidity(){
     PipelineConfigError("RenderTargetMissing", "The pipeline is not ready for rendering, target surface not set.").raise();
   }
   // Check PX output layout with target.
-  DataLayout outl = program->impl->c_outputLayout;
+  DataLayout outl = program->c_outputLayout;
   if(target_is_window){
     if(outl.layout.size() != 1){
       PipelineConfigError("OutputLayoutMismatch", "This pipeline is configured to use a window as the output, so it should use only one color output, but the pixel shader provides " + std::to_string(outl.layout.size())+ " outputs.").raise();
@@ -339,7 +341,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   std::shared_ptr<vkhlf::Framebuffer> framebuffer;
   vk::Extent2D extent;
   if(target_is_window){
-    std::tie(framebuffer, extent) = targetWindow->impl->getCurrentFramebuffer();
+    std::tie(framebuffer, extent) = targetWindow->getCurrentFramebuffer();
   }else{
     prepare_renderpass();
     framebuffer = rp_framebuffer;
@@ -403,7 +405,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   fence->wait(UINT64_MAX);
   
   if(target_is_window){
-    targetWindow->impl->currentFrameRendered = true;
+    targetWindow->currentFrameRendered = true;
   }else{
     // Recalculate mipmaps in each target image.
     for(auto img : targetImages){
@@ -416,7 +418,7 @@ void Pipeline::Impl::clear(){
   if(!ensureValidity()) return;
 
   if(target_is_window){
-    targetWindow->impl->clearCurrentFrame();
+    targetWindow->clearCurrentFrame();
   }else{
     for(const auto& i : targetImages){
       i->clear();
@@ -430,7 +432,7 @@ void Pipeline::Impl::clear(){
 void Pipeline::Impl::prepare_unibuffers(){
   if(unibuffers_prepared) return;
 
-  b_uniformSize = program->impl->c_uniformSize;
+  b_uniformSize = program->c_uniformSize;
   // Prepare uniform buffers.
   b_uniformBuffer = global::device->createBuffer(
     b_uniformSize,
@@ -446,7 +448,7 @@ void Pipeline::Impl::prepare_unibuffers(){
 
 void Pipeline::Impl::prepare_samplers(){
   if(samplers_prepared) return;
-  for(const auto& s : program->impl->c_samplerBindings){
+  for(const auto& s : program->c_samplerBindings){
     s_samplers[s.first] = SamplerData(s.second);
   }
   samplers_prepared = true;
@@ -456,7 +458,7 @@ void Pipeline::Impl::prepare_descset(){
 
   prepare_unibuffers();
 
-  unsigned int samplerno = program->impl->c_samplerBindings.size();
+  unsigned int samplerno = program->c_samplerBindings.size();
 
   
   // Descriptor bindings
@@ -616,7 +618,7 @@ void Pipeline::Impl::cook(){
 
     // Take renderpass and framebuffer
     if(target_is_window){
-      c_renderPass = targetWindow->impl->renderPass;
+      c_renderPass = targetWindow->renderPass;
     }else{
       prepare_renderpass();
       c_renderPass = rp_renderpass;
@@ -627,9 +629,9 @@ void Pipeline::Impl::cook(){
 
     // Use shaders
     vkhlf::PipelineShaderStageCreateInfo vertexStage(
-      vk::ShaderStageFlagBits::eVertex,   program->impl->c_VS_shader, "main");
+      vk::ShaderStageFlagBits::eVertex,   program->c_VS_shader, "main");
     vkhlf::PipelineShaderStageCreateInfo fragmentStage(
-      vk::ShaderStageFlagBits::eFragment, program->impl->c_FS_shader, "main");
+      vk::ShaderStageFlagBits::eFragment, program->c_FS_shader, "main");
 
     // Prepare input bindings according to vertexInputLayout.
     static std::map<DataType, vk::Format> dataTypeLayout = {
@@ -649,7 +651,7 @@ void Pipeline::Impl::cook(){
     };
     std::vector<vk::VertexInputAttributeDescription> attribs;
     size_t offset = 0, n = 0;
-    for(DataType dt : program->impl->c_inputLayout.layout){
+    for(DataType dt : program->c_inputLayout.layout){
       attribs.push_back(vk::VertexInputAttributeDescription(
                           n, 0, dataTypeLayout[dt], offset));
       n++;
@@ -739,18 +741,18 @@ void Pipeline::Impl::cook(){
     cooked = true;
 }
 
-FullQuadPipeline::Impl::Impl(){
-  vbo = VBO::create({sga::DataType::Float2}, 3);
-  
+FullQuadPipeline::Impl::Impl() :
+  vbo({sga::DataType::Float2}, 3){
   std::vector<std::array<float,2>> vertices = {{-1,-1},{ 3,-1},{-1, 3}};
-  vbo->write(vertices);
+  vbo.write(vertices);
 }
 
-void FullQuadPipeline::Impl::setProgram(std::shared_ptr<Program> p){
-  if(p && !p->impl->compiled)
+void FullQuadPipeline::Impl::setProgram(const Program& p_){
+  auto p = p_.impl;
+  if(p && !p->compiled)
     PipelineConfigError("ProgramNotCompiled", "The program passed to the pipeline was not compiled.",
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
-  if(!p->impl->isFullQuad)
+  if(!p->isFullQuad)
     PipelineConfigError("InvalidProgramType", "Only full quad programs are supported by this pipeline.").raise();
     
   program = p;

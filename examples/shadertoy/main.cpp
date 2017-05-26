@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 
   // Prepare SGA
   sga::init();
-  auto window = sga::Window::create(640*2, 360*2, "Shadertoy simulator");
+  sga::Window window(640*2, 360*2, "Shadertoy simulator");
   
   // Really wish we could use getopt, but it's posix-only!
   std::vector<std::string> textures;
@@ -72,54 +72,54 @@ int main(int argc, char** argv){
   }
   
   auto shader = sga::FragmentShader::createFromSource(fragSource);
-  shader->addOutput(sga::DataType::Float4, "outColor");
-  shader->addUniform(sga::DataType::Float4, "stoyMouse");
-  shader->addSampler("iChannel0");
-  shader->addSampler("iChannel1");
-  shader->addSampler("iChannel2");
-  shader->addSampler("iChannel3");
+  shader.addOutput(sga::DataType::Float4, "outColor");
+  shader.addUniform(sga::DataType::Float4, "stoyMouse");
+  shader.addSampler("iChannel0");
+  shader.addSampler("iChannel1");
+  shader.addSampler("iChannel2");
+  shader.addSampler("iChannel3");
 
   auto program = sga::Program::createAndCompile(shader);
 
-  auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(window);
-  pipeline->setUniform("stoyMouse", {0,0,-1,-1});
-  pipeline->setSampler("iChannel0", images[0], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-  pipeline->setSampler("iChannel1", images[1], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-  pipeline->setSampler("iChannel2", images[2], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-  pipeline->setSampler("iChannel3", images[3], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  sga::FullQuadPipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(window);
+  pipeline.setUniform("stoyMouse", {0,0,-1,-1});
+  pipeline.setSampler("iChannel0", images[0], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  pipeline.setSampler("iChannel1", images[1], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  pipeline.setSampler("iChannel2", images[2], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  pipeline.setSampler("iChannel3", images[3], sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
 
   bool mouse_l_last = false;
   float click_x = 250.0, click_y = 250.0;
-  window->setOnMouseAny([&](double x, double y, bool l, bool){
+  window.setOnMouseAny([&](double x, double y, bool l, bool){
       if(!mouse_l_last && l){
         click_x = x;
         click_y = y;
       }
       if(!l) x = y = 0;
-      pipeline->setUniform("stoyMouse",
-                           {(float)x,
-                            (float)y,
-                            l ? click_x : -1.0f,
-                            l ? click_y : -1.0f});
+      pipeline.setUniform("stoyMouse",
+                          {(float)x,
+                           (float)y,
+                           l ? click_x : -1.0f,
+                           l ? click_y : -1.0f});
       mouse_l_last = l;
     });
 
-  window->setOnKeyDown(sga::Key::Escape, [&](){
-      window->close();
+  window.setOnKeyDown(sga::Key::Escape, [&](){
+      window.close();
     });
-  window->setOnKeyDown(sga::Key::F11, [&](){
-      window->toggleFullscreen();
+  window.setOnKeyDown(sga::Key::F11, [&](){
+      window.toggleFullscreen();
     });
   
-  window->setFPSLimit(60);
-  while(window->isOpen()){
-    pipeline->drawFullQuad();
-    window->nextFrame();
+  window.setFPSLimit(60);
+  while(window.isOpen()){
+    pipeline.drawFullQuad();
+    window.nextFrame();
     
-    if(window->getFrameNo() % 20 == 0)
-      std::cout << window->getAverageFPS() << std::endl;
+    if(window.getFrameNo() % 20 == 0)
+      std::cout << window.getAverageFPS() << std::endl;
   }
   sga::terminate();
 }

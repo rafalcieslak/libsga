@@ -25,12 +25,11 @@ void VBO::putData(uint8_t* pData, size_t n_elem, size_t elem_size){
   impl->putData(pData, n_elem, elem_size);
 }
 DataLayout VBO::getLayout() const{
-  return impl->layout;
+  return impl->getLayout();
 }
-size_t VBO::getDataSize() const{
-  return impl->layout.byteSize();
+unsigned int VBO::getSize() const{
+  return impl->getSize();
 }
-unsigned int VBO::getSize() const{ return impl->getSize(); }
 
 VBO::Impl::Impl(DataLayout layout, unsigned int s)
   : layout(layout), size(s) {
@@ -44,6 +43,9 @@ VBO::Impl::Impl(DataLayout layout, unsigned int s)
     nullptr);
 }
 
+DataLayout VBO::Impl::getLayout() const{
+  return layout;
+}
 unsigned int VBO::Impl::getSize() const{
   return size;
 }

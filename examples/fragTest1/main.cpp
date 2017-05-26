@@ -4,7 +4,7 @@
 
 int main(){
   sga::init();
-  auto window = sga::Window::create(800, 600, "Example window");
+  sga::Window window(800, 600, "Example window");
   
   auto fragShader = sga::FragmentShader::createFromSource(R"(
     void main()
@@ -22,23 +22,23 @@ int main(){
     }
   )");
 
-  fragShader->addOutput(sga::DataType::Float4, "outColor");
+  fragShader.addOutput(sga::DataType::Float4, "outColor");
 
   auto program = sga::Program::createAndCompile(fragShader);
 
-  auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(window);
+  sga::FullQuadPipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(window);
   
-  window->setFPSLimit(60);
+  window.setFPSLimit(60);
 
-  window->setOnKeyDown(sga::Key::F11, [&](){
-      window->toggleFullscreen();
+  window.setOnKeyDown(sga::Key::F11, [&](){
+      window.toggleFullscreen();
     });
   
-  while(window->isOpen()){
-    pipeline->drawFullQuad();
-    window->nextFrame();
+  while(window.isOpen()){
+    pipeline.drawFullQuad();
+    window.nextFrame();
   }
   sga::terminate();
 }

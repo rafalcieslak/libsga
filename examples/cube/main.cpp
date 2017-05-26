@@ -68,16 +68,15 @@ std::vector<VertData> vertices = {
 int main(){
   sga::init();
 
-  auto window = sga::Window::create(800, 600, "Cube");
+  sga::Window window(800, 600, "Cube");
 
   // Prepare VBO
-  auto vbo = sga::VBO::create({
+  sga::VBO vbo({
       sga::DataType::Float3,
       sga::DataType::Float3,
       sga::DataType::Float2},
     vertices.size());
-  
-  vbo->write(vertices);
+  vbo.write(vertices);
 
   auto vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
@@ -98,20 +97,20 @@ int main(){
   )");
 
   // Configure shader input/output/uniforms
-  vertShader->addInput({{sga::DataType::Float3, "in_position"},
+  vertShader.addInput({{sga::DataType::Float3, "in_position"},
                         {sga::DataType::Float3, "in_normal"},
                         {sga::DataType::Float2, "in_texuv"}});
-  vertShader->addOutput({{sga::DataType::Float3, "out_position"},
+  vertShader.addOutput({{sga::DataType::Float3, "out_position"},
                          {sga::DataType::Float3, "out_normal"},
                          {sga::DataType::Float2, "out_texuv"}});
-  vertShader->addUniform(sga::DataType::Mat4, "MVP");
+  vertShader.addUniform(sga::DataType::Mat4, "MVP");
 
-  fragShader->addInput(sga::DataType::Float3, "in_position");
-  fragShader->addInput(sga::DataType::Float3, "in_normal");
-  fragShader->addInput(sga::DataType::Float2, "in_texuv");
-  fragShader->addOutput(sga::DataType::Float4, "out_color");
-  fragShader->addUniform(sga::DataType::Float3, "lightpos");
-  fragShader->addSampler("tex");
+  fragShader.addInput(sga::DataType::Float3, "in_position");
+  fragShader.addInput(sga::DataType::Float3, "in_normal");
+  fragShader.addInput(sga::DataType::Float2, "in_texuv");
+  fragShader.addOutput(sga::DataType::Float4, "out_color");
+  fragShader.addUniform(sga::DataType::Float3, "lightpos");
+  fragShader.addSampler("tex");
 
   // Read images
   auto textureImage  = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "cube.png", sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
@@ -124,64 +123,64 @@ int main(){
   glm::mat4 MVP = projection * camera;
 
   // Compile shaders
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
+  sga::Program program;
+  program.setVertexShader(vertShader);
+  program.setFragmentShader(fragShader);
+  program.compile();
 
   // Configure pipeline
-  auto pipeline = sga::Pipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(window);
-  pipeline->setFaceCull(sga::FaceCullMode::None);
+  sga::Pipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(window);
+  pipeline.setFaceCull(sga::FaceCullMode::None);
   
-  pipeline->setUniform("MVP", MVP);
-  pipeline->setUniform("lightpos", {3.0, -4.0, -5.0});
-  pipeline->setSampler("tex", textureImage);
+  pipeline.setUniform("MVP", MVP);
+  pipeline.setUniform("lightpos", {3.0, -4.0, -5.0});
+  pipeline.setSampler("tex", textureImage);
   
-  window->setFPSLimit(60);
+  window.setFPSLimit(60);
 
-  window->setOnKeyDown(sga::Key::Escape, [&](){
-      window->close();
-    });
-
-  window->setOnKeyDown(sga::Key::F11, [&](){
-      window->toggleFullscreen();
+  window.setOnKeyDown(sga::Key::Escape, [&](){
+      window.close();
     });
 
-  window->setOnKeyDown(sga::Key::d1, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Filled);
+  window.setOnKeyDown(sga::Key::F11, [&](){
+      window.toggleFullscreen();
     });
-  window->setOnKeyDown(sga::Key::d2, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Wireframe);
+
+  window.setOnKeyDown(sga::Key::d1, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Filled);
     });
-  window->setOnKeyDown(sga::Key::d3, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Points);
+  window.setOnKeyDown(sga::Key::d2, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Wireframe);
+    });
+  window.setOnKeyDown(sga::Key::d3, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Points);
     });
   
-  window->setOnMouseMove([&](double x, double y){
+  window.setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
-      x = glm::min(x/window->getWidth(),  0.999);
-      y = glm::min(y/window->getHeight(), 0.999);
+      x = glm::min(x/window.getWidth(),  0.999);
+      y = glm::min(y/window.getHeight(), 0.999);
       float phi = glm::radians(180*y - 90);
       float theta = glm::radians(360*x);
       glm::vec3 p = {0, glm::sin(phi), glm::cos(phi)};
       viewpos = glm::rotateY(p * 4.0f, theta);
       camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
       MVP = projection * camera;
-      pipeline->setUniform("MVP", MVP);
+      pipeline.setUniform("MVP", MVP);
     });
 
   // Main loop
-  while(window->isOpen()){
+  while(window.isOpen()){
     // Periodically switch texture
     float q = sga::getTime();
     int w = q/0.75;
-    if(w % 2) pipeline->setSampler("tex", textureImage);
-    else      pipeline->setSampler("tex", textureImage2);
+    if(w % 2) pipeline.setSampler("tex", textureImage);
+    else      pipeline.setSampler("tex", textureImage2);
     
-    pipeline->drawVBO(vbo);
-    window->nextFrame();
+    pipeline.drawVBO(vbo);
+    window.nextFrame();
   }
   
   sga::terminate();

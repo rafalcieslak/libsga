@@ -33,7 +33,7 @@ int main(){
               << aimporter.GetErrorString() << std::endl;
     return 1;
   }
-  std::vector<std::shared_ptr<sga::VBO>> vbos;
+  std::vector<sga::VBO> vbos;
   for(unsigned int m = 0; m < scene->mNumMeshes; m++){
     const aiMesh* mesh = scene->mMeshes[m];
     std::vector<VertData> vertices;
@@ -49,11 +49,11 @@ int main(){
       }
     }
     // Prepare VBO
-    auto vbo = sga::VBO::create({
+    sga::VBO vbo({
         sga::DataType::Float3,
           sga::DataType::Float3},
       vertices.size());
-    vbo->write(vertices);
+    vbo.write(vertices);
     vbos.push_back(vbo);
     std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   }
@@ -85,21 +85,21 @@ int main(){
   )");
   
   // Configure shader input/output/uniforms
-  vertShader->addInput({{sga::DataType::Float3, "in_position"},
+  vertShader.addInput({{sga::DataType::Float3, "in_position"},
                         {sga::DataType::Float3, "in_normal"}});
-  vertShader->addOutput({{sga::DataType::Float3, "out_world_position"},
+  vertShader.addOutput({{sga::DataType::Float3, "out_world_position"},
                          {sga::DataType::Float3, "out_world_normal"}});
-  vertShader->addUniform(sga::DataType::Mat4, "MVP");
+  vertShader.addUniform(sga::DataType::Mat4, "MVP");
 
-  fragShader->addInput(sga::DataType::Float3, "in_world_position");
-  fragShader->addInput(sga::DataType::Float3, "in_world_normal");
-  fragShader->addOutput(sga::DataType::Float4, "out_color");
-  fragShader->addUniform(sga::DataType::Float3, "lightpos");
-  fragShader->addUniform(sga::DataType::Float3, "viewpos");
+  fragShader.addInput(sga::DataType::Float3, "in_world_position");
+  fragShader.addInput(sga::DataType::Float3, "in_world_normal");
+  fragShader.addOutput(sga::DataType::Float4, "out_color");
+  fragShader.addUniform(sga::DataType::Float3, "lightpos");
+  fragShader.addUniform(sga::DataType::Float3, "viewpos");
 
   // Prepare window
-  auto window = sga::Window::create(800, 600, "Teapot");
-  window->setFPSLimit(60);
+  sga::Window window(800, 600, "Teapot");
+  window.setFPSLimit(60);
   
   // Compute initial MVP
   float distance = 12;
@@ -109,64 +109,64 @@ int main(){
   glm::mat4 MVP = projection * camera;
   
   // Compile shaders
-  auto program = sga::Program::create();
-  program->setVertexShader(vertShader);
-  program->setFragmentShader(fragShader);
-  program->compile();
+  sga::Program program;
+  program.setVertexShader(vertShader);
+  program.setFragmentShader(fragShader);
+  program.compile();
 
   // Configure pipeline
-  auto pipeline = sga::Pipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(window);
-  pipeline->setFaceCull(sga::FaceCullMode::None);
+  sga::Pipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(window);
+  pipeline.setFaceCull(sga::FaceCullMode::None);
   
-  pipeline->setUniform("MVP", MVP);
-  pipeline->setUniform("lightpos", {distance*1.3f, distance*0.6f, -distance});
+  pipeline.setUniform("MVP", MVP);
+  pipeline.setUniform("lightpos", {distance*1.3f, distance*0.6f, -distance});
   
-  window->setOnKeyDown(sga::Key::Escape, [&](){
-      window->close();
+  window.setOnKeyDown(sga::Key::Escape, [&](){
+      window.close();
     });
 
-  window->setOnKeyDown(sga::Key::F11, [&](){
-      window->toggleFullscreen();
+  window.setOnKeyDown(sga::Key::F11, [&](){
+      window.toggleFullscreen();
     });
 
-  window->setOnKeyDown(sga::Key::d1, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Filled);
+  window.setOnKeyDown(sga::Key::d1, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Filled);
     });
-  window->setOnKeyDown(sga::Key::d2, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Wireframe);
+  window.setOnKeyDown(sga::Key::d2, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Wireframe);
     });
-  window->setOnKeyDown(sga::Key::d3, [&](){
-      pipeline->setRasterizerMode(sga::RasterizerMode::Points);
+  window.setOnKeyDown(sga::Key::d3, [&](){
+      pipeline.setRasterizerMode(sga::RasterizerMode::Points);
     });
 
-  window->setOnResize([&](double w, double h){
+  window.setOnResize([&](double w, double h){
       projection = glm::perspectiveFov(glm::radians(70.0), w, h, 0.2, distance * 2.1);
       MVP = projection * camera;
-      pipeline->setUniform("MVP", MVP);
+      pipeline.setUniform("MVP", MVP);
     });
   
-  window->setOnMouseMove([&](double x, double y){
+  window.setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
-      x = glm::min(x/window->getWidth(),  0.999);
-      y = glm::min(y/window->getHeight(), 0.999);
+      x = glm::min(x/window.getWidth(),  0.999);
+      y = glm::min(y/window.getHeight(), 0.999);
       float phi = -glm::radians(180*y - 90);
       float theta = glm::radians(360*x);
       glm::vec3 p = {0, glm::sin(phi), glm::cos(phi)};
       viewpos = glm::rotateY(p * distance, theta);
       camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
       MVP = projection * camera;
-      pipeline->setUniform("MVP", MVP);
+      pipeline.setUniform("MVP", MVP);
     });
   
   // Main loop
-  while(window->isOpen()){
-    pipeline->clear();
-    pipeline->setUniform("viewpos", viewpos);
-    pipeline->drawVBO(vbos[0]);
-    pipeline->drawVBO(vbos[1]);
-    window->nextFrame();
+  while(window.isOpen()){
+    pipeline.clear();
+    pipeline.setUniform("viewpos", viewpos);
+    pipeline.drawVBO(vbos[0]);
+    pipeline.drawVBO(vbos[1]);
+    window.nextFrame();
   }
   
   sga::terminate();

@@ -16,7 +16,7 @@
 
 int main(){
   sga::init();
-  auto window = sga::Window::create(500, 250, "Unwrapped envmap");
+  sga::Window window(500, 250, "Unwrapped envmap");
   
   std::string filepath =  EXAMPLE_DATA_DIR "thepit.hdr";
 
@@ -51,42 +51,42 @@ int main(){
     outColor = mix(outColorA, outColorB, 0.0);
   }
   )");
-  fragShader->addOutput(sga::DataType::Float4, "outColor");
-  fragShader->addUniform(sga::DataType::Float, "phi_offset");
-  fragShader->addSampler("lightprobe");
+  fragShader.addOutput(sga::DataType::Float4, "outColor");
+  fragShader.addUniform(sga::DataType::Float, "phi_offset");
+  fragShader.addSampler("lightprobe");
 
-  sga::Image image(window->getWidth()*SS_SCALE,
-                   window->getHeight()*SS_SCALE,
+  sga::Image image(window.getWidth()*SS_SCALE,
+                   window.getHeight()*SS_SCALE,
                    4, sga::ImageFormat::NInt8,
                    sga::ImageFilterMode::MipMapped);
   
   auto program = sga::Program::createAndCompile(fragShader);
-  auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setTarget(image);
-  pipeline->setProgram(program);
-  pipeline->setUniform("phi_offset",0.0f);
-  pipeline->setSampler("lightprobe", lightprobe_image);
+  sga::FullQuadPipeline pipeline;
+  pipeline.setTarget(image);
+  pipeline.setProgram(program);
+  pipeline.setUniform("phi_offset",0.0f);
+  pipeline.setSampler("lightprobe", lightprobe_image);
   
-  window->setOnKeyDown(sga::Key::Escape, [&](){ window->close(); });
-  window->setOnKeyDown(sga::Key::F11, [&](){ window->toggleFullscreen(); });
+  window.setOnKeyDown(sga::Key::Escape, [&](){ window.close(); });
+  window.setOnKeyDown(sga::Key::F11, [&](){ window.toggleFullscreen(); });
 
   float phi_offset = 0.0;
   bool mouse_down = false;
   double mouse_drag_start = 0.0, phi_offset_drag_start = 0.0;
   double mouse_pos = 0.0;
-  window->setOnMouseButton([&](bool left, bool){
+  window.setOnMouseButton([&](bool left, bool){
       if(!mouse_down && left){
         mouse_drag_start = mouse_pos;
         phi_offset_drag_start = phi_offset;
       }
       mouse_down = left;
     });
-  window->setOnMouseMove([&](double x, double){
+  window.setOnMouseMove([&](double x, double){
       mouse_pos = x;
       if(mouse_down){
-        phi_offset = phi_offset_drag_start + (mouse_drag_start - mouse_pos) * 2*PI / window->getWidth();
+        phi_offset = phi_offset_drag_start + (mouse_drag_start - mouse_pos) * 2*PI / window.getWidth();
       }
-      pipeline->setUniform("phi_offset", phi_offset);
+      pipeline.setUniform("phi_offset", phi_offset);
     });
   
   // Downsample program
@@ -95,23 +95,23 @@ int main(){
       outColor = texture(image, sgaWindowCoords);
     }
   )");
-  downsample_shader->addOutput(sga::DataType::Float4, "outColor");
-  downsample_shader->addSampler("image");
+  downsample_shader.addOutput(sga::DataType::Float4, "outColor");
+  downsample_shader.addSampler("image");
   auto downsample_program = sga::Program::createAndCompile(downsample_shader);
   
   // Downsample pipeline
-  auto downsample_pipeline = sga::FullQuadPipeline::create();
-  downsample_pipeline->setProgram(downsample_program);
-  downsample_pipeline->setTarget(window);
-  downsample_pipeline->setSampler("image", image);
+  sga::FullQuadPipeline downsample_pipeline;
+  downsample_pipeline.setProgram(downsample_program);
+  downsample_pipeline.setTarget(window);
+  downsample_pipeline.setSampler("image", image);
   
   std::cout << "HINT: Drag the image left-right with mouse." << std::endl;
   
-  while(window->isOpen()){
-    pipeline->clear();
-    pipeline->drawFullQuad();
-    downsample_pipeline->drawFullQuad();
-    window->nextFrame();
+  while(window.isOpen()){
+    pipeline.clear();
+    pipeline.drawFullQuad();
+    downsample_pipeline.drawFullQuad();
+    window.nextFrame();
   }
   sga::terminate();
 

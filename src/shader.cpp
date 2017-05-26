@@ -14,7 +14,7 @@
 
 namespace sga{
 
-Shader::Shader() : impl(std::make_unique<Shader::Impl>()) {}
+Shader::Shader() : impl(std::make_shared<Shader::Impl>()) {}
 Shader::~Shader() = default;
 
 void Shader::addInput(DataType type, std::string name) {impl->addInput(type, name);}
@@ -27,31 +27,31 @@ void Shader::addOutput(std::initializer_list<std::pair<DataType, std::string>> l
 void Shader::addUniform(DataType type, std::string name) {impl->addUniform(type, name);}
 void Shader::addSampler(std::string name) {impl->addSampler(name);}
 
-Program::Program() : impl(std::make_unique<Program::Impl>()) {}
+Program::Program() : impl(std::make_shared<Program::Impl>()) {}
 Program::~Program() = default;
 void Program::compile() {impl->compile();}
 void Program::compileFullQuad() {impl->compileFullQuad();}
-void Program::setVertexShader(std::shared_ptr<VertexShader> vs) {impl->setVertexShader(vs);}
-void Program::setFragmentShader(std::shared_ptr<FragmentShader> fs) {impl->setFragmentShader(fs);}
+void Program::setVertexShader(VertexShader vs) {impl->setVertexShader(vs);}
+void Program::setFragmentShader(FragmentShader fs) {impl->setFragmentShader(fs);}
 
 // ======= Shader impl =======
 
 Shader::Impl::Impl() {}
 
-std::shared_ptr<VertexShader> VertexShader::createFromSource(std::string source){
-  auto p = std::make_shared<VertexShader>();
-  p->impl->stage = vk::ShaderStageFlagBits::eVertex;
-  p->impl->source = source;
-  p->impl->addStandardUniforms();
-  return p;
+VertexShader VertexShader::createFromSource(std::string source){
+  VertexShader s;
+  s.impl->stage = vk::ShaderStageFlagBits::eVertex;
+  s.impl->source = source;
+  s.impl->addStandardUniforms();
+  return s;
 }
 
-std::shared_ptr<FragmentShader> FragmentShader::createFromSource(std::string source){
-  auto p = std::make_shared<FragmentShader>();
-  p->impl->stage = vk::ShaderStageFlagBits::eFragment;
-  p->impl->source = source;
-  p->impl->addStandardUniforms();
-  return p;
+FragmentShader FragmentShader::createFromSource(std::string source){
+  FragmentShader s;
+  s.impl->stage = vk::ShaderStageFlagBits::eFragment;
+  s.impl->source = source;
+  s.impl->addStandardUniforms();
+  return s;
 }
 
 void Shader::Impl::addInput(DataType type, std::string name) {
@@ -101,33 +101,35 @@ void Shader::Impl::addStandardUniforms(){
 
 Program::Impl::Impl() {}
 
-void Program::Impl::setVertexShader(std::shared_ptr<VertexShader> vs) {
+void Program::Impl::setVertexShader(VertexShader vs_) {
+  auto vs = vs_.impl;
   if(compiled)
     ProgramConfigError("AlreadyCompiled", "This program has already been compiled, you cannot change shaders anymore.").raise();
   if(VS.source != "")
     ProgramConfigError("AlreadyHasVS", "This program already has a vertex shader, you cannot set another.").raise();
-  if(!vs || vs->impl->source == "")
+  if(!vs || vs->source == "")
     ProgramConfigError("EmptyShader", "The provided shader is empty.").raise();
 
-  VS.source = vs->impl->source;
-  VS.inputAttr = vs->impl->inputAttr;
-  VS.outputAttr = vs->impl->outputAttr;
-  VS.uniforms = vs->impl->uniforms;
-  VS.samplers = vs->impl->samplers;
+  VS.source = vs->source;
+  VS.inputAttr = vs->inputAttr;
+  VS.outputAttr = vs->outputAttr;
+  VS.uniforms = vs->uniforms;
+  VS.samplers = vs->samplers;
 }
-void Program::Impl::setFragmentShader(std::shared_ptr<FragmentShader> fs) {
+void Program::Impl::setFragmentShader(FragmentShader fs_) {
+  auto fs = fs_.impl;
   if(compiled)
     ProgramConfigError("AlreadyCompiled", "This program has already been compiled, you cannot change shaders anymore").raise();
   if(FS.source != "")
     ProgramConfigError("AlreadyHasFS", "This program already has a fragment shader, you cannot set another.").raise();
-  if(!fs || fs->impl->source == "")
+  if(!fs || fs->source == "")
     ProgramConfigError("EmptyShader", "The provided shader is empty.").raise();
   
-  FS.source = fs->impl->source;
-  FS.inputAttr = fs->impl->inputAttr;
-  FS.outputAttr = fs->impl->outputAttr;
-  FS.uniforms = fs->impl->uniforms;
-  FS.samplers = fs->impl->samplers;
+  FS.source = fs->source;
+  FS.inputAttr = fs->inputAttr;
+  FS.outputAttr = fs->outputAttr;
+  FS.uniforms = fs->uniforms;
+  FS.samplers = fs->samplers;
 }
 
 void Program::Impl::compile() {
@@ -149,7 +151,7 @@ void Program::Impl::compileFullQuad(){
       gl_Position = vec4(inVertex, 0, 1);
     }
   )");
-  vertShader->addInput(sga::DataType::Float2, "inVertex");
+  vertShader.addInput(sga::DataType::Float2, "inVertex");
   setVertexShader(vertShader);
   
   isFullQuad = true;  

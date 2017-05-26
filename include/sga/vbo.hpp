@@ -14,6 +14,7 @@ class VBOImpl;
 
 class VBO{
 public:
+  SGA_API VBO(DataLayout layout, unsigned int n);
   SGA_API ~VBO();
 
   SGA_API DataLayout getLayout() const;
@@ -38,13 +39,9 @@ public:
     write(std::tuple<T, Ts...>(arg1, args...));
   }
 
-  SGA_API static std::shared_ptr<VBO> create(DataLayout layout, unsigned int size) {
-    return std::shared_ptr<VBO>(new VBO(layout, size));
-  }
-  
   friend class Pipeline;
+  friend class FullQuadPipeline;
 private:
-  SGA_API VBO(DataLayout layout, unsigned int n);
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 

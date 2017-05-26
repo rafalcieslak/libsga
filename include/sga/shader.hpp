@@ -31,46 +31,41 @@ protected:
 
 class VertexShader : public Shader{
 public:
-  SGA_API static std::shared_ptr<VertexShader> createFromSource(std::string source);
+  SGA_API static VertexShader createFromSource(std::string source);
 };
 
 class FragmentShader : public Shader{
 public:
-  SGA_API static std::shared_ptr<FragmentShader> createFromSource(std::string source);
+  SGA_API static FragmentShader createFromSource(std::string source);
 };
 
 class Program{
 public:
+  SGA_API Program();
   SGA_API ~Program();
-  SGA_API void setVertexShader(std::shared_ptr<VertexShader> vs);
-  SGA_API void setFragmentShader(std::shared_ptr<FragmentShader> fs);
+  SGA_API void setVertexShader(VertexShader vs);
+  SGA_API void setFragmentShader(FragmentShader fs);
   
   SGA_API void compile();
   SGA_API void compileFullQuad();
-
-  SGA_API static std::shared_ptr<Program> create(){
-    return std::shared_ptr<Program>(new Program());
-  }
   
-  SGA_API static std::shared_ptr<Program> createAndCompile(std::shared_ptr<VertexShader> vs, std::shared_ptr<FragmentShader> fs){
-    auto p = create();
-    p->setVertexShader(vs);
-    p->setFragmentShader(fs);
-    p->compile();
+  SGA_API static Program createAndCompile(VertexShader vs, FragmentShader fs){
+    Program p;
+    p.setVertexShader(vs);
+    p.setFragmentShader(fs);
+    p.compile();
     return p;
   }
-  SGA_API static std::shared_ptr<Program> createAndCompile(std::shared_ptr<FragmentShader> fs){
-    auto p = create();
-    p->setFragmentShader(fs);
-    p->compileFullQuad();
+  SGA_API static Program createAndCompile(FragmentShader fs){
+    Program p;
+    p.setFragmentShader(fs);
+    p.compileFullQuad();
     return p;
   }
   
   friend class Pipeline;
   friend class FullQuadPipeline;
 protected:
-  SGA_API Program();
-  
   class Impl;
   pimpl_unique_ptr<Impl> impl;
 };

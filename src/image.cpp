@@ -12,7 +12,7 @@
 
 namespace sga{
 
-Image::Image(int width, int height, unsigned int ch, ImageFormat format, ImageFilterMode filtermode) : impl(std::make_unique<Image::Impl>(width, height, ch, format, filtermode)) {}
+Image::Image(int width, int height, unsigned int ch, ImageFormat format, ImageFilterMode filtermode) : impl(std::make_shared<Image::Impl>(width, height, ch, format, filtermode)) {}
 Image::Image(std::string png_path, ImageFormat format, ImageFilterMode filtermode) : impl(Image::Impl::createFromPNG(png_path, format, filtermode)) {}
 Image::~Image() = default;
 

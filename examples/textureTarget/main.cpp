@@ -19,17 +19,17 @@ int main(){
     }
   )");
 
-  fragShader->addOutput(sga::DataType::Float4, "outColor");
+  fragShader.addOutput(sga::DataType::Float4, "outColor");
 
   auto program = sga::Program::createAndCompile(fragShader);
 
   sga::Image image(1440, 900);
 
-  auto pipeline = sga::FullQuadPipeline::create();
-  pipeline->setProgram(program);
-  pipeline->setTarget(image);
+  sga::FullQuadPipeline pipeline;
+  pipeline.setProgram(program);
+  pipeline.setTarget(image);
 
-  pipeline->drawFullQuad();
+  pipeline.drawFullQuad();
 
   // Save to file.
   image.savePNG("output.png");

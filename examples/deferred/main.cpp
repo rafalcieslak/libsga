@@ -59,15 +59,15 @@ int main(){
   sga::Image texture = sga::Image::createFromPNG(EXAMPLE_DATA_DIR "/teapot/texture.png");
   
   // Prepare VBO
-  auto modelVbo = sga::VBO::create({
+  sga::VBO modelVbo({
       sga::DataType::Float3,
         sga::DataType::Float3,
         sga::DataType::Float2},
     vertices.size());
-  modelVbo->write(vertices);
+  modelVbo.write(vertices);
 
   // Create the window
-  auto window = sga::Window::create(800,600,"Deferred shading");
+  sga::Window window(800,600,"Deferred shading");
   
   // G-buffer program
   auto GvertShader = sga::VertexShader::createFromSource(R"(
@@ -84,33 +84,33 @@ int main(){
       out_normal = in_world_normal;
       out_albedo = texture(tex, in_texUV).xyz;
     })");
-  GvertShader->addInput(sga::DataType::Float3, "in_position");
-  GvertShader->addInput(sga::DataType::Float3, "in_normal");
-  GvertShader->addInput(sga::DataType::Float2, "in_texUV");
-  GvertShader->addOutput(sga::DataType::Float3, "out_world_position");
-  GvertShader->addOutput(sga::DataType::Float3, "out_world_normal");
-  GvertShader->addOutput(sga::DataType::Float2, "out_texUV");
-  GvertShader->addUniform(sga::DataType::Mat4, "MVP");
-  GfragShader->addInput(sga::DataType::Float3, "in_world_position");
-  GfragShader->addInput(sga::DataType::Float3, "in_world_normal");
-  GfragShader->addInput(sga::DataType::Float2, "in_texUV");
-  GfragShader->addSampler("tex");
-  GfragShader->addOutput(sga::DataType::Float3, "out_position");
-  GfragShader->addOutput(sga::DataType::Float3, "out_normal");
-  GfragShader->addOutput(sga::DataType::Float3, "out_albedo");
+  GvertShader.addInput(sga::DataType::Float3, "in_position");
+  GvertShader.addInput(sga::DataType::Float3, "in_normal");
+  GvertShader.addInput(sga::DataType::Float2, "in_texUV");
+  GvertShader.addOutput(sga::DataType::Float3, "out_world_position");
+  GvertShader.addOutput(sga::DataType::Float3, "out_world_normal");
+  GvertShader.addOutput(sga::DataType::Float2, "out_texUV");
+  GvertShader.addUniform(sga::DataType::Mat4, "MVP");
+  GfragShader.addInput(sga::DataType::Float3, "in_world_position");
+  GfragShader.addInput(sga::DataType::Float3, "in_world_normal");
+  GfragShader.addInput(sga::DataType::Float2, "in_texUV");
+  GfragShader.addSampler("tex");
+  GfragShader.addOutput(sga::DataType::Float3, "out_position");
+  GfragShader.addOutput(sga::DataType::Float3, "out_normal");
+  GfragShader.addOutput(sga::DataType::Float3, "out_albedo");
   auto program_gbuffer = sga::Program::createAndCompile(GvertShader, GfragShader);
 
   // Create buffers
-  sga::Image buffer_position(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
-  sga::Image buffer_normal(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
-  sga::Image buffer_albedo(window->getWidth(),window->getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_position(window.getWidth(),window.getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_normal(window.getWidth(),window.getHeight(), 3, sga::ImageFormat::Float);
+  sga::Image buffer_albedo(window.getWidth(),window.getHeight(), 3, sga::ImageFormat::Float);
   
   // G-buffer pipeline
-  auto pipeline_gbuffer = sga::Pipeline::create();
-  pipeline_gbuffer->setProgram(program_gbuffer);
-  pipeline_gbuffer->setSampler("tex", texture, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-  pipeline_gbuffer->setFaceCull(sga::FaceCullMode::Back);
-  pipeline_gbuffer->setTarget({buffer_position, buffer_normal, buffer_albedo});
+  sga::Pipeline pipeline_gbuffer;
+  pipeline_gbuffer.setProgram(program_gbuffer);
+  pipeline_gbuffer.setSampler("tex", texture, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+  pipeline_gbuffer.setFaceCull(sga::FaceCullMode::Back);
+  pipeline_gbuffer.setTarget({buffer_position, buffer_normal, buffer_albedo});
 
   // Lighting program
   auto LfragShader = sga::FragmentShader::createFromSource(R"(
@@ -130,24 +130,24 @@ int main(){
 
       out_color = vec4((a + d + s) * 0.86, 1.0);
     })");
-  LfragShader->addOutput(sga::DataType::Float4, "out_color");
-  LfragShader->addSampler("buffer_position");
-  LfragShader->addSampler("buffer_normal");
-  LfragShader->addSampler("buffer_albedo");
-  LfragShader->addUniform(sga::DataType::Float3, "viewpos");
-  LfragShader->addUniform(sga::DataType::Float3, "lightpos");
+  LfragShader.addOutput(sga::DataType::Float4, "out_color");
+  LfragShader.addSampler("buffer_position");
+  LfragShader.addSampler("buffer_normal");
+  LfragShader.addSampler("buffer_albedo");
+  LfragShader.addUniform(sga::DataType::Float3, "viewpos");
+  LfragShader.addUniform(sga::DataType::Float3, "lightpos");
   auto program_lighting = sga::Program::createAndCompile(LfragShader);
 
   // Result image
   sga::Image result_image(800,600);
 
   // Lighting pipeline
-  auto pipeline_lighting = sga::FullQuadPipeline::create();
-  pipeline_lighting->setProgram(program_lighting);
-  pipeline_lighting->setSampler("buffer_position", buffer_position);
-  pipeline_lighting->setSampler("buffer_normal", buffer_normal);
-  pipeline_lighting->setSampler("buffer_albedo", buffer_albedo);
-  pipeline_lighting->setTarget(result_image);
+  sga::FullQuadPipeline pipeline_lighting;
+  pipeline_lighting.setProgram(program_lighting);
+  pipeline_lighting.setSampler("buffer_position", buffer_position);
+  pipeline_lighting.setSampler("buffer_normal", buffer_normal);
+  pipeline_lighting.setSampler("buffer_albedo", buffer_albedo);
+  pipeline_lighting.setTarget(result_image);
 
   // Window program
   auto WfragShader = sga::FragmentShader::createFromSource(R"(
@@ -167,56 +167,56 @@ int main(){
           out_color = texture(result_image, texpos);
       }
     })");
-  WfragShader->addOutput(sga::DataType::Float4, "out_color");
-  WfragShader->addSampler("buffer_position");
-  WfragShader->addSampler("buffer_normal");
-  WfragShader->addSampler("buffer_albedo");
-  WfragShader->addSampler("result_image");
-  WfragShader->addUniform(sga::DataType::SInt, "demo");
+  WfragShader.addOutput(sga::DataType::Float4, "out_color");
+  WfragShader.addSampler("buffer_position");
+  WfragShader.addSampler("buffer_normal");
+  WfragShader.addSampler("buffer_albedo");
+  WfragShader.addSampler("result_image");
+  WfragShader.addUniform(sga::DataType::SInt, "demo");
   auto program_window = sga::Program::createAndCompile(WfragShader);
 
   // Lighting pipeline
-  auto pipeline_window = sga::FullQuadPipeline::create();
-  pipeline_window->setProgram(program_window);
-  pipeline_window->setSampler("buffer_position", buffer_position);
-  pipeline_window->setSampler("buffer_normal", buffer_normal);
-  pipeline_window->setSampler("buffer_albedo", buffer_albedo);
-  pipeline_window->setSampler("result_image", result_image);
-  pipeline_window->setTarget(window);
+  sga::FullQuadPipeline pipeline_window;
+  pipeline_window.setProgram(program_window);
+  pipeline_window.setSampler("buffer_position", buffer_position);
+  pipeline_window.setSampler("buffer_normal", buffer_normal);
+  pipeline_window.setSampler("buffer_albedo", buffer_albedo);
+  pipeline_window.setSampler("result_image", result_image);
+  pipeline_window.setTarget(window);
 
-  window->setOnKeyDown(sga::Key::Escape, [&](){
-      window->close();
+  window.setOnKeyDown(sga::Key::Escape, [&](){
+      window.close();
     });
 
-  window->setOnKeyDown(sga::Key::F11, [&](){
-      window->toggleFullscreen();
+  window.setOnKeyDown(sga::Key::F11, [&](){
+      window.toggleFullscreen();
     });
 
   std::cout << "Hold SHIFT to switch between display modes." << std::endl;
-  pipeline_window->setUniform("demo", 0);
-  window->setOnKeyDown(sga::Key::Shift, [&](){
-      pipeline_window->setUniform("demo", 1);
+  pipeline_window.setUniform("demo", 0);
+  window.setOnKeyDown(sga::Key::Shift, [&](){
+      pipeline_window.setUniform("demo", 1);
     });
-  window->setOnKeyUp(sga::Key::Shift, [&](){
-      pipeline_window->setUniform("demo", 0);
+  window.setOnKeyUp(sga::Key::Shift, [&](){
+      pipeline_window.setUniform("demo", 0);
     });
 
-  window->setOnResize([&](unsigned int w, unsigned int h){
+  window.setOnResize([&](unsigned int w, unsigned int h){
       // Recreate internediate and target images.
       buffer_position = sga::Image(w,h, 3, sga::ImageFormat::Float);
       buffer_normal   = sga::Image(w,h, 3, sga::ImageFormat::Float);
       buffer_albedo   = sga::Image(w,h, 3, sga::ImageFormat::Float);
       result_image = sga::Image(w,h);
       // Reset samplers and render targets
-      pipeline_gbuffer->setTarget({buffer_position, buffer_normal, buffer_albedo});
-      pipeline_lighting->setSampler("buffer_position", buffer_position);
-      pipeline_lighting->setSampler("buffer_normal", buffer_normal);
-      pipeline_lighting->setSampler("buffer_albedo", buffer_albedo);
-      pipeline_lighting->setTarget(result_image);
-      pipeline_window->setSampler("buffer_position", buffer_position);
-      pipeline_window->setSampler("buffer_normal", buffer_normal);
-      pipeline_window->setSampler("buffer_albedo", buffer_albedo);
-      pipeline_window->setSampler("result_image", result_image); 
+      pipeline_gbuffer.setTarget({buffer_position, buffer_normal, buffer_albedo});
+      pipeline_lighting.setSampler("buffer_position", buffer_position);
+      pipeline_lighting.setSampler("buffer_normal", buffer_normal);
+      pipeline_lighting.setSampler("buffer_albedo", buffer_albedo);
+      pipeline_lighting.setTarget(result_image);
+      pipeline_window.setSampler("buffer_position", buffer_position);
+      pipeline_window.setSampler("buffer_normal", buffer_normal);
+      pipeline_window.setSampler("buffer_albedo", buffer_albedo);
+      pipeline_window.setSampler("result_image", result_image); 
     });
   
   float view_phi = 0.0;
@@ -224,37 +224,37 @@ int main(){
   float distance = 12;
   glm::vec3 lightpos = {15.0f, 17.0f, -12.0f};
   
-  window->setOnMouseMove([&](double x, double y){
+  window.setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
-      x = glm::min(x/window->getWidth(),  0.999);
-      y = glm::min(y/window->getHeight(), 0.999);
+      x = glm::min(x/window.getWidth(),  0.999);
+      y = glm::min(y/window.getHeight(), 0.999);
       view_phi = -glm::radians(180*y - 90);
       view_theta = glm::radians(360*x);
     });
 
-  window->setFPSLimit(60);
-  while(window->isOpen()){
+  window.setFPSLimit(60);
+  while(window.isOpen()){
     // Compute camera position
     glm::vec3 p = {0, glm::sin(view_phi), glm::cos(view_phi)};
     glm::vec3 viewpos = glm::rotateY(p * distance, view_theta);
     glm::mat4 camera = glm::lookAt(viewpos, {0,0,0}, {0,-1,0});
     glm::mat4 projection = glm::perspectiveFov(
-      glm::radians(70.0), (double)window->getWidth(), (double)window->getHeight(), 0.2, distance * 2.1);
+      glm::radians(70.0), (double)window.getWidth(), (double)window.getHeight(), 0.2, distance * 2.1);
     glm::mat4 MVP = projection * camera;
 
     // Update uniforms
-    pipeline_gbuffer->setUniform("MVP", MVP);
-    pipeline_lighting->setUniform("lightpos", lightpos);
-    pipeline_lighting->setUniform("viewpos", viewpos);
+    pipeline_gbuffer.setUniform("MVP", MVP);
+    pipeline_lighting.setUniform("lightpos", lightpos);
+    pipeline_lighting.setUniform("viewpos", viewpos);
 
-    pipeline_gbuffer->clear();
-    pipeline_gbuffer->drawVBO(modelVbo);
-    pipeline_lighting->clear();
-    pipeline_lighting->drawFullQuad();
-    pipeline_window->clear();
-    pipeline_window->drawFullQuad();
+    pipeline_gbuffer.clear();
+    pipeline_gbuffer.drawVBO(modelVbo);
+    pipeline_lighting.clear();
+    pipeline_lighting.drawFullQuad();
+    pipeline_window.clear();
+    pipeline_window.drawFullQuad();
 
-    window->nextFrame();
+    window.nextFrame();
   }
   sga::terminate();
 }

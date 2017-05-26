@@ -7,6 +7,7 @@ Core features:
  - Consider moving shader_ptrs from outside sga classes to inside pimpl pointer
    (the proxy class would be a stateless shared reference to the impl object).
  - Non-resizable windows
+ - Configurable alpha blending
 
 Build process:
  - Automatic release packaging on windows

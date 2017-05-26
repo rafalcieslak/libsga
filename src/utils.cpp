@@ -163,6 +163,8 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   const char** extensions = glfwGetRequiredInstanceExtensions(&count);
   std::copy(extensions, extensions + count, std::back_inserter(enabledInstanceExtensions));
 
+  enabledInstanceExtensions.push_back("VK_EXT_debug_report");
+  
   std::string ext_list;
   for(auto i : enabledInstanceExtensions)
     ext_list += i + " ";

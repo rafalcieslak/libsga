@@ -1,0 +1,8 @@
+Dabrovic Sponza model, originally by Marco Dabrovic.
+Downloaded from http://graphics.cs.williams.edu/data/meshes.xml
+
+Copyright 2002 Marko Dabrovic
+Morgan McGuire painted bump maps.
+Kenzie Lamar assigned UVs and converted to OBJ. 
+
+Modified by Rafał Cieślak 2016, converted to Blender, minor fixes.

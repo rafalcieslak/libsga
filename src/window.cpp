@@ -47,6 +47,8 @@ void Window::setOnMouseButton(std::function<void(bool, bool)> f) {
 void Window::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   impl->setOnMouseAny(f);
 }
+void Window::grabMouse() { impl->grabMouse(); }
+void Window::releaseMouse() { impl->releaseMouse(); }
 
 unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
@@ -319,13 +321,23 @@ void Window::Impl::setOnKeyUp(sga::Key k, std::function<void ()> f){
 
 void Window::Impl::setOnMouseMove(std::function<void(double, double)> f) {
   f_onMouseMove = f;
-};
+}
 void Window::Impl::setOnMouseButton(std::function<void(bool, bool)> f) {
   f_onMouseButton = f;
-};
+}
 void Window::Impl::setOnMouseAny(std::function<void(double, double, bool, bool)> f) {
   f_onMouseAny = f;
-};
+}
+void Window::Impl::grabMouse(){
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwGetCursorPos(window, &mouse_x_offset, &mouse_y_offset);
+  mouse_grabbed = true;
+}
+void Window::Impl::releaseMouse(){
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  mouse_x_offset = mouse_y_offset = 0;
+  mouse_grabbed = false;
+}
 
 void Window::Impl::setOnResize(std::function<void (unsigned int, unsigned int)> f){
   f_onResize = f;
@@ -344,14 +356,16 @@ void Window::Impl::resizeCallback(GLFWwindow *window, int width, int height){
 }
 void Window::Impl::mousePositionCallback(GLFWwindow *window, double x, double y){
   Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
+  x -= wd->mouse_x_offset;
+  y -= wd->mouse_y_offset;
   wd->mouse_x = x;
-  wd->mouse_y = wd->height - y;
+  wd->mouse_y = wd->mouse_grabbed ? y : (wd->height - y);
   if(wd->f_onMouseMove)
     wd->f_onMouseMove(wd->mouse_x, wd->mouse_y);
   if(wd->f_onMouseAny)
     wd->f_onMouseAny(wd->mouse_x, wd->mouse_y, wd->mouse_l, wd->mouse_r);
 }
-void Window::Impl::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods){
+void Window::Impl::mouseButtonCallback(GLFWwindow *window, int button, int action, int){
   Window::Impl * wd = reinterpret_cast<Window::Impl*>(glfwGetWindowUserPointer(window));
   if(button == GLFW_MOUSE_BUTTON_1){
     wd->mouse_l = action==GLFW_PRESS;

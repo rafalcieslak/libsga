@@ -37,6 +37,9 @@ public:
   void setOnMouseButton(std::function<void(bool, bool)> f);
   void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
 
+  void grabMouse();
+  void releaseMouse();
+
   unsigned int getWidth() {return width;}
   unsigned int getHeight() {return height;}
   void setOnResize(std::function<void(unsigned int, unsigned int)> f);
@@ -104,6 +107,9 @@ private:
   float mouse_y = 0.0;
   bool mouse_l = false;
   bool mouse_r = false;
+  // These are used to pretend that after mouse cursor is grabbed, it's centered at (0, 0).
+  double mouse_x_offset = 0.0, mouse_y_offset = 0.0;
+  bool mouse_grabbed = false;
 
   std::function<void(double, double)> f_onMouseMove;
   std::function<void(bool, bool)> f_onMouseButton;

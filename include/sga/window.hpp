@@ -40,6 +40,8 @@ public:
   SGA_API void setOnMouseMove(std::function<void(double, double)> f);
   SGA_API void setOnMouseButton(std::function<void(bool, bool)> f);
   SGA_API void setOnMouseAny(std::function<void(double, double, bool, bool)> f);
+  SGA_API void grabMouse();
+  SGA_API void releaseMouse();
 
   // Window size
   SGA_API unsigned int getWidth();

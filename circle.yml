@@ -1,3 +1,6 @@
+machine:
+  environment:
+    PATH: "/home/ubuntu/cmake-3.6.2-Linux-x86_64/bin:$PATH"
 checkout:
   post:
     - git submodule sync
@@ -7,6 +10,16 @@ dependencies:
     - sudo add-apt-repository -y ppa:graphics-drivers/ppa
     - sudo apt-get update
     - sudo apt-get install cmake build-essential libassimp-dev libglm-dev
+  cache_directories:
+    - ~/cmake-3.6.2-Linux-x86_64
+  override:
+    - >
+      if [ ! -d ~/cmake-3.6.2-Linux-x86_64 ]; then
+        echo "No cache - building CMake"
+        cd ~ && wget --quiet https://cmake.org/files/v3.6/cmake-3.6.2-Linux-x86_64.tar.gz && tar -xvf cmake-3.6.2-Linux-x86_64.tar.gz
+      else
+        echo "Cached CMake found"
+      fi
 test:
   override:
     - mkdir build && cd build && cmake .. && make -j4

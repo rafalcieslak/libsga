@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 #include <vkhlf/vkhlf.h>
 
@@ -389,7 +390,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
   prepareVp();
   vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
-                  {(unsigned int)ceil(vp_right - vp_left), (unsigned int)ceil(vp_bottom - vp_top)});
+                  {(unsigned int)std::ceil(vp_right - vp_left), (unsigned int)std::ceil(vp_bottom - vp_top)});
   cmdBuffer->beginRenderPass(
     c_renderPass, framebuffer,
     area,

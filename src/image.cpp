@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 #include <sga/exceptions.hpp>
 #include "stbi.hpp"
@@ -520,7 +521,7 @@ void Image::Impl::savePNG(std::string filepath){
 }
 
 unsigned int Image::Impl::getDesiredMipsNo() const{
-  return floor(log2(std::max(width, height))) + 1;
+  return std::floor(std::log2(std::max(width, height))) + 1;
 }
 
 void Image::Impl::regenerateMips(){

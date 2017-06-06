@@ -4,7 +4,7 @@ checkout:
     - git submodule update --init
 dependencies:
   pre:
-    - sudo add-apt-repository ppa:graphics-drivers/ppa
+    - sudo add-apt-repository -y ppa:graphics-drivers/ppa
     - sudo apt-get update
     - sudo apt-get install cmake build-essential libassimp-dev libglm-dev
 test:

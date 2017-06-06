@@ -5,6 +5,7 @@ checkout:
   post:
     - git submodule sync
     - git submodule update --init
+    - git fetch --tags && git tag
 dependencies:
   pre:
     - sudo add-apt-repository -y ppa:graphics-drivers/ppa

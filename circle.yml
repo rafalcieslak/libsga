@@ -9,8 +9,10 @@ checkout:
 dependencies:
   pre:
     - sudo add-apt-repository -y ppa:graphics-drivers/ppa
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get update
-    - sudo apt-get install cmake build-essential libassimp-dev libglm-dev
+    - sudo apt-get install cmake build-essential libassimp-dev libglm-dev g++-5 gcc-5
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   cache_directories:
     - ~/cmake-3.6.2-Linux-x86_64
   override:

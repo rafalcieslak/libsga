@@ -32,4 +32,4 @@ jobs:
       - run:
           name: 'Upload releases'
           command: |
-            scp -oStrictHostKeyChecking=no ~/libsga/build/releases-linux/*.tar.gz circleci-builds@cielak.org:/www/libsga-builds/.
+            scp -oStrictHostKeyChecking=no ~/libsga/build/release-linux/*.tar.gz circleci-builds@cielak.org:/www/libsga-builds/.

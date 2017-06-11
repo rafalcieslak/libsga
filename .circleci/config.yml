@@ -17,7 +17,7 @@ jobs:
           command: |
             mkdir build
             cd build
-            cmake ..
+            cmake .. -DCMAKE_BUILD_TYPE=Release
       - run:
           name: 'Compile libsga'
           command: |
@@ -28,6 +28,8 @@ jobs:
           command: |
             cd build
             make release -j2
-      - store_artifacts:
-          destination:  linux
-          path: ~/libsga/build/release-linux/*.tar.gz
+      - add_ssh_keys
+      - run:
+          name: 'Upload releases'
+          command: |
+            scp -oStrictHostKeyChecking=no ~/libsga/build/releases-linux/*.tar.gz circleci-builds@cielak.org:/www/libsga-builds/.

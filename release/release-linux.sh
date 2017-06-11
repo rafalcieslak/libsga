@@ -32,5 +32,3 @@ cp -r doc/html $SDKDIR/doc
 
 # Create a release archive
 cd $BASEDIR && tar -czf $RELDIR.tar.gz $RELDIR
-
-ls ~/libsga/build/release-linux/

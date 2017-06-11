@@ -98,7 +98,7 @@ endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 if(DOXYGEN_FOUND)
 add_custom_target(
   release
-  COMMAND sh ${PACKAGING_SCRIPT} ${PROJECT_VERSION_SHORT}
+  COMMAND sh ${PACKAGING_SCRIPT} ${PROJECT_VERSION_LONG}
 )
 add_dependencies(
   release

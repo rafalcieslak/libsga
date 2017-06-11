@@ -1,0 +1,33 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/libsga
+    docker:
+      - image: ubuntu:16.04
+    steps:
+      - run:
+          name: 'Refresh apt cache'
+          command: 'apt-get -q update'
+      - run:
+          name: 'Install system deps'
+          command: 'apt-get install -y git make build-essential cmake doxygen libvulkan-dev xorg-dev libfreetype6-dev libassimp-dev libglm-dev graphviz'
+      - checkout
+      - run:
+          name: 'Run cmake'
+          command: |
+            mkdir build
+            cd build
+            cmake ..
+      - run:
+          name: 'Compile libsga'
+          command: |
+            cd build
+            make -j2
+      - run:
+          name: 'Prepare release'
+          command: |
+            cd build
+            make release -j2
+      - store_artifacts:
+          destination:  linux
+          path: ~/libsga/build/release-linux/*.tar.gz

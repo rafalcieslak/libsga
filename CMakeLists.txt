@@ -95,6 +95,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
   set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-linux.sh")
 endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 
+if(DOXYGEN_FOUND)
 add_custom_target(
   release
   COMMAND sh ${PACKAGING_SCRIPT} ${PROJECT_VERSION_SHORT}
@@ -104,6 +105,7 @@ add_dependencies(
   sga
   doc
 )
+endif(DOXYGEN_FOUND)
 
 
 add_subdirectory(src)

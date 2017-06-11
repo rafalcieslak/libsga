@@ -9,6 +9,8 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+echo "Preparing Linux release for $1"
+
 BASEDIR=release-linux
 RELDIR=libsga-$1
 SDKDIR=$BASEDIR/$RELDIR
@@ -30,3 +32,5 @@ cp -r doc/html $SDKDIR/doc
 
 # Create a release archive
 cd $BASEDIR && tar -czf $RELDIR.tar.gz $RELDIR
+
+ls ~/libsga/build/release-linux/

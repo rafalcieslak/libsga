@@ -40,6 +40,7 @@ public:
   void loadPNGInternal(uint8_t* stbi_data);
   void savePNG(std::string filepath);
   
+  void setClearColor(ImageClearColor cc);
   void clear();
   
   void copyOnto(
@@ -66,12 +67,14 @@ public:
   static std::unique_ptr<Image::Impl> createFromPNG(std::string png_path, ImageFormat format, ImageFilterMode filtermode);
   
   friend class Pipeline;
+  
 private:
   const unsigned int width, height;
   const unsigned int channels;
   ImageFormat userFormat;
   FormatProperties format;
   ImageFilterMode filtermode;
+  ImageClearColor clearColor;
   bool hasMipmaps(){
     return filtermode == ImageFilterMode::MipMapped || filtermode == ImageFilterMode::Anisotropic;
   }

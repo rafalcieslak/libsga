@@ -2,6 +2,7 @@
 #define __UTILS_HPP__
 
 #include <sga/exceptions.hpp>
+#include <sga/image.hpp>
 
 #include <functional>
 
@@ -22,7 +23,14 @@ size_t align(size_t base, unsigned int alignment);
 bool isVariableNameValid(std::string);
 
 std::vector<std::string> SplitString(std::string str, std::string delimiter, bool skip_empty);
-  
+
+
+// TODO: Move all above to inside Utils
+class Utils{
+public:
+  static vk::ClearColorValue imageClearColorToVkClearColorValue(ImageClearColor cc);
+};
+
 } // namespace sga
 
 #endif // __UTILS_HPP__

@@ -96,7 +96,7 @@ int main(){
         std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
         return 1;
       }
-      sga::Image image(w, h);
+      sga::Image image(w, h, 4, sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
       image.putData(std::vector<uint8_t>(data, data + w*h*4));
       textures.insert({diffuse_tex_path, image});
     }
@@ -142,6 +142,7 @@ int main(){
   sga::Window window(1200, 675, "Teapot");
   window.setFPSLimit(60);
   window.grabMouse();
+  window.setClearColor(sga::ImageClearColor::NInt8(150,180,200));
 
   glm::vec3 viewpos = {0,0,0};
   glm::vec3 viewdir = {-1,1,0};

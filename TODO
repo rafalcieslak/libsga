@@ -4,13 +4,12 @@ Core features:
  - Configurable per-output pipeline clear color
  - Configurable depth buffer properties
  - Indiced vertex mode
- - Consider moving shader_ptrs from outside sga classes to inside pimpl pointer
-   (the proxy class would be a stateless shared reference to the impl object).
  - Non-resizable windows
  - Configurable alpha blending
 
 Build process:
  - Automatic release packaging on windows
+ - Lite (headless) library version
 
 Documentation:
  - Describe examples

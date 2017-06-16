@@ -21,6 +21,7 @@ void Image::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, siz
 void Image::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {impl->getDataRaw(data, n, dtype, value_size);}
 void Image::loadPNG(std::string filepath) {impl->loadPNG(filepath);}
 void Image::savePNG(std::string filepath) {impl->savePNG(filepath);}
+void Image::setClearColor(ImageClearColor cc) {return impl->setClearColor(cc);}
 void Image::clear() {return impl->clear();}
 void Image::copyOnto(std::shared_ptr<Image> target,
                      int source_x, int source_y,
@@ -34,7 +35,7 @@ unsigned int Image::getChannels() {return impl->getChannels();}
 unsigned int Image::getValuesN() {return impl->getValuesN();}
 
 Image::Impl::Impl(unsigned int width, unsigned int height, unsigned int ch, ImageFormat f, ImageFilterMode filtermode) :
-  width(width), height(height), channels(ch), filtermode(filtermode) {
+  width(width), height(height), channels(ch), filtermode(filtermode), clearColor(f,ch) {
   if(!global::initialized){
     SystemError("NotInitialized", "libSGA was not initialized, please call sga::init() first!").raise();
   }
@@ -380,13 +381,25 @@ void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   stagingImage->get<vkhlf::DeviceMemory>()->unmap();
 }
 
+void Image::Impl::setClearColor(ImageClearColor cc){
+  if(cc.getComponents() != channels)
+    ImageFormatError("ClearChannelMismatch", "The clear color used for clearning this image has " + std::to_string(cc.getComponents()) + " values, while the image has " + std::to_string(channels) + " channels.").raise();
+  // TODO: Print out human-readable format name!
+  if(cc.getFormat() != userFormat)
+    ImageFormatError("ClearFormatMismatch", "The clear color used for clearning this image uses a different format than the image itself.").raise();
+
+  clearColor = cc;
+}
+
 void Image::Impl::clear(){
   executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-      std::array<int, 4> cc = {0,0,0,0};
-      cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
+      
+      vk::ClearColorValue vcc = Utils::imageClearColorToVkClearColorValue(clearColor);
+      cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vcc);
+      
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eTransferDstOptimal, current_layout);

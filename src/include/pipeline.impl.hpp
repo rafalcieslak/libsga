@@ -20,7 +20,6 @@ public:
   
   void drawVBO(const VBO&);
   void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
-  void setClearColor(float r, float g, float b);
   void clear();
   
   virtual void setProgram(const Program&);
@@ -101,8 +100,6 @@ protected:
   std::shared_ptr<vkhlf::Framebuffer> rp_framebuffer;
   std::shared_ptr<vkhlf::Image> rp_depthimage;
   vk::Extent2D rp_image_target_extent;
-
-  std::array<float, 4> clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f}};
 };
 
 class FullQuadPipeline::Impl : public Pipeline::Impl{

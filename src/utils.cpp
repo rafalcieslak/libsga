@@ -305,6 +305,7 @@ size_t align(size_t base, unsigned int alignment){
 }
 
 bool isVariableNameValid(std::string s){
+  //TODO: Fix this
   //std::regex e("[a-zA-Z_][a-zA-Z0-9_]*");
   //return std::regex_match(s,e);
   return true;
@@ -323,6 +324,22 @@ std::vector<std::string> SplitString(std::string str, std::string delimiter, boo
     }
     res.push_back(str);
     return res;
+}
+
+
+vk::ClearColorValue Utils::imageClearColorToVkClearColorValue(ImageClearColor cc){
+  if(cc.format == ImageFormat::Float){
+    return vk::ClearColorValue(std::array<float,4>{cc.float32[0],cc.float32[1],cc.float32[2],cc.float32[3]});
+  }else if(cc.format == ImageFormat::UInt8 || cc.format == ImageFormat::UInt16 || cc.format == ImageFormat::UInt32){
+    return vk::ClearColorValue(std::array<uint32_t,4>{cc.uint32[0],cc.uint32[1],cc.uint32[2],cc.uint32[3]});
+  }else if(cc.format == ImageFormat::SInt8 || cc.format == ImageFormat::SInt16 || cc.format == ImageFormat::SInt32){
+    return vk::ClearColorValue(std::array<int32_t,4>{cc.int32[0],cc.int32[1],cc.int32[2],cc.int32[3]});
+  }else if(cc.format == ImageFormat::NInt8){
+    return vk::ClearColorValue(std::array<float,4>{cc.int32[0]/255.f,cc.int32[1]/255.f,cc.int32[2]/255.f,cc.int32[3]/255.f});
+  }else{
+    // TODO: Unimplemented, or impossible?
+    return vk::ClearColorValue();
+  }
 }
 
 

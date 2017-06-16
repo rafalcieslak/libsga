@@ -54,9 +54,12 @@ unsigned int Window::getWidth() {return impl->getWidth();}
 unsigned int Window::getHeight() {return impl->getHeight();}
 void Window::setOnResize(std::function<void (unsigned int, unsigned int)> f) {impl->setOnResize(f);}
 
+void Window::setClearColor(ImageClearColor cc) {return impl->setClearColor(cc);}
+
 // ====== IMPL ======
 
-Window::Impl::Impl(unsigned int width, unsigned int height, std::string title){
+Window::Impl::Impl(unsigned int width, unsigned int height, std::string title) :
+  clearColor(ImageFormat::NInt8, 3) {
     // Do not create OpenGL context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // Do not minimize fullscreen windows on focus loss
@@ -232,6 +235,16 @@ void Window::Impl::nextFrame() {
   glfwPollEvents();
 }
 
+void Window::Impl::setClearColor(ImageClearColor cc){
+  if(cc.getComponents() != 3)
+    ImageFormatError("ClearChannelMismatch", "The clear color for a window must have 3 values, while this one has " + std::to_string(cc.getComponents()) + ".").raise();
+  // TODO: Print out human-readable format name!
+  if(cc.getFormat() != ImageFormat::NInt8)
+    ImageFormatError("ClearFormatMismatch", "The clear color used for clearning a window must use NInt8 format.").raise();
+
+  clearColor = cc;
+}
+
 void Window::Impl::clearCurrentFrame(){
   executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       // Clear the new frame.
@@ -239,8 +252,11 @@ void Window::Impl::clearCurrentFrame(){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-      std::array<int, 4> cc = {0,0,0,0};
+      
+      vk::ClearColorValue cc = Utils::imageClearColorToVkClearColorValue(clearColor);
+      //vk::ClearColorValue cc(std::array<float,4>{1.0f,0.0f,1.0f,1.0f});
       cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
+      
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eColorAttachmentOptimal);

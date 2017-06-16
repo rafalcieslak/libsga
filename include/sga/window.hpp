@@ -7,6 +7,7 @@
 
 #include "config.hpp"
 #include "keys.hpp"
+#include "image.hpp"
 
 namespace sga{
 
@@ -47,6 +48,8 @@ public:
   SGA_API unsigned int getWidth();
   SGA_API unsigned int getHeight();
   SGA_API void setOnResize(std::function<void(unsigned int, unsigned int)> f);
+  
+  void setClearColor(ImageClearColor cc);
   
   friend class Pipeline;
   friend class Image;

@@ -76,10 +76,6 @@ public:
       inconsistencies. */
   SGA_API void drawVBO(const VBO&);
 
-  /** Configures the clear color of this pipeline, i.e. the color used for
-      clearing the target surface before at the beginning of a render. */
-  SGA_API void setClearColor(float r, float g, float b);
-
   SGA_API void clear();
   
   SGA_API void setProgram(const Program&);

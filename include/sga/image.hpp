@@ -20,6 +20,32 @@ enum class ImageFormat{
   Float,
 };
 
+class Utils;
+struct ImageClearColor{
+
+  static ImageClearColor NInt8(int r){ return ImageClearColor(ImageFormat::NInt8, 1).setUInt32(r,0,0,255); }
+  static ImageClearColor NInt8(int r, int g){ return ImageClearColor(ImageFormat::NInt8, 2).setUInt32(r,g,0,255); }
+  static ImageClearColor NInt8(int r, int g, int b){ return ImageClearColor(ImageFormat::NInt8, 3).setUInt32(r,g,b,255); }
+  static ImageClearColor NInt8(int r, int g, int b, int a){ return ImageClearColor(ImageFormat::NInt8, 4).setUInt32(r,g,b,a); }
+  
+  ImageClearColor(ImageFormat f, unsigned int c) : format(f), components(c), uint32{0,0,0,0} {}
+  friend class Utils;
+  ImageFormat getFormat() {return format;}
+  unsigned int getComponents() {return components;}
+  ImageClearColor& setUInt32(unsigned int r, unsigned int g, unsigned int b, unsigned int a){
+    uint32[0] = r; uint32[1] = g; uint32[2] = b; uint32[3] = a;
+    return *this;
+  }
+private:
+  ImageFormat format;
+  unsigned int components;
+  union{
+    uint32_t uint32[4];
+    int32_t int32[4];
+    float float32[4];
+  };
+};
+
 enum class ImageFilterMode{
   None,
   MipMapped,
@@ -89,6 +115,7 @@ public:
   SGA_API unsigned int getChannels();
   SGA_API unsigned int getValuesN();
 
+  SGA_API void setClearColor(ImageClearColor cc);
   SGA_API void clear();
   
   SGA_API void copyOnto(

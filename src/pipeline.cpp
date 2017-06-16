@@ -27,7 +27,6 @@ Pipeline::~Pipeline() = default;
 void Pipeline::setTarget(const Window& target) {impl()->setTarget(target);}
 void Pipeline::setTarget(std::vector<Image> images) {impl()->setTarget(images);}
 void Pipeline::drawVBO(const VBO& vbo) {impl()->drawVBO(vbo);}
-void Pipeline::setClearColor(float r, float g, float b) {impl()->setClearColor(r, g, b);}
 void Pipeline::clear() {impl()->clear();}
 void Pipeline::setProgram(const Program& p) {impl()->setProgram(p);}
 
@@ -105,10 +104,6 @@ void Pipeline::Impl::setTarget(std::vector<Image> images){
   targetWindow = nullptr;
   
   resetViewport();
-}
-
-void Pipeline::Impl::setClearColor(float r, float g, float b){
-  clear_color = {r,g,b};
 }
 
 void Pipeline::Impl::setFaceCull(FaceCullMode fcm, FaceDirection fd){

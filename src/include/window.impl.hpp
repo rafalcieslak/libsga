@@ -2,6 +2,7 @@
 #define __WINDOW_IMPL_HPP__
 
 #include <sga/window.hpp>
+#include <sga/image.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -49,6 +50,7 @@ public:
   static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
   static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+  void setClearColor(ImageClearColor cc);
   void clearCurrentFrame();
 private:
   GLFWwindow* window;
@@ -111,6 +113,9 @@ private:
   double mouse_x_offset = 0.0, mouse_y_offset = 0.0;
   bool mouse_grabbed = false;
 
+  // Color used when clearing this window.
+  ImageClearColor clearColor;
+  
   std::function<void(double, double)> f_onMouseMove;
   std::function<void(bool, bool)> f_onMouseButton;
   std::function<void(double, double, bool, bool)> f_onMouseAny;

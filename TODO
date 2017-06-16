@@ -7,6 +7,7 @@ Core features:
  - Configurable alpha blending
  - Pipelining multiple draw calls to reduce gpu<->cpu sync overhead
  - More verbose error messages
+ - Array and struct uniforms
 
 Build process:
  - Automatic release packaging on windows

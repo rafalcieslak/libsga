@@ -99,6 +99,7 @@ int main(){
       sga::Image image(w, h, 4, sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
       image.putData(std::vector<uint8_t>(data, data + w*h*4));
       textures.insert({diffuse_tex_path, image});
+      // TODO: Bumpmaps?
     }
     
     meshes.emplace_back(vbo, (glm::vec3){c.r, c.g, c.b}, diffuse_tex_path);
@@ -117,9 +118,30 @@ int main(){
     }
   )");
   auto fragShader = sga::FragmentShader::createFromSource(R"(
+    float attenuation(float r, float f, float d) {
+      float denom = d / r + 1.0;
+      float attenuation = 1.0 / (denom*denom);
+      float t = (attenuation - f) / (1.0 - f);
+      return max(t, 0.0);
+    }
     void main(){
-      vec3 Kd = texture(diffuse, in_texuv).xyz;
-      out_color = vec4(Kd*0.8, 1.0);
+      vec3 light_vector = world_lightpos - in_world_position;
+      float light_distance = length(light_vector);
+      vec3 L = normalize(light_vector);
+      vec3 N = normalize(in_world_normal);
+      vec3 V = normalize(world_viewpos - in_world_position);
+      float att = attenuation(40, 0.002, light_distance);
+      // Colors:
+      vec3 Kd = pow(texture(diffuse, in_texuv).xyz, vec3(2.2));
+      vec3 Ks = Kd; // TODO: Does this model use different colors for specular?
+      vec3 Ka = Kd;
+      // Lambertian diffuse
+      float d = max(0.0, dot(L, N)) * att;
+      // Phong specular
+      vec3 R = reflect(L,N);
+      float exponent = 30.0;
+      float s = pow(max(0.0, dot(R, -V)), exponent) * att;
+      out_color = vec4(Kd*d*0.8 + Ks*s*0.4 + Ka*0.12, 1.0);
     }
   )");
   
@@ -136,6 +158,8 @@ int main(){
   fragShader.addInput(sga::DataType::Float3, "in_world_normal");
   fragShader.addInput(sga::DataType::Float2, "in_texuv");
   fragShader.addOutput(sga::DataType::Float4, "out_color");
+  fragShader.addUniform(sga::DataType::Float3, "world_lightpos");
+  fragShader.addUniform(sga::DataType::Float3, "world_viewpos");
   fragShader.addSampler("diffuse");
   
   // Prepare window
@@ -146,6 +170,7 @@ int main(){
 
   glm::vec3 viewpos = {0,0,0};
   glm::vec3 viewdir = {-1,1,0};
+  glm::vec3 lightpos = {0,6.5,0};
   
   // Compute projection matrix
   glm::mat4 projection =
@@ -216,7 +241,9 @@ int main(){
     glm::mat4 camera = glm::lookAt(viewpos, viewpos + viewdir, {0,-1,0});
     glm::mat4 MVP = projection * camera;
     pipeline.setUniform("MVP", MVP);
-      
+    pipeline.setUniform("world_viewpos", viewpos);
+    pipeline.setUniform("world_lightpos", lightpos);
+    
     // Render scene
     pipeline.clear();
     for(const MeshData& mesh : meshes){

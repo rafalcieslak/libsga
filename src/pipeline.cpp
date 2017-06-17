@@ -201,6 +201,9 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
   
   size_t offset = it->second.first;
   memcpy(b_uniformArea + offset, pData, size);
+
+  // Mark the uniform as set.
+  uniformsSet.insert(name);
 }
 
 void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, SamplerInterpolation interpolation, SamplerWarpMode warp_mode){
@@ -247,11 +250,9 @@ void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, Sample
     // TODO: Store device limits somewhere globally.
     max_anisotropy = global::physicalDevice->getProperties().limits.maxSamplerAnisotropy;
     enable_anisotropy = true;
-    out_dbg("Anisotropic sampler, level: " + std::to_string(max_anisotropy));
     /* FALLTHROGH */
   case ImageFilterMode::MipMapped:
     maxLod = image->getDesiredMipsNo();
-    out_dbg("Mipmapped sampler, lods:" + std::to_string(maxLod));
     break;
   }
   
@@ -363,7 +364,12 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
     s.second.image->switchLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
   }
 
-  // TODO: ensure all uniforms are set!
+  // Ensure all uniforms are set
+  for(const auto& u : program->c_uniformOffsets){
+    if(uniformsSet.find(u.first) == uniformsSet.end()){
+      PipelineConfigError("UniformNotSet", "This pipeline cannot render, uniform \"" + u.first + "\" was not set.").raise();
+    }
+  }
   
   auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();

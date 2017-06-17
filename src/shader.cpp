@@ -34,6 +34,10 @@ void Program::compileFullQuad() {impl->compileFullQuad();}
 void Program::setVertexShader(VertexShader vs) {impl->setVertexShader(vs);}
 void Program::setFragmentShader(FragmentShader fs) {impl->setFragmentShader(fs);}
 
+void VertexShader::setOutputInterpolationMode(std::string name, sga::OutputInterpolationMode mode){
+  impl->setOutputInterpolationMode(name, mode);
+}
+
 // ======= Shader impl =======
 
 Shader::Impl::Impl() {}
@@ -45,6 +49,9 @@ VertexShader VertexShader::createFromSource(std::string source){
   s.impl->addStandardUniforms();
   return s;
 }
+VertexShader VertexShader::createFromFile(std::string path){
+  return createFromSource(Utils::readEntireFile(path));
+}
 
 FragmentShader FragmentShader::createFromSource(std::string source){
   FragmentShader s;
@@ -52,6 +59,9 @@ FragmentShader FragmentShader::createFromSource(std::string source){
   s.impl->source = source;
   s.impl->addStandardUniforms();
   return s;
+}
+FragmentShader FragmentShader::createFromFile(std::string path){
+  return createFromSource(Utils::readEntireFile(path));
 }
 
 void Shader::Impl::addInput(DataType type, std::string name) {
@@ -71,11 +81,11 @@ void Shader::Impl::addOutput(std::initializer_list<std::pair<DataType, std::stri
 
 void Shader::Impl::addInput(std::pair<DataType, std::string> pair) {
   // TODO: check if name OK (e.g. no redefinition)
-  inputAttr.push_back(pair);
+  inputAttr.push_back({pair.first, pair.second, ""});
 }
 void Shader::Impl::addOutput(std::pair<DataType, std::string> pair) {
   // TODO: check if name OK (e.g. no redefinition)
-  outputAttr.push_back(pair);
+  outputAttr.push_back({pair.first, pair.second, ""});
 }
 
 void Shader::Impl::addUniform(sga::DataType type, std::string name, bool special){
@@ -83,7 +93,7 @@ void Shader::Impl::addUniform(sga::DataType type, std::string name, bool special
     ProgramConfigError("UniformNameReserved", "Cannot add an uniform using a reserved name", "Uniforms with names beginning with `sga` have a special meaning, and you cannot declare your own").raise();
   if(!isVariableNameValid(name))
     ProgramConfigError("UniformNameInvalid", "Cannot use \"" + name + "\" for the identifier of a uniform, it must be a valid C indentifier.").raise();
-  uniforms.push_back(std::make_pair(type,name));
+  uniforms.push_back({type,name,""});
 }
 void Shader::Impl::addSampler(std::string name){
   if(!isVariableNameValid(name))
@@ -95,6 +105,31 @@ void Shader::Impl::addStandardUniforms(){
   addUniform(DataType::Float, "sgaTime", true);
   addUniform(DataType::Float2, "sgaResolution", true);
   addUniform(DataType::Float4, "sgaViewport", true);
+}
+
+void Shader::Impl::setOutputInterpolationMode(std::string name, sga::OutputInterpolationMode mode){
+  if(stage != vk::ShaderStageFlagBits::eVertex)
+    ProgramConfigError("InvalidOutputMode", "Only vertex shaders may use output interpolation mode qualifiers.").raise();
+  for(auto& attr : outputAttr){
+    if(attr.name == name){
+      switch(mode){
+      case OutputInterpolationMode::Default:
+        attr.out_smoothness_qualifier = "";
+        break;
+      case OutputInterpolationMode::Flat:
+        attr.out_smoothness_qualifier = "flat";
+        break;
+      case OutputInterpolationMode::Smooth:
+        attr.out_smoothness_qualifier = "smooth";
+        break;
+      case OutputInterpolationMode::NoPerspective:
+        attr.out_smoothness_qualifier = "noperspective";
+        break;
+      }
+      return;
+    }
+  }
+  ProgramConfigError("NoSuchOutput", "Shader output \"" + name + "\" was not declared .").raise();
 }
 
 // ====== Program impl ======
@@ -174,11 +209,11 @@ void Program::Impl::compile_internal() {
   std::map<std::string, DataType> uniforms;
   for(const ShaderData& S : {std::ref(FS), std::ref(VS)}){
     for(const auto& p : S.uniforms){
-      auto it = uniforms.find(p.second);
+      auto it = uniforms.find(p.name);
       if(it == uniforms.end()){
-        uniforms[p.second] = p.first;
+        uniforms[p.name] = p.type;
       }else{
-        if(it->second != p.first)
+        if(it->second != p.type)
           PipelineConfigError("UniformMismatch", "There are some uniforms that share name, but not type.");
       }
     }
@@ -221,13 +256,13 @@ void Program::Impl::compile_internal() {
   for(ShaderData& S : {std::ref(FS), std::ref(VS)}){
     for(unsigned int i = 0; i < S.inputAttr.size(); i++){
       S.attrCode += "layout(location = " + std::to_string(i) + ") in " +
-        getDataTypeGLSLName(S.inputAttr[i].first) + " " + S.inputAttr[i].second + ";\n";
-      S.inputLayout.extend(S.inputAttr[i].first);
+        getDataTypeGLSLName(S.inputAttr[i].type) + " " + S.inputAttr[i].name + ";\n";
+      S.inputLayout.extend(S.inputAttr[i].type);
     }
     for(unsigned int i = 0; i < S.outputAttr.size(); i++){
-      S.attrCode += "layout(location = " + std::to_string(i) + ") out " +
-        getDataTypeGLSLName(S.outputAttr[i].first) + " " + S.outputAttr[i].second + ";\n";
-      S.outputLayout.extend(S.outputAttr[i].first);
+      S.attrCode += "layout(location = " + std::to_string(i) + ") " + S.outputAttr[i].out_smoothness_qualifier + " out " +
+        getDataTypeGLSLName(S.outputAttr[i].type) + " " + S.outputAttr[i].name + ";\n";
+      S.outputLayout.extend(S.outputAttr[i].type);
     }
   }
 

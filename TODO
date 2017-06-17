@@ -8,6 +8,7 @@ Core features:
  - Pipelining multiple draw calls to reduce gpu<->cpu sync overhead
  - More verbose error messages
  - Array and struct uniforms
+ - An option to disable vsync
 
 Build process:
  - Automatic release packaging on windows
@@ -18,7 +19,6 @@ Documentation:
  - Specify what exactly gets reset on target change.
 
 Examples:
- - Shadow maps
  - Toon shader
  - Interactive 3D function plot
  - Port terrain heightmap (?)

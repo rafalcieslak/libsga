@@ -8,6 +8,13 @@
 
 namespace sga{
 
+enum class OutputInterpolationMode{
+  Default,
+  Flat,
+  Smooth,
+  NoPerspective
+};
+
 class Shader{
 public:
   SGA_API ~Shader();
@@ -18,7 +25,7 @@ public:
   SGA_API void addOutput(DataType type, std::string name);
   SGA_API void addOutput(std::pair<DataType, std::string>);
   SGA_API void addOutput(std::initializer_list<std::pair<DataType, std::string>>);
-
+  
   SGA_API void addUniform(DataType type, std::string name);
   SGA_API void addSampler(std::string name);
   
@@ -31,11 +38,15 @@ protected:
 
 class VertexShader : public Shader{
 public:
+  SGA_API static VertexShader createFromFile(std::string source);
   SGA_API static VertexShader createFromSource(std::string source);
+
+  SGA_API void setOutputInterpolationMode(std::string name, OutputInterpolationMode mode);
 };
 
 class FragmentShader : public Shader{
 public:
+  SGA_API static FragmentShader createFromFile(std::string source);
   SGA_API static FragmentShader createFromSource(std::string source);
 };
 

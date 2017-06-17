@@ -56,4 +56,4 @@ Demonstrates text rendering with FreeType2.
 
 ### Sponza
 
-Displays the Darbovic Sponza model with no lighting (all textures 100% emissive). Demonstrates user movement with WASD and multiple-material setup.
+Forward renderer displaying the Darbovic Sponza model with PCF shadow maps from a dynamic light source. Use WASD and mouselook to move around the sponza. Hold space to preview the shadowmap.

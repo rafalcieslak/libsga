@@ -9,6 +9,8 @@
 #include <sga/shader.hpp>
 #include <sga/image.hpp>
 
+#include <unordered_set>
+
 namespace sga{
 
 class Pipeline::Impl{
@@ -77,6 +79,7 @@ protected:
   std::shared_ptr<vkhlf::Buffer> b_uniformBuffer;
   size_t b_uniformSize;
   char* b_uniformArea = nullptr;
+  std::unordered_set<std::string> uniformsSet;
 
   void prepare_samplers();
   bool samplers_prepared = false;

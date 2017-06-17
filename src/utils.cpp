@@ -5,6 +5,8 @@
 #include <vector>
 #include <stdexcept>
 #include <regex>
+#include <fstream>
+#include <sstream>
 
 #include <vulkan/vulkan.h>
 #include <vkhlf/vkhlf.h>
@@ -342,5 +344,14 @@ vk::ClearColorValue Utils::imageClearColorToVkClearColorValue(ImageClearColor cc
   }
 }
 
+std::string Utils::readEntireFile(std::string path){
+  std::ifstream file(path);
+  if(!file){
+    SystemError("FileOpenFailed", "Failed to open file \"" + path + "\"").raise();
+  }
+  std::stringstream ss;
+  ss << file.rdbuf();
+  return ss.str();
+}
 
 } // namespace sga

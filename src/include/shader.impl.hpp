@@ -9,6 +9,12 @@
 
 namespace sga{
 
+struct AttrParams{
+  DataType type;
+  std::string name;
+  std::string out_smoothness_qualifier;
+};
+
 class Shader::Impl{
 public:
   Impl();
@@ -26,9 +32,9 @@ public:
   void addUniform(DataType type, std::string name, bool special = false);
   void addSampler(std::string name);
   
-  std::vector<std::pair<DataType, std::string>> inputAttr;
-  std::vector<std::pair<DataType, std::string>> outputAttr;
-  std::vector<std::pair<DataType, std::string>> uniforms;
+  void setOutputInterpolationMode(std::string name, OutputInterpolationMode mode);
+  
+  std::vector<AttrParams> inputAttr, outputAttr, uniforms;
   std::vector<std::string> samplers;
 
   void addStandardUniforms();
@@ -49,7 +55,7 @@ public:
 private:
   struct ShaderData{
     std::string autoSource, source, attrCode, fullSource;
-    std::vector<std::pair<DataType, std::string>> inputAttr, outputAttr, uniforms;
+    std::vector<AttrParams> inputAttr, outputAttr, uniforms;
     std::vector<std::string> samplers;
     DataLayout inputLayout, outputLayout;
   };

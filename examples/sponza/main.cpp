@@ -42,9 +42,8 @@ int main(){
   // Import model.
   Assimp::Importer aimporter;
   std::string filepath =  EXAMPLE_DATA_DIR "sponza/sponza.obj";
-  const aiScene* scene = aimporter.ReadFile(filepath, 
+  const aiScene* scene = aimporter.ReadFile(filepath,
                                             aiProcess_Triangulate |
-                                            // aiProcess_GenNormals  |
                                             aiProcess_SortByPType);
   if( !scene){
     std::cout << "Failed to open model file " << filepath << ": "
@@ -68,7 +67,7 @@ int main(){
           });
       }
     }
-    
+
     // Prepare VBO
     sga::VBO vbo({
         sga::DataType::Float3,
@@ -76,7 +75,7 @@ int main(){
         sga::DataType::Float2},
       vertices.size());
     vbo.write(vertices);
-    
+
     // Prepare material info
     const aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
     aiColor3D c;
@@ -101,93 +100,92 @@ int main(){
       textures.insert({diffuse_tex_path, image});
       // TODO: Bumpmaps?
     }
-    
+
     meshes.emplace_back(vbo, (glm::vec3){c.r, c.g, c.b}, diffuse_tex_path);
     std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
   }
 
-  std::cout << "Use WASD keys and mouselook to move" << std::endl;
+  // Done loading scene.
+  std::cout << "Use WASD keys and mouselook to move. Hold SPACE to preview shadow map." << std::endl;
 
-  auto vertShader = sga::VertexShader::createFromSource(R"(
-    void main(){
-      vec3 pos = in_position + vec3(0, -4, 0);
-      gl_Position = MVP * vec4(pos,1);
-      out_world_normal = in_normal;
-      out_world_position = pos;
-      out_texuv = in_texuv;
-    }
-  )");
-  auto fragShader = sga::FragmentShader::createFromSource(R"(
-    float attenuation(float r, float f, float d) {
-      float denom = d / r + 1.0;
-      float attenuation = 1.0 / (denom*denom);
-      float t = (attenuation - f) / (1.0 - f);
-      return max(t, 0.0);
-    }
-    void main(){
-      vec3 light_vector = world_lightpos - in_world_position;
-      float light_distance = length(light_vector);
-      vec3 L = normalize(light_vector);
-      vec3 N = normalize(in_world_normal);
-      vec3 V = normalize(world_viewpos - in_world_position);
-      float att = attenuation(40, 0.002, light_distance);
-      // Colors:
-      vec3 Kd = pow(texture(diffuse, in_texuv).xyz, vec3(2.2));
-      vec3 Ks = Kd; // TODO: Does this model use different colors for specular?
-      vec3 Ka = Kd;
-      // Lambertian diffuse
-      float d = max(0.0, dot(L, N)) * att;
-      // Phong specular
-      vec3 R = reflect(L,N);
-      float exponent = 30.0;
-      float s = pow(max(0.0, dot(R, -V)), exponent) * att;
-      out_color = vec4(Kd*d*0.8 + Ks*s*0.4 + Ka*0.12, 1.0);
-    }
-  )");
-  
-  // Configure shader input/output/uniforms
-  vertShader.addInput({{sga::DataType::Float3, "in_position"},
-                       {sga::DataType::Float3, "in_normal"},
-                       {sga::DataType::Float2, "in_texuv"}});
-  vertShader.addOutput({{sga::DataType::Float3, "out_world_position"},
-                        {sga::DataType::Float3, "out_world_normal"},
-                        {sga::DataType::Float2, "out_texuv"}});
-  vertShader.addUniform(sga::DataType::Mat4, "MVP");
+  // View and light source parameters.
+  glm::vec3 viewpos = {5,2,0};
+  glm::vec3 viewdir = {-1,0,0};
+  float viewnear = 0.1f, viewfar = 30.0f;
+  float viewfov = 70.0f;
+  glm::vec3 lightposA = {0, 40, 0};
+  glm::vec3 lightposB = {-20, 0, 4};
+  glm::vec3 lightlookat = {0, 12, 0};
+  float lightnear = -5.0f, lightfar = 60.0f;
+  float shadowmap_size = 1024, shadowmap_range = 12.0f;
 
-  fragShader.addInput(sga::DataType::Float3, "in_world_position");
-  fragShader.addInput(sga::DataType::Float3, "in_world_normal");
-  fragShader.addInput(sga::DataType::Float2, "in_texuv");
-  fragShader.addOutput(sga::DataType::Float4, "out_color");
-  fragShader.addUniform(sga::DataType::Float3, "world_lightpos");
-  fragShader.addUniform(sga::DataType::Float3, "world_viewpos");
-  fragShader.addSampler("diffuse");
-  
+  sga::Image shadowmap(shadowmap_size, shadowmap_size, 1, sga::ImageFormat::Float, sga::ImageFilterMode::None);
+  glm::mat4 shadowmapProj = glm::ortho(-shadowmap_range, shadowmap_range, -shadowmap_range, shadowmap_range, lightnear, lightfar);
+
   // Prepare window
-  sga::Window window(1200, 675, "Teapot");
+  sga::Window window(1200, 900, "Sponza");
   window.setFPSLimit(60);
   window.grabMouse();
   window.setClearColor(sga::ImageClearColor::NInt8(150,180,200));
 
-  glm::vec3 viewpos = {0,0,0};
-  glm::vec3 viewdir = {-1,1,0};
-  glm::vec3 lightpos = {0,6.5,0};
-  
-  // Compute projection matrix
-  glm::mat4 projection =
-    glm::perspectiveFov( glm::radians(70.0f), (float)window.getWidth(),
-                         (float)window.getHeight(), 0.2f, 50.0f);
-  
-  // Compile shaders
-  sga::Program program;
-  program.setVertexShader(vertShader);
-  program.setFragmentShader(fragShader);
-  program.compile();
+  // This vertex shader is used both by main pipeline and shadow map.
+  auto mainVertShader = sga::VertexShader  ::createFromFile(EXAMPLE_DATA_DIR "/sponza/model.vert");
+  mainVertShader.addInput(sga::DataType::Float3, "in_position");
+  mainVertShader.addInput(sga::DataType::Float3, "in_normal");
+  mainVertShader.addInput(sga::DataType::Float2, "in_texuv");
+  mainVertShader.addOutput(sga::DataType::Float3, "out_world_position");
+  mainVertShader.addOutput(sga::DataType::Float3, "out_world_normal");
+  mainVertShader.addOutput(sga::DataType::Float2, "out_texuv");
+  mainVertShader.addOutput(sga::DataType::Float3, "out_shadowmap");
+  mainVertShader.addUniform(sga::DataType::Mat4, "MVP");
+  mainVertShader.addUniform(sga::DataType::Mat4, "shadowmapMVP");
 
-  // Configure pipeline
+  // Main fragment shader for the scene.
+  auto fragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/model.frag");
+  fragShader.addInput(sga::DataType::Float3, "in_world_position");
+  fragShader.addInput(sga::DataType::Float3, "in_world_normal");
+  fragShader.addInput(sga::DataType::Float2, "in_texuv");
+  fragShader.addInput(sga::DataType::Float3, "in_shadowmap");
+  fragShader.addOutput(sga::DataType::Float4, "out_color");
+  fragShader.addUniform(sga::DataType::Float3, "world_lightpos");
+  fragShader.addUniform(sga::DataType::Float3, "world_viewpos");
+  fragShader.addUniform(sga::DataType::SInt, "debug");
+  fragShader.addSampler("diffuse");
+  fragShader.addSampler("shadowmap");
+
+  auto shadowmapFragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/shadow.frag");
+  shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_position");
+  shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_normal");
+  shadowmapFragShader.addInput(sga::DataType::Float2, "in_texuv");
+  shadowmapFragShader.addInput(sga::DataType::Float3, "in_shadowmap");
+  shadowmapFragShader.addOutput(sga::DataType::Float, "out_depth");
+
+  // Shadowmap render pass
+  sga::Program shadowmapProgram = sga::Program::createAndCompile(mainVertShader, shadowmapFragShader);
+  sga::Pipeline shadowmapPipeline;
+  shadowmapPipeline.setProgram(shadowmapProgram);
+  shadowmapPipeline.setTarget(shadowmap);
+  shadowmapPipeline.setFaceCull(sga::FaceCullMode::Back);
+
+  // Main render pass
+  glm::mat4 projection = glm::perspectiveFov(glm::radians(viewfov), (float)window.getWidth(),
+                                             (float)window.getHeight(), viewnear, viewfar);
+  sga::Program program = sga::Program::createAndCompile(mainVertShader, fragShader);
   sga::Pipeline pipeline;
   pipeline.setProgram(program);
   pipeline.setTarget(window);
-  pipeline.setFaceCull(sga::FaceCullMode::None);
+  pipeline.setFaceCull(sga::FaceCullMode::Back);
+  pipeline.setSampler("shadowmap", shadowmap);
+  pipeline.setUniform("debug", 0);
+
+  // Shadowmap preview render pass
+  sga::FullQuadPipeline previewPipeline;
+  auto previewShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/preview.frag");
+  previewShader.addSampler("shadowmap");
+  previewShader.addOutput(sga::DataType::Float4,"out_color");
+  previewPipeline.setProgram(sga::Program::createAndCompile(previewShader));
+  previewPipeline.setTarget(window);
+  previewPipeline.setSampler("shadowmap", shadowmap);
 
   window.setOnKeyDown(sga::Key::Escape, [&](){
       window.close();
@@ -197,66 +195,77 @@ int main(){
       window.toggleFullscreen();
     });
 
-  window.setOnKeyDown(sga::Key::d1, [&](){
-      pipeline.setRasterizerMode(sga::RasterizerMode::Filled);
-    });
-  window.setOnKeyDown(sga::Key::d2, [&](){
-      pipeline.setRasterizerMode(sga::RasterizerMode::Wireframe);
-    });
-  window.setOnKeyDown(sga::Key::d3, [&](){
-      pipeline.setRasterizerMode(sga::RasterizerMode::Points);
+  window.setOnResize([&](double w, double h){
+      projection = glm::perspectiveFov(glm::radians(viewfov), (float)w, (float)h, viewnear, viewfar);
     });
 
-  window.setOnResize([&](double w, double h){
-      projection = glm::perspectiveFov(glm::radians(70.0), w, h, 0.2, 50.0);
-    });
-  
   window.setOnMouseMove([&](double x, double y){
       // Calculate new viewpos and MVP
       float mouse_speed = 0.002;
       float phi = glm::clamp(-90.0*y*mouse_speed, -89.99, 89.99);
-      float theta = 90.0f*x*mouse_speed;
-      phi = glm::radians(phi);
-      theta = glm::radians(theta);
-      glm::vec3 p = {0, glm::sin(phi), glm::cos(phi)};
-      viewdir = glm::rotateY(p, theta);
+      float theta = 90.0f*x*mouse_speed - 90;
+      glm::vec3 p = {0, glm::sin(glm::radians(phi)), glm::cos(glm::radians(phi))};
+      viewdir = glm::rotateY(p, glm::radians(theta));
     });
-  
+
   // Main loop
   while(window.isOpen()){
     // Process user movement
-    float playerspeed = 2.5;
+    float playerspeed = 4.5;
+    glm::vec3 playermove(0.0f, 0.0f, 0.0f);
     if(window.isKeyPressed(sga::Key::Shift))
       playerspeed *= 2.5;
     glm::vec3 tangent = glm::normalize(glm::cross({0,-1,0}, viewdir));
-    if(window.isKeyPressed(sga::Key::W))
-      viewpos += viewdir * playerspeed * window.getLastFrameDelta();
-    if(window.isKeyPressed(sga::Key::S))
-      viewpos -= viewdir * playerspeed * window.getLastFrameDelta();
-    if(window.isKeyPressed(sga::Key::A))
-      viewpos += tangent * playerspeed * window.getLastFrameDelta();
-    if(window.isKeyPressed(sga::Key::D))
-      viewpos -= tangent * playerspeed * window.getLastFrameDelta();
-    
+    if(window.isKeyPressed(sga::Key::W)) playermove += viewdir;
+    if(window.isKeyPressed(sga::Key::S)) playermove -= viewdir;
+    if(window.isKeyPressed(sga::Key::A)) playermove += tangent;
+    if(window.isKeyPressed(sga::Key::D)) playermove -= tangent;
+    if(glm::length(playermove) > 0.0f)
+      viewpos += glm::normalize(playermove) * playerspeed * window.getLastFrameDelta();
+
+    // Update shadowmap MVPs
     glm::mat4 camera = glm::lookAt(viewpos, viewpos + viewdir, {0,-1,0});
     glm::mat4 MVP = projection * camera;
+    glm::vec3 lightpos = lightposA + glm::rotate(lightposB, (float)sga::getTime()/11.0f + 1.8f, glm::vec3(0,1,0));
+    glm::vec3 lightdir = glm::normalize(lightlookat - lightpos);
+    glm::mat4 shadowmapCamera = glm::lookAt(lightpos, lightpos + lightdir, {0,-1,0});
+    glm::mat4 shadowmapMVP = shadowmapProj * shadowmapCamera;
+
+    // Apply uniforms
+    shadowmapPipeline.setUniform("MVP", shadowmapMVP);
+    shadowmapPipeline.setUniform("shadowmapMVP", shadowmapMVP);
     pipeline.setUniform("MVP", MVP);
+    pipeline.setUniform("shadowmapMVP", shadowmapMVP);
     pipeline.setUniform("world_viewpos", viewpos);
     pipeline.setUniform("world_lightpos", lightpos);
-    
-    // Render scene
-    pipeline.clear();
-    for(const MeshData& mesh : meshes){
-      if(mesh.texture != ""){
-        auto it = textures.find(mesh.texture);
-        pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-      } else {
-        // ???
+
+    // Render shadowmap
+    shadowmapPipeline.clear();
+    for(const MeshData& mesh : meshes)
+      shadowmapPipeline.drawVBO(mesh.vbo);
+
+    if(window.isKeyPressed(sga::Key::Space)){
+      // Preview shadowmap
+      previewPipeline.clear();
+      previewPipeline.drawFullQuad();
+    }else{
+      // Render scene
+      pipeline.clear();
+      for(const MeshData& mesh : meshes){
+        if(mesh.texture != ""){
+          // Set texture sampler to use
+          auto it = textures.find(mesh.texture);
+          pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+        }
+        pipeline.drawVBO(mesh.vbo);
       }
-      pipeline.drawVBO(mesh.vbo);
     }
     window.nextFrame();
+
+
+    if(window.getFrameNo() % 60 == 0)
+      std::cout << window.getAverageFPS() << std::endl;
   }
-  
+
   sga::terminate();
 }

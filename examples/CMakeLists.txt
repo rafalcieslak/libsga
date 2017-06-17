@@ -41,6 +41,7 @@ function(add_example NAME)
     ./${NAME}/*.cpp
     )
   file(GLOB EXAMPLE_SHADERS
+    ./${NAME}/*.vert
     ./${NAME}/*.frag
     )
   set(TARGET_NAME sga-example-${NAME})

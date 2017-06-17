@@ -29,6 +29,7 @@ std::vector<std::string> SplitString(std::string str, std::string delimiter, boo
 class Utils{
 public:
   static vk::ClearColorValue imageClearColorToVkClearColorValue(ImageClearColor cc);
+  static std::string readEntireFile(std::string path);
 };
 
 } // namespace sga

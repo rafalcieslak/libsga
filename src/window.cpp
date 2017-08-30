@@ -196,12 +196,11 @@ void Window::Impl::nextFrame() {
                                  vk::SubpassContents::eInline);
       cmdBuffer->endRenderPass();
       cmdBuffer->end();
-      Scheduler::submitAndSync("Rendering placeholder for an empty frame", cmdBuffer);
+      Scheduler::submitSynced("Rendering placeholder for an empty frame", cmdBuffer);
     }
     
     //std::cout << "PRESENTING" << std::endl;
-    Scheduler::present(framebufferSwapchain);
-    Scheduler::fullSync();
+    Scheduler::presentSynced(framebufferSwapchain);
   }
   
   //std::cout << "ACQUIRING" << std::endl;
@@ -241,7 +240,7 @@ void Window::Impl::setClearColor(ImageClearColor cc){
 }
 
 void Window::Impl::clearCurrentFrame(){
-  Scheduler::buildSubmitAndSync("Clearing frame", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+  Scheduler::buildAndSubmitSynced("Clearing frame", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       // Clear the new frame.
       auto image = framebufferSwapchain->getColorImage();
       vkhlf::setImageLayout(

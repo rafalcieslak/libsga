@@ -412,7 +412,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   cmdBuffer->endRenderPass();
   cmdBuffer->end();
 
-  Scheduler::submitAndSync("Pipeline DRAW", cmdBuffer);
+  Scheduler::submitSynced("Pipeline DRAW", cmdBuffer);
 
   // We've just synchronized cpu-gpu, so it's okay to release all buffers. TODO:
   // This should be done by the scheduler when it synchronizes.
@@ -603,7 +603,7 @@ void Pipeline::Impl::prepare_renderpass(){
 
 void Pipeline::Impl::clearDepthImage(){
   // Clear depth image.
-  Scheduler::buildSubmitAndSync("Clearing depth image", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+  Scheduler::buildAndSubmitSynced("Clearing depth image", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       auto image = rp_depthimage;
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,

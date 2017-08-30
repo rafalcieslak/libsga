@@ -78,7 +78,7 @@ void VBO::Impl::putData(uint8_t *pData, size_t n){
   devmem->flush(offset, size);
   devmem->unmap();
   
-  Scheduler::buildSubmitAndSync("Putting VBO data", [&](auto cmdBuffer){
+  Scheduler::buildAndSubmitSynced("Putting VBO data", [&](auto cmdBuffer){
       cmdBuffer->copyBuffer(stagingBuffer, buffer, vk::BufferCopy(0, 0, size));
     });
 }

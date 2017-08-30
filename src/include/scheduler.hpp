@@ -20,12 +20,22 @@ public:
 
   // Convenience wrapper for calling FramebufferSwapchain::present synchronized.
   static void presentSynced(std::unique_ptr<vkhlf::FramebufferSwapchain>&);
-  
+
+  static void scheduleChained(const char* annotation, std::shared_ptr<vkhlf::CommandBuffer>);
+
+  // Stores a reference to a resource as long as the current chain is executing.
+  static void appendChainedResource(std::shared_ptr<void>);
 private:
   static std::shared_ptr<vkhlf::Queue> queue;
 
   // Waits until all scheduled actions are finished.
   static void sync();
+
+  // This container keeps references for objects used within the current chain.
+  // They will be released on the next chain sync.
+  static std::vector<std::shared_ptr<void>> references_till_next_sync;
+
+  static std::shared_ptr<vkhlf::Semaphore> last_chain_semaphore;
 };
 
 } // namespace sga

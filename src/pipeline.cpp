@@ -391,9 +391,9 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
   // Schedule a copy from that staging buffer into uniforms buffer.
   cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
-  // Keep a reference to the buffer so that it doesn't get destroyed when this
-  // function ends (the copy may be performed much later).
-  b_uniformStagingBuffers.push_back(uniform_staging_buffer);
+  // Have scheduler keep a reference to the buffer so that it doesn't get
+  // destroyed when this function ends (the copy may be performed much later).
+  Scheduler::appendChainedResource(uniform_staging_buffer);
   
   prepareVp();
   vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
@@ -412,11 +412,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   cmdBuffer->endRenderPass();
   cmdBuffer->end();
 
-  Scheduler::submitSynced("Pipeline DRAW", cmdBuffer);
-
-  // We've just synchronized cpu-gpu, so it's okay to release all buffers. TODO:
-  // This should be done by the scheduler when it synchronizes.
-  b_uniformStagingBuffers.clear();
+  Scheduler::scheduleChained("Pipeline draw", cmdBuffer);
   
   if(target_is_window){
     targetWindow->currentFrameRendered = true;

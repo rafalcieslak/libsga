@@ -83,6 +83,9 @@ Freetype. It has been running for %.2fs.
 Each frame the entire text is rendered again, 
 character by character. Average FPS: %.2fs.
 )", sga::getTime(), window.getAverageFPS());
+
+    #define REPEAT 1
+    for(int i =0; i < REPEAT; i++){
     
     // Cursor coordinates;
     float x = basex, y = 0;
@@ -110,6 +113,7 @@ character by character. Average FPS: %.2fs.
         x = basex;
       }
 
+    }
     }
     window.nextFrame();
   }

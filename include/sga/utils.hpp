@@ -11,7 +11,7 @@ SGA_API void info();
 /** Returns the number of seconds elapsed since SGA was initialized, as a
  * double-precision floating point value. You may find it convenient to use this
  * function for timing and animation in your application. The same value is
- * available for shaders via the `u.sgaTime` uniform. */
+ * available for shaders via the `sgaTime` uniform. */
 SGA_API double getTime();
 
 enum class VerbosityLevel{
@@ -22,19 +22,25 @@ enum class VerbosityLevel{
 
 // TODO: Bitfield?
 enum class ErrorStrategy{
-  None, /// SGA will ignore all errors. Do not use this option unless you are
-        /// certain what you are doing! This strategy will lead to internal
-        /// crashes.
-  Message, /// SGA will print out diagnostic information about the encoutered
-           /// exception, but will continue execution. This will cause internal
-           /// crashes!
-  Throw, /// On errors, SGA will throw exceptions.
-  MessageThrow, /// SGA will print out a diagnostic mesasge and throw an
-                /// appropriate exception. This is the default and recommended
-                /// behavior.
-  Abort, /// SGA will simply abort current process when problems happen.
-  MessageAbort, /// SGA will print out a diagnostic message and abort current
-                /// process.
+  /// SGA will ignore all errors. Do not use this option unless you are
+  /// certain what you are doing! This strategy will lead to internal
+  /// crashes.
+  None,
+  /// SGA will print out diagnostic information about the encoutered
+  /// exception, but will continue execution. This will cause internal
+  /// crashes!
+  Message,
+  /// On errors, SGA will throw exceptions.
+  Throw,
+  /// SGA will print out a diagnostic mesasge and throw an
+  /// appropriate exception. This is the default and recommended
+  /// behavior.
+  MessageThrow,
+  /// SGA will simply abort current process when problems happen.
+  Abort,
+  /// SGA will print out a diagnostic message and abort current error and will
+  /// abort the process process.
+  MessageAbort,
 };
 
 /** Prepares SGA. Chooses a device to use and prepares it for rendering.  You
@@ -49,7 +55,7 @@ enum class ErrorStrategy{
 SGA_API void init(VerbosityLevel level = VerbosityLevel::Verbose,
           ErrorStrategy stragety = ErrorStrategy::MessageThrow);
 
-/** Deinitializes SGA. You MUST call terminate() before your application exits,
+/** Deinitializes SGA. You must call terminate() before your application exits,
     if you called init() before. */
 SGA_API void terminate();
 

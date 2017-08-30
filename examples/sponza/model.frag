@@ -52,7 +52,7 @@ void main(){
     shadow_factor = get_shadow_filtered(in_shadowmap.xy);
 
   vec3 D = Kd * d * shadow_factor * light_color;
-  vec3 S = Ks * s * 0.4 * shadow_factor;
+  vec3 S = Ks * s * 1.0 * shadow_factor;
   vec3 A = Ka * ambient_color;
   out_color = vec4(D + S + A, 1.0);
 }

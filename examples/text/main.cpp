@@ -86,7 +86,7 @@ character by character. Average FPS: %.2fs.
     
     // Cursor coordinates;
     float x = basex, y = 0;
-  
+
     for(char c : std::string(text_buffer)){
       auto it = glyphs.find(c);
       if(it != glyphs.end()){

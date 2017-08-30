@@ -186,6 +186,7 @@ int main(){
   previewPipeline.setProgram(sga::Program::createAndCompile(previewShader));
   previewPipeline.setTarget(window);
   previewPipeline.setSampler("shadowmap", shadowmap);
+  previewPipeline.setViewport(0, 0, 512, 512);
 
   window.setOnKeyDown(sga::Key::Escape, [&](){
       window.close();
@@ -244,22 +245,18 @@ int main(){
     for(const MeshData& mesh : meshes)
       shadowmapPipeline.drawVBO(mesh.vbo);
 
-    if(window.isKeyPressed(sga::Key::Space)){
-      // Preview shadowmap
-      previewPipeline.clear();
-      previewPipeline.drawFullQuad();
-    }else{
-      // Render scene
-      pipeline.clear();
-      for(const MeshData& mesh : meshes){
-        if(mesh.texture != ""){
-          // Set texture sampler to use
-          auto it = textures.find(mesh.texture);
-          pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
-        }
-        pipeline.drawVBO(mesh.vbo);
+    // Render scene
+    pipeline.clear();
+    for(const MeshData& mesh : meshes){
+      if(mesh.texture != ""){
+        // Set texture sampler to use
+        auto it = textures.find(mesh.texture);
+        pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
       }
+      pipeline.drawVBO(mesh.vbo);
     }
+    if(window.isKeyPressed(sga::Key::Space))
+      previewPipeline.drawFullQuad();
     window.nextFrame();
 
 

@@ -1,13 +1,12 @@
 Core features:
  - Consider hardware antialiasing options
- - Data structure and arrays description
+ - Data structure and arrays description (Array and struct uniforms)
  - Configurable depth buffer properties
  - Indiced vertex mode
  - Non-resizable windows
  - Configurable alpha blending
  - Pipelining multiple draw calls to reduce gpu<->cpu sync overhead
  - More verbose error messages
- - Array and struct uniforms
  - An option to disable vsync
 
 Build process:

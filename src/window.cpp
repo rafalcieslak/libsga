@@ -8,6 +8,7 @@
 
 #include "global.hpp"
 #include "utils.hpp"
+#include "scheduler.hpp"
 
 namespace sga{
 
@@ -164,7 +165,6 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
 }
 
 void Window::Impl::nextFrame() {
-
   if(!isOpen()) return;
   
   double now  = glfwGetTime();
@@ -196,28 +196,23 @@ void Window::Impl::nextFrame() {
                                  vk::SubpassContents::eInline);
       cmdBuffer->endRenderPass();
       cmdBuffer->end();
-      
-      auto fence = global::device->createFence(false);
-      global::queue->submit(
-        vkhlf::SubmitInfo{
-          {},{}, cmdBuffer, {} },
-        fence
-        );
-      fence->wait(UINT64_MAX);
+      Scheduler::submitAndSync("Rendering placeholder for an empty frame", cmdBuffer);
     }
     
     //std::cout << "PRESENTING" << std::endl;
-    framebufferSwapchain->present(global::queue);
-    global::queue->waitIdle();
+    Scheduler::present(framebufferSwapchain);
+    Scheduler::fullSync();
   }
   
   //std::cout << "ACQUIRING" << std::endl;
+  /* Interestingly, this doesn't use the queue. We still full-sync manually,
+   * though. */
   auto fence = global::device->createFence(false);
   framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
   fence->wait(UINT64_MAX);
 
-  // Clear the new frame
-  clearCurrentFrame();
+  // DO NOT clear current frame. It gets cleared by Pipeline::clear().
+  // clearCurrentFrame();
   
   // Compute time deltas
   lastFrameDelta = now - lastFrameTime;
@@ -246,7 +241,7 @@ void Window::Impl::setClearColor(ImageClearColor cc){
 }
 
 void Window::Impl::clearCurrentFrame(){
-  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+  Scheduler::buildSubmitAndSync("Clearing frame", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       // Clear the new frame.
       auto image = framebufferSwapchain->getColorImage();
       vkhlf::setImageLayout(

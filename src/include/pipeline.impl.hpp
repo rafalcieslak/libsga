@@ -76,9 +76,22 @@ protected:
   
   void prepare_unibuffers();
   bool unibuffers_prepared = false;
-  std::shared_ptr<vkhlf::Buffer> b_uniformBuffer;
+  /* This bufer is permanently present on the device and contains current values
+   * (device-time). Draw commands update it by copying from the right clone of a
+   * staging buffer. */
+  std::shared_ptr<vkhlf::Buffer> b_uniformDeviceBuffer;
   size_t b_uniformSize;
-  char* b_uniformArea = nullptr;
+  /* This buffer is in host memory. It is used for building the buffer as values
+   * are set with the API (host-time). On draw, the contents are copied to a
+   * staging buffer, which keeps this data until the frame is drawn by the
+   * device. This means there may simultaneously exist multiple staging buffers
+   * with different values, waiting to be used for rendering. */
+  char* b_uniformHostBuffer = nullptr;
+  /* Keeps references to staging buffers currently in use. TODO: This should be
+   * owned by the scheduler. */
+  std::vector<std::shared_ptr<vkhlf::Buffer>> b_uniformStagingBuffers;
+  /* Stores the names of uniforms that were set at least once. This is used for
+     ensuring that the user did not forget to set any uniform. */
   std::unordered_set<std::string> uniformsSet;
 
   void prepare_samplers();

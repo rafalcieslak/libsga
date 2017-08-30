@@ -9,7 +9,6 @@ bool global::initialized = false;
 std::shared_ptr<vkhlf::Instance> global::instance;
 std::shared_ptr<vkhlf::PhysicalDevice> global::physicalDevice;
 std::shared_ptr<vkhlf::Device> global::device;
-std::shared_ptr<vkhlf::Queue> global::queue;
 std::shared_ptr<vkhlf::CommandPool> global::commandPool;
 
 unsigned int global::queueFamilyIndex;

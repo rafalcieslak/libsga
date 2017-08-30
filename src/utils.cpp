@@ -16,6 +16,7 @@
 #include <sga/exceptions.hpp>
 #include "global.hpp"
 #include "utils.hpp"
+#include "scheduler.hpp"
 
 namespace sga{
 void info(){
@@ -206,7 +207,7 @@ void init(VerbosityLevel verbosity, ErrorStrategy strategy){
   global::device = global::physicalDevice->createDevice(vkhlf::DeviceQueueCreateInfo(global::queueFamilyIndex, 1.0f), nullptr, enabledDeviceExtensions);
   out_dbg("Logical device created.");
 
-  global::queue = global::device->getQueue(global::queueFamilyIndex, 0);
+  Scheduler::initQueue(global::queueFamilyIndex);
 
   // TODO: Prepare memory allocators??
   // eg.
@@ -224,7 +225,7 @@ void terminate(){
     return;
   global::physicalDevice = nullptr;
   global::device = nullptr;
-  global::queue = nullptr;
+  Scheduler::releaseQueue();
   global::commandPool = nullptr;
   global::debugReportCallback = nullptr;
   
@@ -239,16 +240,6 @@ void terminate(){
   glfwTerminate();
   
   global::initialized = false;
-}
-
-void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)> record_commands){
-  auto commandBuffer = global::commandPool->allocateCommandBuffer();
-  commandBuffer->begin();
-
-  record_commands(commandBuffer);
-
-  commandBuffer->end();
-  vkhlf::submitAndWait(global::queue, commandBuffer);
 }
 
 void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface){

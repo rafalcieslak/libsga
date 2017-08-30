@@ -18,7 +18,7 @@ public:
   static std::shared_ptr<vkhlf::Instance> instance;
   static std::shared_ptr<vkhlf::PhysicalDevice> physicalDevice;
   static std::shared_ptr<vkhlf::Device> device;
-  static std::shared_ptr<vkhlf::Queue> queue;
+  //static std::shared_ptr<vkhlf::Queue> queue;
   static std::shared_ptr<vkhlf::CommandPool> commandPool;
 
   static unsigned int queueFamilyIndex;

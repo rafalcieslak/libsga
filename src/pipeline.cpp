@@ -15,6 +15,7 @@
 #include "shader.impl.hpp"
 #include "image.impl.hpp"
 #include "layout.hpp"
+#include "scheduler.hpp"
 
 namespace sga{
 
@@ -200,7 +201,7 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
     DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
   
   size_t offset = it->second.first;
-  memcpy(b_uniformArea + offset, pData, size);
+  memcpy(b_uniformHostBuffer + offset, pData, size);
 
   // Mark the uniform as set.
   uniformsSet.insert(name);
@@ -374,21 +375,26 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   auto cmdBuffer = global::commandPool->allocateCommandBuffer();
   cmdBuffer->begin();
   
-  // Update uniform buffers.
-  std::shared_ptr<vkhlf::Buffer> unisb = global::device->createBuffer(
+  // Prepare a new staging buffer.
+  std::shared_ptr<vkhlf::Buffer> uniform_staging_buffer = global::device->createBuffer(
     b_uniformSize,
     vk::BufferUsageFlagBits::eTransferSrc,
     vk::SharingMode::eExclusive,
     nullptr,
     vk::MemoryPropertyFlagBits::eHostVisible,
     nullptr);
-  auto sbdm = unisb->get<vkhlf::DeviceMemory>();
+  // Fill it with data for current uniform state
+  auto sbdm = uniform_staging_buffer->get<vkhlf::DeviceMemory>();
   void* pMapped = sbdm->map(0, b_uniformSize);
-  memcpy(pMapped, b_uniformArea, b_uniformSize);
+  memcpy(pMapped, b_uniformHostBuffer, b_uniformSize);
   sbdm->flush(0, b_uniformSize); sbdm->unmap();
 
-  cmdBuffer->copyBuffer(unisb, b_uniformBuffer, vk::BufferCopy(0, 0, b_uniformSize));
-
+  // Schedule a copy from that staging buffer into uniforms buffer.
+  cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
+  // Keep a reference to the buffer so that it doesn't get destroyed when this
+  // function ends (the copy may be performed much later).
+  b_uniformStagingBuffers.push_back(uniform_staging_buffer);
+  
   prepareVp();
   vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
                   {(unsigned int)std::ceil(vp_right - vp_left), (unsigned int)std::ceil(vp_bottom - vp_top)});
@@ -405,14 +411,12 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   cmdBuffer->draw(uint32_t(n), 1, 0, 0);
   cmdBuffer->endRenderPass();
   cmdBuffer->end();
-  
-  auto fence = global::device->createFence(false);
-  global::queue->submit(
-    vkhlf::SubmitInfo{
-      {},{}, cmdBuffer, {} },
-    fence
-    );
-  fence->wait(UINT64_MAX);
+
+  Scheduler::submitAndSync("Pipeline DRAW", cmdBuffer);
+
+  // We've just synchronized cpu-gpu, so it's okay to release all buffers. TODO:
+  // This should be done by the scheduler when it synchronizes.
+  b_uniformStagingBuffers.clear();
   
   if(target_is_window){
     targetWindow->currentFrameRendered = true;
@@ -444,14 +448,14 @@ void Pipeline::Impl::prepare_unibuffers(){
 
   b_uniformSize = program->c_uniformSize;
   // Prepare uniform buffers.
-  b_uniformBuffer = global::device->createBuffer(
+  b_uniformDeviceBuffer = global::device->createBuffer(
     b_uniformSize,
     vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer,
     vk::SharingMode::eExclusive,
     nullptr,
     vk::MemoryPropertyFlagBits::eDeviceLocal);
-  if(b_uniformArea != nullptr) delete[] b_uniformArea;
-  b_uniformArea = new char[b_uniformSize];
+  if(b_uniformHostBuffer != nullptr) delete[] b_uniformHostBuffer;
+  b_uniformHostBuffer = new char[b_uniformSize];
   
   unibuffers_prepared = true;
 }
@@ -491,7 +495,7 @@ void Pipeline::Impl::prepare_descset(){
   wdss.push_back(vkhlf::WriteDescriptorSet(
                    d_descriptorSet, 0, 0, 1,
                    vk::DescriptorType::eUniformBuffer, nullptr,
-                   vkhlf::DescriptorBufferInfo(b_uniformBuffer, 0, b_uniformSize)));
+                   vkhlf::DescriptorBufferInfo(b_uniformDeviceBuffer, 0, b_uniformSize)));
     global::device->updateDescriptorSets(wdss, nullptr);
   
   descset_prepared = true;
@@ -599,7 +603,7 @@ void Pipeline::Impl::prepare_renderpass(){
 
 void Pipeline::Impl::clearDepthImage(){
   // Clear depth image.
-  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+  Scheduler::buildSubmitAndSync("Clearing depth image", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       auto image = rp_depthimage;
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eDepth,

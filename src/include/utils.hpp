@@ -10,7 +10,6 @@
 
 namespace sga{
 
-void executeOneTimeCommands(std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)>);
 void ensurePhysicalDeviceSurfaceSupport(std::shared_ptr<vkhlf::Surface> surface);
 
 void out_msg(std::string text, std::string terminator = "\n");

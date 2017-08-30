@@ -6,6 +6,7 @@
 #include <sga/exceptions.hpp>
 #include "utils.hpp"
 #include "global.hpp"
+#include "scheduler.hpp"
 
 namespace sga{
 
@@ -77,7 +78,7 @@ void VBO::Impl::putData(uint8_t *pData, size_t n){
   devmem->flush(offset, size);
   devmem->unmap();
   
-  executeOneTimeCommands([&](auto cmdBuffer){
+  Scheduler::buildSubmitAndSync("Putting VBO data", [&](auto cmdBuffer){
       cmdBuffer->copyBuffer(stagingBuffer, buffer, vk::BufferCopy(0, 0, size));
     });
 }

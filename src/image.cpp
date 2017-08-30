@@ -10,6 +10,7 @@
 #include "window.impl.hpp"
 #include "global.hpp"
 #include "utils.hpp"
+#include "scheduler.hpp"
 
 namespace sga{
 
@@ -148,7 +149,7 @@ void Image::Impl::switchLayout(vk::ImageLayout target_layout){
 
   //out_dbg("Image requires layout switch.");
   vk::ImageSubresourceRange subresRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-  executeOneTimeCommands([&](auto cmdBuffer){
+  Scheduler::buildSubmitAndSync("Switching image layout", [&](auto cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, image, subresRange, current_layout, target_layout);
     });
@@ -186,7 +187,7 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
     vk::MemoryPropertyFlagBits::eHostVisible,
     nullptr, image->get<vkhlf::Allocator>());
       
-  executeOneTimeCommands([&](auto cmdBuffer){
+  Scheduler::buildSubmitAndSync("Preparing staging image layout", [&](auto cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::ePreinitialized, vk::ImageLayout::eGeneral);
@@ -253,7 +254,7 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   stagingImage->get<vkhlf::DeviceMemory>()->unmap();
 
   withLayout(vk::ImageLayout::eTransferDstOptimal, [&](){
-      executeOneTimeCommands([&](auto cmdBuffer){
+      Scheduler::buildSubmitAndSync("Copying staging image to main image", [&](auto cmdBuffer){
           // Switch staging image layout
           vkhlf::setImageLayout(
             cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
@@ -298,7 +299,7 @@ void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtyp
 
 
   withLayout(vk::ImageLayout::eTransferSrcOptimal, [&](){
-      executeOneTimeCommands([&](auto cmdBuffer){
+      Scheduler::buildSubmitAndSync("Copying main image to staging image", [&](auto cmdBuffer){
           vkhlf::setImageLayout(
             cmdBuffer, stagingImage, vk::ImageAspectFlagBits::eColor,
             vk::ImageLayout::ePreinitialized, vk::ImageLayout::eTransferDstOptimal);
@@ -392,7 +393,7 @@ void Image::Impl::setClearColor(ImageClearColor cc){
 }
 
 void Image::Impl::clear(){
-  executeOneTimeCommands([&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
+  Scheduler::buildSubmitAndSync("Clearing image", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       vkhlf::setImageLayout(
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
@@ -453,7 +454,7 @@ void Image::Impl::copyOnto(std::shared_ptr<Image> target,
   correct_bounds(source_x, source_y, target_x, target_y,
                  cwidth, cheight, width, height, twidth, theight);
   
-  executeOneTimeCommands([&](auto cmdBuffer){
+  Scheduler::buildSubmitAndSync("Copying from image to image", [&](auto cmdBuffer){
       
       auto source_orig_layout = current_layout;
       auto target_orig_layout = target->impl->current_layout;
@@ -546,7 +547,7 @@ void Image::Impl::regenerateMips(){
 
   switchLayout(vk::ImageLayout::eTransferSrcOptimal);
 
-  executeOneTimeCommands([&](auto cmdBuffer){
+  Scheduler::buildSubmitAndSync("Regenerating image mips", [&](auto cmdBuffer){
       for (unsigned int i = 1; i < mipsno; i++){
         vk::ImageBlit imageBlit;
         
@@ -584,7 +585,7 @@ void Image::Impl::regenerateMips(){
       vk::ImageSubresourceRange allSubresRange = { vk::ImageAspectFlagBits::eColor, 0, mipsno, 0, 1 };
       vkhlf::setImageLayout(cmdBuffer, image, allSubresRange, vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
       current_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    }); // executeOneTimeCommands
+    }); // Scheduler::buildSubmitAndSync
 }
 
 } // namespace sga

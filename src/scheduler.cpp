@@ -61,7 +61,7 @@ void Scheduler::scheduleChained(const char *annotation, std::shared_ptr<vkhlf::C
     // Subsequent link in the chain.
     auto new_semaphore = global::device->createSemaphore();
     queue->submit( vkhlf::SubmitInfo{
-        {last_chain_semaphore}, {vk::PipelineStageFlagBits::eAllCommands}, cmdBuffer, {new_semaphore} }, nullptr
+        {last_chain_semaphore}, {vk::PipelineStageFlagBits::eAllGraphics}, cmdBuffer, {new_semaphore} }, nullptr
       );
     last_chain_semaphore = new_semaphore;
   }

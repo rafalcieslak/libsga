@@ -41,7 +41,7 @@ int main(){
 
   // Import model.
   Assimp::Importer aimporter;
-  std::string filepath =  EXAMPLE_DATA_DIR "sponza/sponza.obj";
+  std::string filepath =  EXAMPLE_DATA_DIR "sponza-shadowmap/sponza.obj";
   const aiScene* scene = aimporter.ReadFile(filepath,
                                             aiProcess_Triangulate |
                                             aiProcess_SortByPType);
@@ -86,13 +86,13 @@ int main(){
     std::string diffuse_tex_path = diffuse_tex_pathAI.C_Str();
     auto it = textures.find(diffuse_tex_path);
     if(diffuse_tex_path!= "" && it == textures.end()){
-      std::string full_path = EXAMPLE_DATA_DIR "sponza/" + diffuse_tex_path;
+      std::string full_path = EXAMPLE_DATA_DIR "sponza-shadowmap/" + diffuse_tex_path;
       std::cout << "Loading texture \"" << diffuse_tex_path << "\"" << std::endl;
       int w,h,n;
       stbi_set_flip_vertically_on_load(1);
       unsigned char* data = stbi_load(full_path.c_str(), &w, &h, &n, 4);
       if(!data){
-        std::cout << "Opening texture failed: " << stbi_failure_reason() << std::endl;
+        std::cout << "Opening texture '" << full_path << "' failed: " << stbi_failure_reason() << std::endl;
         return 1;
       }
       sga::Image image(w, h, 4, sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
@@ -129,7 +129,7 @@ int main(){
   window.setClearColor(sga::ImageClearColor::NInt8(150,180,200));
 
   // This vertex shader is used both by main pipeline and shadow map.
-  auto mainVertShader = sga::VertexShader  ::createFromFile(EXAMPLE_DATA_DIR "/sponza/model.vert");
+  auto mainVertShader = sga::VertexShader  ::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/model.vert");
   mainVertShader.addInput(sga::DataType::Float3, "in_position");
   mainVertShader.addInput(sga::DataType::Float3, "in_normal");
   mainVertShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -141,7 +141,7 @@ int main(){
   mainVertShader.addUniform(sga::DataType::Mat4, "shadowmapMVP");
 
   // Main fragment shader for the scene.
-  auto fragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/model.frag");
+  auto fragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/model.frag");
   fragShader.addInput(sga::DataType::Float3, "in_world_position");
   fragShader.addInput(sga::DataType::Float3, "in_world_normal");
   fragShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -153,7 +153,7 @@ int main(){
   fragShader.addSampler("diffuse");
   fragShader.addSampler("shadowmap");
 
-  auto shadowmapFragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/shadow.frag");
+  auto shadowmapFragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/shadow.frag");
   shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_position");
   shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_normal");
   shadowmapFragShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -180,7 +180,7 @@ int main(){
 
   // Shadowmap preview render pass
   sga::FullQuadPipeline previewPipeline;
-  auto previewShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza/preview.frag");
+  auto previewShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/preview.frag");
   previewShader.addSampler("shadowmap");
   previewShader.addOutput(sga::DataType::Float4,"out_color");
   previewPipeline.setProgram(sga::Program::createAndCompile(previewShader));

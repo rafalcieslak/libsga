@@ -25,7 +25,7 @@ float get_shadow_filtered(vec2 c){
 }
 
 vec3 light_color = vec3(1.0, 0.96, 0.92);
-vec3 ambient_color = vec3(0.1, 0.108, 0.11);
+vec3 ambient_color = vec3(0.2, 0.208, 0.21);
 
 void main(){
   vec3 light_vector = world_lightpos - in_world_position;

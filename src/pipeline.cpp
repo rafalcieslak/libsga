@@ -63,7 +63,7 @@ FullQuadPipeline::Impl* FullQuadPipeline::impl(){
 
 void FullQuadPipeline::setProgram(const Program& p) {impl()->setProgram(p);}
 void FullQuadPipeline::drawFullQuad() {impl()->drawFullQuad();}
-  
+
 
 // ====== IMPL ======
 
@@ -82,7 +82,7 @@ void Pipeline::Impl::setTarget(const Window& tgt){
   rp_renderpass = nullptr;
   rp_framebuffer = nullptr;
   renderpass_prepared = false;
-  
+
   resetViewport();
 }
 
@@ -103,7 +103,7 @@ void Pipeline::Impl::setTarget(std::vector<Image> images){
   target_is_window = false;
   renderpass_prepared = false;
   targetWindow = nullptr;
-  
+
   resetViewport();
 }
 
@@ -154,7 +154,7 @@ void Pipeline::Impl::setProgram(const Program& p_){
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
   if(p->isFullQuad)
     PipelineConfigError("InvalidProgramType", "This pipeline does not support full quad programs.").raise();
-    
+
   program = p;
   cooked = false;
   samplers_prepared = descset_prepared = unibuffers_prepared = false;
@@ -177,7 +177,7 @@ void Pipeline::Impl::setUniform(std::string name, std::initializer_list<float> f
     DataFormatError("SetUniformInitializerList", "Unable to automatically deduce data type from an initializer list used for setUniform, please use a more specific type (like std::array, glm::vec etc.)").raise();
   }
 }
-  
+
 void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size_t size, bool standard){
   if(size != getDataTypeSize(dt)){
     // TODO: Name types in output?
@@ -191,7 +191,7 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
 
   prepare_unibuffers();
-  
+
   // Lookup offset.
   const auto& off_map = program->c_uniformOffsets;
   auto it = off_map.find(name);
@@ -199,7 +199,7 @@ void Pipeline::Impl::setUniform(DataType dt, std::string name, char* pData, size
     PipelineConfigError("NoUniform", "Uniform \"" + name + "\" does not exist.").raise();
   if(it->second.second != dt)
     DataFormatError("UniformDataTypeMimatch", "The data type of uniform " + name + " is different than the value written to it.").raise();
-  
+
   size_t offset = it->second.first;
   memcpy(b_uniformHostBuffer + offset, pData, size);
 
@@ -211,15 +211,15 @@ void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, Sample
   if(!program)
     PipelineConfigError("NoProgram", "Cannot set uniforms when no program is set.").raise();
   std::shared_ptr<Image::Impl> image = image_ref.impl;
-  
-  
+
+
   // Ensure image is not a render target.
   for(const auto& i : targetImages){
     if(image == i){
       PipelineConfigError("InvalidSamplerImageUsage", "An image cannot be both sampler source and render target in the same pipeline.");
     }
   }
-  
+
   prepare_samplers();
   prepare_descset();
 
@@ -256,7 +256,7 @@ void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, Sample
     maxLod = image->getDesiredMipsNo();
     break;
   }
-  
+
   auto& sdata = it->second;
   sdata.image = image;
   sdata.sampler = global::device->createSampler(
@@ -267,7 +267,7 @@ void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, Sample
     vk::CompareOp::eNever, minLod, maxLod,
     vk::BorderColor::eFloatOpaqueWhite, false);
 
-  
+
   std::vector<vkhlf::WriteDescriptorSet> wdss;
   wdss.push_back(vkhlf::WriteDescriptorSet(
                    d_descriptorSet, sdata.bindno, 0, 1,
@@ -281,7 +281,7 @@ void Pipeline::Impl::setSampler(std::string name, const Image& image_ref, Sample
 void Pipeline::Impl::updateStandardUniforms(){
   float time = getTime();
   setUniform(DataType::Float, "sgaTime", (char*)&time, sizeof(time), true);
-  
+
   vk::Extent2D extent;
   if(target_is_window){
     extent = targetWindow->getCurrentFramebuffer().second;
@@ -305,7 +305,7 @@ void Pipeline::Impl::drawVBO(const VBO& vbo_){
   if(vbo->layout != program->c_inputLayout){
     PipelineConfigError("VertexLayoutMismatch", "VBO layout does not match pipeline input layout!").raise();
   }
-  
+
   cook();
   updateStandardUniforms();
   drawBuffer(vbo->buffer, vbo->getSize());
@@ -371,10 +371,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
       PipelineConfigError("UniformNotSet", "This pipeline cannot render, uniform \"" + u.first + "\" was not set.").raise();
     }
   }
-  
-  auto cmdBuffer = global::commandPool->allocateCommandBuffer();
-  cmdBuffer->begin();
-  
+
   // Prepare a new staging buffer.
   std::shared_ptr<vkhlf::Buffer> uniform_staging_buffer = global::device->createBuffer(
     b_uniformSize,
@@ -389,31 +386,31 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   memcpy(pMapped, b_uniformHostBuffer, b_uniformSize);
   sbdm->flush(0, b_uniformSize); sbdm->unmap();
 
-  // Schedule a copy from that staging buffer into uniforms buffer.
-  cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
   // Have scheduler keep a reference to the buffer so that it doesn't get
   // destroyed when this function ends (the copy may be performed much later).
   Scheduler::appendChainedResource(uniform_staging_buffer);
-  
+
   prepareVp();
   vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
                   {(unsigned int)std::ceil(vp_right - vp_left), (unsigned int)std::ceil(vp_bottom - vp_top)});
-  cmdBuffer->beginRenderPass(
-    c_renderPass, framebuffer,
-    area,
-    {},
-    vk::SubpassContents::eInline);
-  cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
-  cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
-  cmdBuffer->bindVertexBuffer(0, buffer, 0);
-  cmdBuffer->setViewport(0, vk::Viewport(vp_left, vp_top, vp_right, vp_bottom, 0.0f, 1.0f));
-  cmdBuffer->setScissor(0, area);
-  cmdBuffer->draw(uint32_t(n), 1, 0, 0);
-  cmdBuffer->endRenderPass();
-  cmdBuffer->end();
+  vk::Viewport viewport(vp_left, vp_top, vp_right, vp_bottom, 0.0f, 1.0f);
 
-  Scheduler::scheduleChained("Pipeline draw", cmdBuffer);
-  
+  Scheduler::borrowChainableCmdBuffer("pipeline draw", [&](auto cmdBuffer){
+      cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
+
+      cmdBuffer->beginRenderPass(c_renderPass, framebuffer, area, {}, vk::SubpassContents::eInline);
+
+      cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
+      cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
+      cmdBuffer->bindVertexBuffer(0, buffer, 0);
+      cmdBuffer->setViewport(0, viewport);
+      cmdBuffer->setScissor(0, area);
+
+      cmdBuffer->draw(uint32_t(n), 1, 0, 0);
+
+      cmdBuffer->endRenderPass();
+    });
+
   if(target_is_window){
     targetWindow->currentFrameRendered = true;
   }else{
@@ -452,7 +449,7 @@ void Pipeline::Impl::prepare_unibuffers(){
     vk::MemoryPropertyFlagBits::eDeviceLocal);
   if(b_uniformHostBuffer != nullptr) delete[] b_uniformHostBuffer;
   b_uniformHostBuffer = new char[b_uniformSize];
-  
+
   unibuffers_prepared = true;
 }
 
@@ -470,7 +467,7 @@ void Pipeline::Impl::prepare_descset(){
 
   unsigned int samplerno = program->c_samplerBindings.size();
 
-  
+
   // Descriptor bindings
   std::vector<vkhlf::DescriptorSetLayoutBinding> dslbs;
   dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
@@ -478,28 +475,28 @@ void Pipeline::Impl::prepare_descset(){
     dslbs.push_back(vkhlf::DescriptorSetLayoutBinding(1 + i, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr));
   // Descriptor set layout
   d_descriptorSetLayout = global::device->createDescriptorSetLayout(dslbs);
-    
+
   // Set up descriptor sets
   std::shared_ptr<vkhlf::DescriptorPool> descriptorPool = global::device->createDescriptorPool(
     {}, 1 + samplerno,
     {{vk::DescriptorType::eUniformBuffer, 1},
         {vk::DescriptorType::eCombinedImageSampler, samplerno}});
-  
+
   d_descriptorSet = global::device->allocateDescriptorSet(descriptorPool, d_descriptorSetLayout);
-  
+
   std::vector<vkhlf::WriteDescriptorSet> wdss;
   wdss.push_back(vkhlf::WriteDescriptorSet(
                    d_descriptorSet, 0, 0, 1,
                    vk::DescriptorType::eUniformBuffer, nullptr,
                    vkhlf::DescriptorBufferInfo(b_uniformDeviceBuffer, 0, b_uniformSize)));
     global::device->updateDescriptorSets(wdss, nullptr);
-  
+
   descset_prepared = true;
 }
 
 void Pipeline::Impl::prepare_renderpass(){
   if(target_is_window || renderpass_prepared) return;
-                        
+
   out_dbg("Preparing pipeline renderpass.");
 
   // Ensure all target images use the same extent.
@@ -511,8 +508,8 @@ void Pipeline::Impl::prepare_renderpass(){
       PipelineConfigError("TargetImageSizeMismatch", "All target images must share identical dimensions.").raise();
   }
   rp_image_target_extent = vk::Extent2D(width, height);
-  
-  
+
+
   // Gather color attachment references.
   std::vector<vk::AttachmentReference> colorReferences;
   unsigned int n = 0;
@@ -523,7 +520,7 @@ void Pipeline::Impl::prepare_renderpass(){
   }
   n = targetImages.size();
   vk::AttachmentReference depthReference(n, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-  
+
   // Gather attachment descriptions.
   std::vector<vk::AttachmentDescription> attachmentDescriptions;
   for(const auto& i : targetImages){
@@ -540,7 +537,7 @@ void Pipeline::Impl::prepare_renderpass(){
                                      vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, // stencil
                                      vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal
                                      ));
-  
+
   vk::SubpassDescription subpassDesc(
     {}, vk::PipelineBindPoint::eGraphics, 0, nullptr,
     colorReferences.size(), colorReferences.data(),
@@ -590,10 +587,10 @@ void Pipeline::Impl::prepare_renderpass(){
   iviews.push_back(iv);
 
   clearDepthImage();
-  
+
   // Prepare framebuffer
   rp_framebuffer = global::device->createFramebuffer(rp_renderpass, iviews, rp_image_target_extent, 1);
-  
+
   renderpass_prepared = true;
 }
 
@@ -622,7 +619,7 @@ void Pipeline::Impl::cook(){
     prepare_samplers();
 
     prepare_descset();
-    
+
     // pipeline layout
     c_pipelineLayout = global::device->createPipelineLayout(d_descriptorSetLayout, nullptr);
 
@@ -633,7 +630,7 @@ void Pipeline::Impl::cook(){
       prepare_renderpass();
       c_renderPass = rp_renderpass;
     }
-    
+
     // init pipeline
     std::shared_ptr<vkhlf::PipelineCache> pipelineCache = global::device->createPipelineCache(0, nullptr);
 
@@ -669,8 +666,8 @@ void Pipeline::Impl::cook(){
     }
     vk::VertexInputBindingDescription binding(0, offset, vk::VertexInputRate::eVertex);
     vkhlf::PipelineVertexInputStateCreateInfo vertexInput(binding, attribs);
-    
-    
+
+
     vk::PipelineInputAssemblyStateCreateInfo assembly(
       {},
       [=]{ switch(polygonMode){
@@ -710,7 +707,7 @@ void Pipeline::Impl::cook(){
       vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::StencilOp::eKeep, vk::CompareOp::eAlways, 0, 0, 0);
     vk::PipelineDepthStencilStateCreateInfo depthStencil(
       {}, true, true, vk::CompareOp::eLessOrEqual, false, false, stencilOpState, stencilOpState, 0.0f, 0.0f);
-    
+
     vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(
       false,
       vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
@@ -725,13 +722,13 @@ void Pipeline::Impl::cook(){
         colorBlendAttachments.push_back(defaultColorBlendAttachment);
       }
     }
-    
+
     vkhlf::PipelineColorBlendStateCreateInfo colorBlend(
       false, vk::LogicOp::eNoOp, colorBlendAttachments,
       { 1.0f, 1.0f, 1.0f, 1.0f });
     vkhlf::PipelineDynamicStateCreateInfo dynamic(
       { vk::DynamicState::eViewport, vk::DynamicState::eScissor });
-    
+
     c_pipeline = global::device->createGraphicsPipeline(
       pipelineCache,
       {},
@@ -747,7 +744,7 @@ void Pipeline::Impl::cook(){
       dynamic,
       c_pipelineLayout,
       c_renderPass);
-  
+
     cooked = true;
 }
 
@@ -764,7 +761,7 @@ void FullQuadPipeline::Impl::setProgram(const Program& p_){
                         "The program passed to a pipeline must be compiled first, using Program::compile() method.").raise();
   if(!p->isFullQuad)
     PipelineConfigError("InvalidProgramType", "Only full quad programs are supported by this pipeline.").raise();
-    
+
   program = p;
   cooked = false;
   samplers_prepared = descset_prepared = unibuffers_prepared = false;

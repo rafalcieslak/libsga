@@ -50,7 +50,7 @@ int main(){
 
   sga::Window window(800, 200, "Font");
   window.setFPSLimit(60);
-  
+
   auto textShader = sga::FragmentShader::createFromSource(R"(
     void main()
     {
@@ -62,7 +62,7 @@ int main(){
 
   textShader.addSampler("glyph");
   textShader.addOutput(sga::DataType::Float4, "outColor");
-  
+
   auto textProgram = sga::Program::createAndCompile(textShader);
   sga::FullQuadPipeline textPipeline;
 
@@ -72,7 +72,7 @@ int main(){
   textPipeline.setViewport(50,50,300,350);
 
   int basex = 20;
-    
+
   while(window.isOpen()){
     textPipeline.clear();
 
@@ -80,13 +80,13 @@ int main(){
     sprintf(text_buffer, R"(
 This example demonstrates rendering text with
 Freetype. It has been running for %.2fs.
-Each frame the entire text is rendered again, 
+Each frame the entire text is rendered again,
 character by character. Average FPS: %.2fs.
 )", sga::getTime(), window.getAverageFPS());
 
     #define REPEAT 1
     for(int i =0; i < REPEAT; i++){
-    
+
     // Cursor coordinates;
     float x = basex, y = 0;
 
@@ -94,13 +94,13 @@ character by character. Average FPS: %.2fs.
       auto it = glyphs.find(c);
       if(it != glyphs.end()){
         const GlyphData& glyph = glyphs[c];
-        
+
         if(!isspace(c) && glyph.image){
           float charx = x + glyph.metrics.horiBearingX / 64.0f;
           float chary = y - glyph.metrics.horiBearingY / 64.0f;
           float charw = glyph.image->getWidth();
           float charh = glyph.image->getHeight();
-          
+
           textPipeline.setViewport(charx, chary, charx + charw, chary + charh);
           textPipeline.setSampler("glyph", *glyph.image, sga::SamplerInterpolation::Nearest);
           textPipeline.drawFullQuad();

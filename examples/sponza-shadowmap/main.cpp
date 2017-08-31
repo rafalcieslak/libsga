@@ -247,6 +247,7 @@ int main(){
 
     // Render scene
     pipeline.clear();
+    for(int i = 0; i < 1; i++){
     for(const MeshData& mesh : meshes){
       if(mesh.texture != ""){
         // Set texture sampler to use
@@ -254,6 +255,7 @@ int main(){
         pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
       }
       pipeline.drawVBO(mesh.vbo);
+    }
     }
     if(window.isKeyPressed(sga::Key::Space))
       previewPipeline.drawFullQuad();

@@ -8,6 +8,7 @@ Core features:
  - Pipelining multiple draw calls to reduce gpu<->cpu sync overhead
  - More verbose error messages
  - An option to disable vsync
+ - A user should be able to hint that an image will be used mostly for sampling (so it shoudl stay in shader optimal layout)
 
 Build process:
  - Automatic release packaging on windows
@@ -27,4 +28,4 @@ Feature-level bugs:
  - Function naming: Polygon vs Primitive
  - Rename sgaWindowCoords to something not specific to a window, as the target may be a texture not a window
  - Rename sga*Coords to sga*Coord
- 
+

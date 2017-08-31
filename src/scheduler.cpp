@@ -6,12 +6,16 @@
 
 namespace sga{
 
-bool trace_scheduler = false;
+// There is a lot of tests for this debug variable, but branch prediction
+// optimizes it out.
+static bool trace_scheduler = false;
 
 std::shared_ptr<vkhlf::Queue> Scheduler::queue = nullptr;
 
 std::vector<std::shared_ptr<void>> Scheduler::references_till_next_sync;
 std::shared_ptr<vkhlf::Semaphore> Scheduler::last_chain_semaphore = nullptr;
+
+std::shared_ptr<vkhlf::CommandBuffer> Scheduler::current_command_buffer = nullptr;
 
 void Scheduler::initQueue(unsigned int queueFamilyIndex){
   queue = global::device->getQueue(queueFamilyIndex, 0);
@@ -68,6 +72,8 @@ void Scheduler::scheduleChained(const char *annotation, std::shared_ptr<vkhlf::C
 }
 
 void Scheduler::sync(){
+  finalizeChainedCmdBuffer();
+
   if(last_chain_semaphore){
     if(trace_scheduler) std::cout << "[SCHEDULER] CHAIN SYNC!" << std::endl;
     // Make a fence that waits for the semaphore and wait for the fence.
@@ -80,6 +86,25 @@ void Scheduler::sync(){
     last_chain_semaphore = nullptr;
   }
   references_till_next_sync.clear();
+}
+
+void Scheduler::borrowChainableCmdBuffer(const char* annotation, std::function<void(std::shared_ptr<vkhlf::CommandBuffer>)> action){
+  if(!current_command_buffer){
+    if(trace_scheduler) std::cout << "[SCHEDULER] " << annotation << " CHAIN buffer first" << std::endl;
+    current_command_buffer = global::commandPool->allocateCommandBuffer();
+    current_command_buffer->begin();
+  }else{
+    if(trace_scheduler) std::cout << "[SCHEDULER] " << annotation << " CHAIN subsequent" << std::endl;
+  }
+  action(current_command_buffer);
+}
+
+void Scheduler::finalizeChainedCmdBuffer(){
+  if(current_command_buffer){
+    current_command_buffer->end();
+    scheduleChained("Chained draw command buffer", current_command_buffer);
+    current_command_buffer = nullptr;
+  }
 }
 
 void Scheduler::appendChainedResource(std::shared_ptr<void> r){

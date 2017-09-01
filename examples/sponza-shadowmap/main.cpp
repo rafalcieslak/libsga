@@ -36,14 +36,19 @@ struct MeshData{
 // Texture bank
 std::unordered_map<std::string, sga::Image> textures;
 
+std::string model_dir = EXAMPLE_DATA_DIR "sponza-shadowmap";
+std::string model_file = "sponza.obj";
+
 int main(){
   sga::init();
 
   // Import model.
   Assimp::Importer aimporter;
-  std::string filepath =  EXAMPLE_DATA_DIR "sponza-shadowmap/sponza.obj";
+  aimporter.SetPropertyBool(AI_CONFIG_PP_PTV_NORMALIZE, true);
+  std::string filepath =  model_dir + "/" + model_file;
   const aiScene* scene = aimporter.ReadFile(filepath,
                                             aiProcess_Triangulate |
+                                            aiProcess_PreTransformVertices |
                                             aiProcess_SortByPType);
   if( !scene){
     std::cout << "Failed to open model file " << filepath << ": "
@@ -61,7 +66,7 @@ int main(){
         aiVector3D normal = mesh->mNormals[face.mIndices[v]];
         aiVector3D uv = mesh->mTextureCoords[0][face.mIndices[v]];
         vertices.push_back({
-            {vertex.x, vertex.y, vertex.z},
+            {15*vertex.x, 15*vertex.y, 15*vertex.z},
             {normal.x, normal.y, normal.z},
             {uv.x, uv.y}
           });
@@ -85,8 +90,9 @@ int main(){
     mat->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse_tex_pathAI);
     std::string diffuse_tex_path = diffuse_tex_pathAI.C_Str();
     auto it = textures.find(diffuse_tex_path);
+    std::cout << "texpath: " << diffuse_tex_path << std::endl;
     if(diffuse_tex_path!= "" && it == textures.end()){
-      std::string full_path = EXAMPLE_DATA_DIR "sponza-shadowmap/" + diffuse_tex_path;
+      std::string full_path = model_dir + "/" + diffuse_tex_path;
       std::cout << "Loading texture \"" << diffuse_tex_path << "\"" << std::endl;
       int w,h,n;
       stbi_set_flip_vertically_on_load(1);
@@ -113,12 +119,11 @@ int main(){
   glm::vec3 viewdir = {-1,0,0};
   float viewnear = 0.1f, viewfar = 30.0f;
   float viewfov = 70.0f;
-  glm::vec3 lightposA = {0, 40, 0};
+  glm::vec3 lightposA = {0, 25, 0};
   glm::vec3 lightposB = {-20, 0, 4};
-  glm::vec3 lightlookat = {0, 12, 0};
+  glm::vec3 lightlookat = {0, 0, 0};
   float lightnear = -5.0f, lightfar = 60.0f;
-  float shadowmap_size = 1024, shadowmap_range = 12.0f;
-
+  float shadowmap_size = 4096, shadowmap_range = 10.0f;
   sga::Image shadowmap(shadowmap_size, shadowmap_size, 1, sga::ImageFormat::Float, sga::ImageFilterMode::None);
   glm::mat4 shadowmapProj = glm::ortho(-shadowmap_range, shadowmap_range, -shadowmap_range, shadowmap_range, lightnear, lightfar);
 

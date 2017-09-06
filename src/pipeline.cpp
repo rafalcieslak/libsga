@@ -425,6 +425,7 @@ void Pipeline::Impl::clear(){
   if(!ensureValidity()) return;
 
   if(target_is_window){
+    targetWindow->currentFrameRendered = true;
     targetWindow->clearCurrentFrame();
   }else{
     for(const auto& i : targetImages){

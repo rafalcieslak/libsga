@@ -252,15 +252,16 @@ int main(){
 
     // Render scene
     pipeline.clear();
-    for(int i = 0; i < 1; i++){
-    for(const MeshData& mesh : meshes){
-      if(mesh.texture != ""){
-        // Set texture sampler to use
-        auto it = textures.find(mesh.texture);
-        pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+    #define REPEAT 1
+    for(int i = 0; i < REPEAT; i++){
+      for(const MeshData& mesh : meshes){
+        if(mesh.texture != ""){
+          // Set texture sampler to use
+          auto it = textures.find(mesh.texture);
+          pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+        }
+        pipeline.drawVBO(mesh.vbo);
       }
-      pipeline.drawVBO(mesh.vbo);
-    }
     }
     if(window.isKeyPressed(sga::Key::Space))
       previewPipeline.drawFullQuad();
@@ -268,7 +269,7 @@ int main(){
 
 
     if(window.getFrameNo() % 60 == 0)
-      std::cout << window.getAverageFPS() << std::endl;
+      std::cout << "FPS: " << window.getAverageFPS() << ", frame time: " << window.getAverageFrameTime() << std::endl;
   }
 
   sga::terminate();

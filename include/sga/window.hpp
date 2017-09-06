@@ -21,6 +21,7 @@ public:
   SGA_API void setFPSLimit(double fps);
   SGA_API float getLastFrameDelta() const;
   SGA_API float getAverageFPS() const;
+  SGA_API float getAverageFrameTime() const;
   SGA_API unsigned int getFrameNo() const;
 
   // Window state

@@ -22,6 +22,7 @@ void Window::nextFrame() {impl->nextFrame();}
 void Window::setFPSLimit(double fps) {impl->setFPSLimit(fps);}
 float Window::getLastFrameDelta() const {return impl->getLastFrameDelta();}
 float Window::getAverageFPS() const {return impl->getAverageFPS();}
+float Window::getAverageFrameTime() const {return impl->getAverageFrameTime();}
 unsigned int Window::getFrameNo() const {return impl->getFrameNo();}
 
 bool Window::isOpen() {return impl->isOpen();}
@@ -167,64 +168,54 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
 void Window::Impl::nextFrame() {
   if(!isOpen()) return;
   
-  double now  = glfwGetTime();
+  double frameReadyTimestamp = glfwGetTime();
     
   // Wait with presentation for a while, if fpslimit is enabled.
   if(frameno > 0 && fpsLimit > 0){
-    double timeSinceLastFrame = now - lastFrameTime;
+    double timeSinceLastFrame = frameReadyTimestamp - lastFrameTimestamp;
     double desiredTime = 1.0/fpsLimit;
     double time_left = desiredTime - timeSinceLastFrame;
     if(time_left > 0.0){
       std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
     }
-    now = glfwGetTime();
   }
-  
+
+  double framePresentTimestamp = glfwGetTime();
+
   if(frameno > 0){
     if(!currentFrameRendered){
       std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
-      
-      // TODO: Consider always clearing target immediatelly after acquiring a new frame. This may simplify things a lot (but may bost some performance).
-      
-      std::array<float, 4> clear_color = { 1.0f, 0.0f, 1.0f };
-      
-      auto cmdBuffer = global::commandPool->allocateCommandBuffer();
-      cmdBuffer->begin();
-      cmdBuffer->beginRenderPass(renderPass, framebufferSwapchain->getFramebuffer(),
-                                 vk::Rect2D({ 0, 0 }, framebufferSwapchain->getExtent()),
-                                 { vk::ClearValue(clear_color), vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0)) },
-                                 vk::SubpassContents::eInline);
-      cmdBuffer->endRenderPass();
-      cmdBuffer->end();
-      Scheduler::submitSynced("Rendering placeholder for an empty frame", cmdBuffer);
+      clearCurrentFrame(vk::ClearColorValue(std::array<float,4>({1.0f, 0.0f, 1.0f, 1.0f})));
     }
-    
-    //std::cout << "PRESENTING" << std::endl;
+
     Scheduler::presentSynced(framebufferSwapchain);
   }
-  
-  //std::cout << "ACQUIRING" << std::endl;
-  /* Interestingly, this doesn't use the queue. We still full-sync manually,
+
+  /* WSI interface doesn't use our cmd queue. We still full-sync manually,
    * though. */
   auto fence = global::device->createFence(false);
   framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
   fence->wait(UINT64_MAX);
 
-  // DO NOT clear current frame. It gets cleared by Pipeline::clear().
-  // clearCurrentFrame();
+  // DO NOT clear new frame. User clears it with Pipeline::clear().
   
   // Compute time deltas
-  lastFrameDelta = now - lastFrameTime;
-  lastFrameTime = now;
+  lastFrameDelta = framePresentTimestamp - lastFrameTimestamp;
+  lastFrameTime = frameReadyTimestamp - lastFrameTimestamp;
+  lastFrameTimestamp = glfwGetTime();
 
-  const double fpsFilterTheta = 0.85;
+  const double fpsFilterTheta = 0.85, ftimeFilterTheta = 0.7;
   averagedFrameDelta =
     averagedFrameDelta * fpsFilterTheta +
     lastFrameDelta * (1.0 - fpsFilterTheta);
+  averagedFrameTime =
+    averagedFrameTime * ftimeFilterTheta +
+    lastFrameTime * (1.0 - ftimeFilterTheta);
 
   // Update frame counters
   frameno++;
   totalFrameNo++;
+  currentFrameRendered = false;
   
   glfwPollEvents();
 }
@@ -240,6 +231,10 @@ void Window::Impl::setClearColor(ImageClearColor cc){
 }
 
 void Window::Impl::clearCurrentFrame(){
+  clearCurrentFrame(Utils::imageClearColorToVkClearColorValue(clearColor));
+}
+
+void Window::Impl::clearCurrentFrame(vk::ClearColorValue cc){
   Scheduler::buildAndSubmitSynced("Clearing frame", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       // Clear the new frame.
       auto image = framebufferSwapchain->getColorImage();
@@ -247,8 +242,6 @@ void Window::Impl::clearCurrentFrame(){
         cmdBuffer, image, vk::ImageAspectFlagBits::eColor,
         vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
       
-      vk::ClearColorValue cc = Utils::imageClearColorToVkClearColorValue(clearColor);
-      //vk::ClearColorValue cc(std::array<float,4>{1.0f,0.0f,1.0f,1.0f});
       cmdBuffer->clearColorImage(image, vk::ImageLayout::eTransferDstOptimal, vk::ClearColorValue(cc));
       
       vkhlf::setImageLayout(
@@ -278,6 +271,9 @@ float Window::Impl::getLastFrameDelta() const{
 }
 float Window::Impl::getAverageFPS() const{
   return 1.0 / averagedFrameDelta;
+}
+float Window::Impl::getAverageFrameTime() const{
+  return averagedFrameTime;
 }
 unsigned int Window::Impl::getFrameNo() const{
   return totalFrameNo;

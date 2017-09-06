@@ -19,6 +19,7 @@ public:
   void setFPSLimit(double fps);
   float getLastFrameDelta() const;
   float getAverageFPS() const;
+  float getAverageFrameTime() const;
   unsigned int getFrameNo() const;
   
   void do_resize(unsigned int w, unsigned int h);
@@ -52,6 +53,8 @@ public:
 
   void setClearColor(ImageClearColor cc);
   void clearCurrentFrame();
+  void clearCurrentFrame(vk::ClearColorValue cc);
+
 private:
   GLFWwindow* window;
   unsigned int width, height;
@@ -99,11 +102,16 @@ private:
   // Curent FPS limit.
   float fpsLimit = 60;
   // Time when the last frame was drawn.
+  double lastFrameTimestamp = 0.0;
+  // Total time between the last frame was acquired to the time it was ready for
+  // presentation.
   double lastFrameTime = 0.0;
-  // Time between last two drawn frames.
+  // Time between last two drawn frames. May be higher than lastFrameTime due to VSync etc.
   double lastFrameDelta = 0.0;
   // Low-pass filtered time between frames
   double averagedFrameDelta = 0.0;
+  // Low-pass filtered time to render a frame.
+  double averagedFrameTime = 0.0;
 
   float mouse_x = 0.0;
   float mouse_y = 0.0;

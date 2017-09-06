@@ -81,15 +81,14 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title) :
     
     // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
     // there is no preferered format, so we assume VK_FORMAT_B8G8R8A8_UNORM
-    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined){
+    if (surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined)
       colorFormat = vk::Format::eB8G8R8A8Unorm;
-      // colorSpace = surfaceFormats[0].colorSpace;
-    }else{
+    else
       colorFormat = surfaceFormats[0].format;
-      // colorSpace = surfaceFormats[0].colorSpace;
-    }
     depthFormat = vk::Format::eD24UnormS8Uint;
     
+    // Create the renderpass used for drawing onto this window.
+    // Note that it may be shared between multiple pipelines!
     vk::AttachmentReference colorReference(0, vk::ImageLayout::eColorAttachmentOptimal);
     vk::AttachmentReference depthReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);  
     renderPass = global::device->createRenderPass(
@@ -110,8 +109,8 @@ Window::Impl::Impl(unsigned int width, unsigned int height, std::string title) :
                               &colorReference, nullptr,
                               &depthReference, 0, nullptr),
       nullptr );
-
-    // This will create the initial swapchain.
+    
+    // This will also create the initial swapchain.
     do_resize(width, height);
 
     // Hook some glfw callbacks.
@@ -135,7 +134,20 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
   int w2, h2;
   glfwGetFramebufferSize(window, &w2, &h2); w = w2; h = h2;
   if (w == width && h == height) return;
+
+  createSwapchainsAndFramebuffer();
+  out_dbg("Performed window resize to " + std::to_string(w) + "x" + std::to_string(h));
+  frameno = 0;
+
+  clearCurrentFrame();
   
+  width = w;
+  height = h;
+
+  if(f_onResize) f_onResize(width,height);
+}
+
+void Window::Impl::createSwapchainsAndFramebuffer(){
   // Before creating the new framebuffer stapchain, the old one must be destroyed.
   framebufferSwapchain.reset();
   
@@ -148,61 +160,57 @@ void Window::Impl::do_resize(unsigned int w, unsigned int h){
       renderPass,
       // TODO: TransferDst is not guaranteed to be supported!
       // See: https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html#_surface_queries
-      vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
+      vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst,
+      std::vector<vk::PresentModeKHR>{vk::PresentModeKHR::eImmediate}
+      )
     );
-  out_dbg("Performed window resize to " + std::to_string(w) + "x" + std::to_string(h));
-  frameno = 0;
-  //std::cout << framebufferSwapchain->getExtent().width << " " << framebufferSwapchain->getExtent().height << std::endl;
-  //std::cout << w << " " << h << std::endl;
-  //std::cout << width << " " << height << std::endl;
-  //std::cout << "===" << std::endl;
-
-  clearCurrentFrame();
-  
-  width = w;
-  height = h;
-
-  if(f_onResize) f_onResize(width,height);
 }
 
 void Window::Impl::nextFrame() {
   if(!isOpen()) return;
-  
+
+  // Very important to sync here. We're about to commit a new frame, so we need
+  // to finish all (potentially time-consuming) GPU actions before we measure
+  // time and proceed to present the frame.
+  Scheduler::sync();  
   double frameReadyTimestamp = glfwGetTime();
     
   // Wait with presentation for a while, if fpslimit is enabled.
   if(frameno > 0 && fpsLimit > 0){
     double timeSinceLastFrame = frameReadyTimestamp - lastFrameTimestamp;
-    double desiredTime = 1.0/fpsLimit;
+    double desiredTime = (1.0/fpsLimit)*0.95;
     double time_left = desiredTime - timeSinceLastFrame;
     if(time_left > 0.0){
+      std::cout << "Sleeping for " << time_left << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
     }
   }
 
-  double framePresentTimestamp = glfwGetTime();
-
-  if(frameno > 0){
-    if(!currentFrameRendered){
-      std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
-      clearCurrentFrame(vk::ClearColorValue(std::array<float,4>({1.0f, 0.0f, 1.0f, 1.0f})));
+  if(framebufferSwapchain){
+    if(frameno > 0){
+      if(!currentFrameRendered){
+        std::cout << "SGA WARNING: Nothing was rendered onto current frame, skipping it." << std::endl;
+        clearCurrentFrame(vk::ClearColorValue(std::array<float,4>({1.0f, 0.0f, 1.0f, 1.0f})));
+      }
+      
+      Scheduler::presentSynced(framebufferSwapchain);
     }
-
-    Scheduler::presentSynced(framebufferSwapchain);
+    
+    /* WSI interface doesn't use our cmd queue. We still full-sync manually,
+     * though. */
+    auto fence = global::device->createFence(false);
+    framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
+    fence->wait(UINT64_MAX);
+    
+    // DO NOT clear new frame. User clears it with Pipeline::clear().
   }
 
-  /* WSI interface doesn't use our cmd queue. We still full-sync manually,
-   * though. */
-  auto fence = global::device->createFence(false);
-  framebufferSwapchain->acquireNextFrame(UINT64_MAX, fence, true);
-  fence->wait(UINT64_MAX);
-
-  // DO NOT clear new frame. User clears it with Pipeline::clear().
+  double newFrameTimestamp = glfwGetTime();
   
   // Compute time deltas
-  lastFrameDelta = framePresentTimestamp - lastFrameTimestamp;
+  lastFrameDelta = newFrameTimestamp - lastFrameTimestamp;
   lastFrameTime = frameReadyTimestamp - lastFrameTimestamp;
-  lastFrameTimestamp = glfwGetTime();
+  lastFrameTimestamp = newFrameTimestamp;
 
   const double fpsFilterTheta = 0.85, ftimeFilterTheta = 0.7;
   averagedFrameDelta =
@@ -235,6 +243,8 @@ void Window::Impl::clearCurrentFrame(){
 }
 
 void Window::Impl::clearCurrentFrame(vk::ClearColorValue cc){
+  if(!framebufferSwapchain)
+    return;
   Scheduler::buildAndSubmitSynced("Clearing frame", [&](std::shared_ptr<vkhlf::CommandBuffer> cmdBuffer){
       // Clear the new frame.
       auto image = framebufferSwapchain->getColorImage();

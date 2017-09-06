@@ -123,13 +123,13 @@ int main(){
   glm::vec3 lightposB = {-20, 0, 4};
   glm::vec3 lightlookat = {0, 0, 0};
   float lightnear = -5.0f, lightfar = 60.0f;
-  float shadowmap_size = 4096, shadowmap_range = 10.0f;
+  float shadowmap_size = 2048, shadowmap_range = 10.0f;
   sga::Image shadowmap(shadowmap_size, shadowmap_size, 1, sga::ImageFormat::Float, sga::ImageFilterMode::None);
   glm::mat4 shadowmapProj = glm::ortho(-shadowmap_range, shadowmap_range, -shadowmap_range, shadowmap_range, lightnear, lightfar);
 
   // Prepare window
   sga::Window window(1200, 900, "Sponza");
-  window.setFPSLimit(60);
+  //window.setFPSLimit(60);
   window.grabMouse();
   window.setClearColor(sga::ImageClearColor::NInt8(150,180,200));
 
@@ -216,6 +216,7 @@ int main(){
 
   // Main loop
   while(window.isOpen()){
+
     // Process user movement
     float playerspeed = 4.5;
     glm::vec3 playermove(0.0f, 0.0f, 0.0f);
@@ -269,7 +270,7 @@ int main(){
 
 
     if(window.getFrameNo() % 60 == 0)
-      std::cout << "FPS: " << window.getAverageFPS() << ", frame time: " << window.getAverageFrameTime() << std::endl;
+      std::cout << "FPS: " << window.getAverageFPS() << ", frame time (ms): " << window.getAverageFrameTime()*1000 << std::endl;
   }
 
   sga::terminate();

@@ -35,11 +35,11 @@ public:
   // Stores a reference to a resource as long as the current chain is executing.
   static void appendChainedResource(std::shared_ptr<void>);
 
-private:
-  static void finalizeChainedCmdBuffer();
-
   // Waits until all scheduled actions are finished.
   static void sync();
+  
+private:
+  static void finalizeChainedCmdBuffer();
 
   // This is the main command queue used by SGA! No other classes access
   // it. This way the Scheduler has full control over synchronizing all

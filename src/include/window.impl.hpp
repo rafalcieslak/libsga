@@ -55,6 +55,8 @@ public:
   void clearCurrentFrame();
   void clearCurrentFrame(vk::ClearColorValue cc);
 
+  void createSwapchainsAndFramebuffer();
+  void setRenderPass(vkhlf::RenderPass);
 private:
   GLFWwindow* window;
   unsigned int width, height;
@@ -100,7 +102,7 @@ private:
   unsigned int totalFrameNo = 0;
 
   // Curent FPS limit.
-  float fpsLimit = 60;
+  float fpsLimit = -1;
   // Time when the last frame was drawn.
   double lastFrameTimestamp = 0.0;
   // Total time between the last frame was acquired to the time it was ready for

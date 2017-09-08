@@ -12,7 +12,7 @@ int main(){
   sga::init();
   
   Scene scene;
-  bool loaded = scene.load("castle-on-hills/preview.fbx", true);
+  bool loaded = scene.load("castle-on-hills/castle-on-hills.fbx", true);
   //bool loaded = scene.load("kokura/kokura.obj", true, true);
   if(!loaded)
     return 1;

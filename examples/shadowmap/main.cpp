@@ -6,135 +6,58 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "../common/stb_image.h"
 
 #define SGA_USE_GLM
 #include <sga.hpp>
-#include "../common/common.hpp"
 
-#include <unordered_map>
+#include "../common/sceneloader.hpp"
 
-struct VertData{
-  glm::vec3 pos;
-  glm::vec3 normal;
-  glm::vec2 uv;
-};
+int main(int argc, char** argv){
 
-struct MeshData{
-  MeshData(sga::VBO v, glm::vec3 c, std::string t)
-    : vbo(v), color(c), texture(t) {}
-  sga::VBO vbo;
-  glm::vec3 color;
-  std::string texture;
-};
-
-// Texture bank
-std::unordered_map<std::string, sga::Image> textures;
-
-std::string model_dir = EXAMPLE_DATA_DIR "sponza-shadowmap";
-std::string model_file = "sponza.obj";
-
-int main(){
-  sga::init();
-
-  // Import model.
-  Assimp::Importer aimporter;
-  aimporter.SetPropertyBool(AI_CONFIG_PP_PTV_NORMALIZE, true);
-  std::string filepath =  model_dir + "/" + model_file;
-  const aiScene* scene = aimporter.ReadFile(filepath,
-                                            aiProcess_Triangulate |
-                                            aiProcess_PreTransformVertices |
-                                            aiProcess_SortByPType);
-  if( !scene){
-    std::cout << "Failed to open model file " << filepath << ": "
-              << aimporter.GetErrorString() << std::endl;
+  std::string filepath;
+  if(argc < 2 || std::string(argv[1]) == ""){
+    std::cout << "Usage: " << argv[0] << " MODEL_NAME" << std::endl;
+    return 1;
+  }else if (std::string(argv[1]) == "sponza"){
+    filepath = "sponza-shadowmap/sponza.obj";
+  }else if (std::string(argv[1]) == "castle"){
+    filepath = "castle-on-hills/castle-on-hills.fbx";
+  }else{
+    std::cout << "Unknown model " << argv[1] << ", choose between 'sponza' and 'castle'" << std::endl;
     return 1;
   }
-  std::vector<MeshData> meshes;
-  for(unsigned int m = 0; m < scene->mNumMeshes; m++){
-    const aiMesh* mesh = scene->mMeshes[m];
-    std::vector<VertData> vertices;
-    for(unsigned int f = 0; f < mesh->mNumFaces; f++){
-      aiFace face = mesh->mFaces[f];
-      for(unsigned int v = 0; v < 3; v++){
-        aiVector3D vertex = mesh->mVertices[face.mIndices[v]];
-        aiVector3D normal = mesh->mNormals[face.mIndices[v]];
-        aiVector3D uv = mesh->mTextureCoords[0][face.mIndices[v]];
-        vertices.push_back({
-            {15*vertex.x, 15*vertex.y, 15*vertex.z},
-            {normal.x, normal.y, normal.z},
-            {uv.x, uv.y}
-          });
-      }
-    }
-
-    // Prepare VBO
-    sga::VBO vbo({
-        sga::DataType::Float3,
-        sga::DataType::Float3,
-        sga::DataType::Float2},
-      vertices.size());
-    vbo.write(vertices);
-
-    // Prepare material info
-    const aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
-    aiColor3D c;
-    mat->Get(AI_MATKEY_COLOR_DIFFUSE, c);
-
-    aiString diffuse_tex_pathAI;
-    mat->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse_tex_pathAI);
-    std::string diffuse_tex_path = diffuse_tex_pathAI.C_Str();
-    auto it = textures.find(diffuse_tex_path);
-    std::cout << "texpath: " << diffuse_tex_path << std::endl;
-    if(diffuse_tex_path!= "" && it == textures.end()){
-      std::string full_path = model_dir + "/" + diffuse_tex_path;
-      std::cout << "Loading texture \"" << diffuse_tex_path << "\"" << std::endl;
-      int w,h,n;
-      stbi_set_flip_vertically_on_load(1);
-      unsigned char* data = stbi_load(full_path.c_str(), &w, &h, &n, 4);
-      if(!data){
-        std::cout << "Opening texture '" << full_path << "' failed: " << stbi_failure_reason() << std::endl;
-        return 1;
-      }
-      sga::Image image(w, h, 4, sga::ImageFormat::NInt8, sga::ImageFilterMode::Anisotropic);
-      image.putData(std::vector<uint8_t>(data, data + w*h*4));
-      textures.insert({diffuse_tex_path, image});
-      // TODO: Bumpmaps?
-    }
-
-    meshes.emplace_back(vbo, (glm::vec3){c.r, c.g, c.b}, diffuse_tex_path);
-    std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
-  }
-
+  
+  sga::init();
+  
+  Scene scene;
+  bool loaded = scene.load(filepath, true);
+  if(!loaded)
+    return 1;
+  
   // Done loading scene.
   std::cout << "Use WASD keys and mouselook to move. Hold SPACE to preview shadow map." << std::endl;
 
   // View and light source parameters.
-  glm::vec3 viewpos = {5,2,0};
+  glm::vec3 viewpos = {1.5,0.5,0};
   glm::vec3 viewdir = {-1,0,0};
-  float viewnear = 0.1f, viewfar = 30.0f;
+  float viewnear = 0.1f, viewfar = 10.0f;
   float viewfov = 70.0f;
-  glm::vec3 lightposA = {0, 25, 0};
-  glm::vec3 lightposB = {-20, 0, 4};
+  glm::vec3 lightposA = {0, 3.0, 0};
+  glm::vec3 lightposB = {-1.0, 0, 0.25};
   glm::vec3 lightlookat = {0, 0, 0};
-  float lightnear = -5.0f, lightfar = 60.0f;
-  float shadowmap_size = 2048, shadowmap_range = 10.0f;
+  float lightnear = -8.0f, lightfar = 8.0f;
+  float shadowmap_size = 4096, shadowmap_range = 6.0f;
   sga::Image shadowmap(shadowmap_size, shadowmap_size, 1, sga::ImageFormat::Float, sga::ImageFilterMode::None);
   glm::mat4 shadowmapProj = glm::ortho(-shadowmap_range, shadowmap_range, -shadowmap_range, shadowmap_range, lightnear, lightfar);
 
   // Prepare window
-  sga::Window window(1200, 900, "Sponza");
+  sga::Window window(1200, 900, "Shadowmap");
   //window.setFPSLimit(60);
   window.grabMouse();
   window.setClearColor(sga::ImageClearColor::NInt8(150,180,200));
 
   // This vertex shader is used both by main pipeline and shadow map.
-  auto mainVertShader = sga::VertexShader  ::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/model.vert");
+  auto mainVertShader = sga::VertexShader  ::createFromFile(EXAMPLE_DATA_DIR "/shadowmap/model.vert");
   mainVertShader.addInput(sga::DataType::Float3, "in_position");
   mainVertShader.addInput(sga::DataType::Float3, "in_normal");
   mainVertShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -146,7 +69,7 @@ int main(){
   mainVertShader.addUniform(sga::DataType::Mat4, "shadowmapMVP");
 
   // Main fragment shader for the scene.
-  auto fragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/model.frag");
+  auto fragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/shadowmap/model.frag");
   fragShader.addInput(sga::DataType::Float3, "in_world_position");
   fragShader.addInput(sga::DataType::Float3, "in_world_normal");
   fragShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -154,11 +77,13 @@ int main(){
   fragShader.addOutput(sga::DataType::Float4, "out_color");
   fragShader.addUniform(sga::DataType::Float3, "world_lightpos");
   fragShader.addUniform(sga::DataType::Float3, "world_viewpos");
+  fragShader.addUniform(sga::DataType::Float3, "color_diffuse");
+  fragShader.addUniform(sga::DataType::SInt, "use_texture");
   fragShader.addUniform(sga::DataType::SInt, "debug");
   fragShader.addSampler("diffuse");
   fragShader.addSampler("shadowmap");
 
-  auto shadowmapFragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/sponza-shadowmap/shadow.frag");
+  auto shadowmapFragShader = sga::FragmentShader::createFromFile(EXAMPLE_DATA_DIR "/shadowmap/shadow.frag");
   shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_position");
   shadowmapFragShader.addInput(sga::DataType::Float3, "in_world_normal");
   shadowmapFragShader.addInput(sga::DataType::Float2, "in_texuv");
@@ -180,6 +105,9 @@ int main(){
   pipeline.setProgram(program);
   pipeline.setTarget(window);
   pipeline.setFaceCull(sga::FaceCullMode::Back);
+  sga::Image no_image = sga::Image(16, 16);
+  pipeline.setSampler("diffuse", no_image);
+  pipeline.setUniform("color_diffuse", glm::vec3{0.0f, 0.0f, 0.0f});
   pipeline.setSampler("shadowmap", shadowmap);
   pipeline.setUniform("debug", 0);
 
@@ -218,7 +146,7 @@ int main(){
   while(window.isOpen()){
 
     // Process user movement
-    float playerspeed = 4.5;
+    float playerspeed = 1.5;
     glm::vec3 playermove(0.0f, 0.0f, 0.0f);
     if(window.isKeyPressed(sga::Key::Shift))
       playerspeed *= 2.5;
@@ -233,7 +161,7 @@ int main(){
     // Update shadowmap MVPs
     glm::mat4 camera = glm::lookAt(viewpos, viewpos + viewdir, {0,-1,0});
     glm::mat4 MVP = projection * camera;
-    glm::vec3 lightpos = lightposA + glm::rotate(lightposB, (float)sga::getTime()/11.0f + 1.8f, glm::vec3(0,1,0));
+    glm::vec3 lightpos = lightposA + glm::rotate(lightposB, (float)sga::getTime()/7.0f + 1.8f, glm::vec3(0,1,0));
     glm::vec3 lightdir = glm::normalize(lightlookat - lightpos);
     glm::mat4 shadowmapCamera = glm::lookAt(lightpos, lightpos + lightdir, {0,-1,0});
     glm::mat4 shadowmapMVP = shadowmapProj * shadowmapCamera;
@@ -248,18 +176,22 @@ int main(){
 
     // Render shadowmap
     shadowmapPipeline.clear();
-    for(const MeshData& mesh : meshes)
+    for(const MeshData& mesh : scene.meshes)
       shadowmapPipeline.drawVBO(mesh.vbo);
 
     // Render scene
     pipeline.clear();
     #define REPEAT 1
     for(int i = 0; i < REPEAT; i++){
-      for(const MeshData& mesh : meshes){
-        if(mesh.texture != ""){
+      for(const MeshData& mesh : scene.meshes){
+        if(mesh.texture_name != ""){
           // Set texture sampler to use
-          auto it = textures.find(mesh.texture);
+          auto it = scene.textures.find(mesh.texture_name);
+          pipeline.setUniform("use_texture", 1);
           pipeline.setSampler("diffuse", it->second, sga::SamplerInterpolation::Linear, sga::SamplerWarpMode::Repeat);
+        }else{
+          pipeline.setUniform("use_texture", 0);
+          pipeline.setUniform("color_diffuse", mesh.diffuse_color);
         }
         pipeline.drawVBO(mesh.vbo);
       }

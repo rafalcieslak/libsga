@@ -54,6 +54,7 @@ function(add_example NAME)
   if(EXAMPLE_SHADERS)
     add_custom_command(
 	  TARGET ${TARGET_NAME} POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/examples/data/${NAME}/"
 	  COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_SHADERS} "${PROJECT_BINARY_DIR}/examples/data/${NAME}/"
     )
   endif()
@@ -76,5 +77,5 @@ add_example(ssaa GLM ASSIMP)
 add_example(deferred GLM ASSIMP)
 add_example(unwrap-envmap)
 add_example(text FREETYPE)
-add_example(sponza-shadowmap GLM ASSIMP)
+add_example(shadowmap GLM ASSIMP)
 add_example(model GLM ASSIMP)

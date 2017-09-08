@@ -25,7 +25,7 @@ float get_shadow_filtered(vec2 c){
 }
 
 vec3 light_color = vec3(1.0, 0.96, 0.92);
-vec3 ambient_color = vec3(0.2, 0.208, 0.21);
+vec3 ambient_light_color = vec3(0.2, 0.208, 0.21);
 
 void main(){
   vec3 light_vector = world_lightpos - in_world_position;
@@ -35,8 +35,13 @@ void main(){
   vec3 V = normalize(world_viewpos - in_world_position);
   float att = attenuation(2000, 0.002, light_distance);
   // Colors:
-  vec3 Kd = pow(texture(diffuse, in_texuv).xyz, vec3(2.2));
-  vec3 Ks = Kd; // TODO: Does this model use different colors for specular?
+  vec3 Kd;
+  if(use_texture == 0){
+    Kd = color_diffuse;
+  }else{
+    Kd = pow(texture(diffuse, in_texuv).xyz, vec3(2.2));
+  }
+  vec3 Ks = Kd;
   vec3 Ka = Kd;
   // Lambertian diffuse
   float d = max(0.0, dot(L, N)) * att;
@@ -53,6 +58,6 @@ void main(){
 
   vec3 D = Kd * d * shadow_factor * light_color;
   vec3 S = Ks * s * 1.0 * shadow_factor;
-  vec3 A = Ka * ambient_color;
+  vec3 A = Ka * ambient_light_color;
   out_color = vec4(D + S + A, 1.0);
 }

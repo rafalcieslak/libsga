@@ -54,6 +54,6 @@ Simple deferred shading pipeline. Hold SHIFT to preview G-Buffer.
 
 Demonstrates text rendering with FreeType2.
 
-### Sponza
+### Shadowmap
 
-Forward renderer displaying the Darbovic Sponza model with PCF shadow maps from a dynamic light source. Use WASD and mouselook to move around the sponza. Hold space to preview the shadowmap. Generally, the Sponza model is not great for demonstrating shadows as light is limited by narrow gap in the model - but you can clearly observe the shadows, even though their shape is not attractive.
+Forward renderer displaying the Darbovic Sponza or Castle-On-Hills model with PCF shadow maps from a dynamic light source. Use WASD and mouselook to move around the sponza/castle. Hold space to preview the shadowmap. Generally, the Sponza model is not great for demonstrating shadows as light is limited by narrow gap in the model - but you can clearly observe the shadows, even though their shape is not attractive. Castle-On-Hills doesn't use textures, so unlit areas are bleak.

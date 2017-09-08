@@ -394,18 +394,19 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
   vk::Rect2D area({(int)floor(vp_left), (int)floor(vp_top)},
                   {(unsigned int)std::ceil(vp_right - vp_left), (unsigned int)std::ceil(vp_bottom - vp_top)});
   vk::Viewport viewport(vp_left, vp_top, vp_right, vp_bottom, 0.0f, 1.0f);
-
+  
   Scheduler::borrowChainableCmdBuffer("pipeline draw", [&](auto cmdBuffer){
-      cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
 
       cmdBuffer->beginRenderPass(c_renderPass, framebuffer, area, {}, vk::SubpassContents::eInline);
 
+      cmdBuffer->copyBuffer(uniform_staging_buffer, b_uniformDeviceBuffer, vk::BufferCopy(0, 0, b_uniformSize));
+
       cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, c_pipeline);
       cmdBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, c_pipelineLayout, 0, {d_descriptorSet}, nullptr);
-      cmdBuffer->bindVertexBuffer(0, buffer, 0);
       cmdBuffer->setViewport(0, viewport);
       cmdBuffer->setScissor(0, area);
-
+      
+      cmdBuffer->bindVertexBuffer(0, buffer, 0);
       cmdBuffer->draw(uint32_t(n), 1, 0, 0);
 
       cmdBuffer->endRenderPass();
@@ -423,7 +424,7 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
 
 void Pipeline::Impl::clear(){
   if(!ensureValidity()) return;
-
+  
   if(target_is_window){
     targetWindow->currentFrameRendered = true;
     targetWindow->clearCurrentFrame();

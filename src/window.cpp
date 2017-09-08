@@ -181,7 +181,7 @@ void Window::Impl::nextFrame() {
     double desiredTime = (1.0/fpsLimit)*0.95;
     double time_left = desiredTime - timeSinceLastFrame;
     if(time_left > 0.0){
-      std::cout << "Sleeping for " << time_left << std::endl;
+      //std::cout << "Sleeping for " << time_left << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(int(time_left * 1000)));
     }
   }

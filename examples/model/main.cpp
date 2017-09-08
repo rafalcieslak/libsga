@@ -32,7 +32,6 @@ int main(){
       vec3 R = normalize(-reflect(L, N));
       vec3 E = normalize(viewpos - in_world_position);
 
-      //vec3 Kd = vec3(1.0, 145.0/255, 231.0/255);
       vec3 Ks = vec3(1.0);
       vec3 a = Kd * 0.2;
       vec3 d = Kd * max(0, dot(L, N));
@@ -57,6 +56,7 @@ int main(){
   fragShader.addUniform(sga::DataType::Float3, "lightpos");
   fragShader.addUniform(sga::DataType::Float3, "viewpos");
   fragShader.addUniform(sga::DataType::Float3, "Kd");
+  fragShader.addUniform(sga::DataType::Float3, "Ka");
 
   // Prepare window
   sga::Window window(800, 600, "Teapot");
@@ -101,6 +101,7 @@ int main(){
     });
 
   glm::tvec2<double> viewmouse = {0.0, 0.0};
+  glm::tvec2<double> viewmouse_target = {0.0, 0.0};
   glm::tvec2<double> viewmouse_drag_start = {0.0, 0.0};
   
   auto recalculateMVP = [&](){
@@ -118,7 +119,6 @@ int main(){
 
   window.setOnResize([&](double w, double h){
       projection = glm::perspectiveFov(glm::radians(70.0), w, h, 0.2, distance * 2.1);
-      recalculateMVP();
     });
 
   glm::tvec2<double> mousedown_pos;
@@ -129,7 +129,7 @@ int main(){
         mouse_down = true;
         // Left press
         mousedown_pos = mouse_pos;
-        viewmouse_drag_start = viewmouse;
+        viewmouse_drag_start = viewmouse_target;
       }else if(!left && mouse_down){
         mouse_down = false;
         // Left release
@@ -140,22 +140,23 @@ int main(){
       mouse_pos = {x/window.getWidth(),y/window.getHeight()};
       if(mouse_down){
         auto mouse_delta = mouse_pos - mousedown_pos;
-        viewmouse = viewmouse_drag_start + mouse_delta;
-        viewmouse.y = glm::max(viewmouse.y, -0.5 + 0.001);
-        viewmouse.y = glm::min(viewmouse.y,  0.5 - 0.001);
-        recalculateMVP();
+        viewmouse_target = viewmouse_drag_start + mouse_delta;
+        viewmouse_target.y = glm::max(viewmouse_target.y, -0.5 + 0.001);
+        viewmouse_target.y = glm::min(viewmouse_target.y,  0.5 - 0.001);
       }
     });
-
-  // Initial MVP
-  recalculateMVP();
   
   // Main loop
   while(window.isOpen()){
+    double theta = glm::pow(0.12, window.getLastFrameDelta());
+    viewmouse = viewmouse * theta + viewmouse_target * (1.0 - theta);
+    recalculateMVP();
+  
     pipeline.clear();
     pipeline.setUniform("viewpos", viewpos);
     for(auto& mesh : scene.meshes){
       pipeline.setUniform("Kd", mesh.diffuse_color);
+      pipeline.setUniform("Ka", mesh.ambient_color);
       pipeline.drawVBO(mesh.vbo);
     }
     window.nextFrame();

@@ -23,10 +23,11 @@ struct VertData{
 };
 
 struct MeshData{
-  MeshData(sga::VBO v, glm::vec3 dc, std::string tn)
-    : vbo(v), diffuse_color(dc), texture_name(tn) {}
+  MeshData(sga::VBO v, std::string tn)
+    : vbo(v), texture_name(tn) {}
   sga::VBO vbo;
   glm::vec3 diffuse_color;
+  glm::vec3 ambient_color;
   std::string texture_name;
 };
 
@@ -95,8 +96,10 @@ public:
 
       // Prepare material info
       const aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
-      aiColor3D c;
-      mat->Get(AI_MATKEY_COLOR_DIFFUSE, c);
+      aiColor3D cd;
+      mat->Get(AI_MATKEY_COLOR_DIFFUSE, cd);
+      aiColor3D ca;
+      mat->Get(AI_MATKEY_COLOR_AMBIENT, ca);
 
       aiString diffuse_tex_pathAI;
       mat->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse_tex_pathAI);
@@ -118,7 +121,8 @@ public:
         textures.insert({diffuse_tex_path, image});
       }
 
-      meshes.emplace_back(vbo, (glm::vec3){c.r, c.g, c.b}, diffuse_tex_path);
+      meshes.emplace_back(vbo, diffuse_tex_path);
+      meshes.back().diffuse_color = glm::vec3(cd.r, cd.g, cd.b);
       std::cout << "Loaded " << vertices.size() << " vertices." << std::endl;
     }
     return true;

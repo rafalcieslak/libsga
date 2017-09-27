@@ -69,6 +69,7 @@ int main(int argc, char** argv){
   std::vector<std::pair<std::vector<Eigen::Vector2f>, std::vector<Eigen::Vector2f>>> points;
   unsigned int center = 0;
   unsigned int N;
+  bool render_lines = false;
   try{
     json config;
     config_file >> config;
@@ -84,6 +85,9 @@ int main(int argc, char** argv){
     if(config.count("center") > 0){
       center = config["center"];
     }
+    if(config.count("lines") > 0){
+      render_lines = config["lines"] != 0;
+    }
     auto pointlist = config["points"];
     if(!pointlist.is_array() || pointlist.size() != N-1){
       std::cout << "Json config must contain an array of point coordinates \"points\" of the lentgh equal to the number of images minus one (" << N-1 << ")." << std::endl;
@@ -93,7 +97,7 @@ int main(int argc, char** argv){
       std::vector<Eigen::Vector2f> pl;
       std::vector<Eigen::Vector2f> pr;
       if(pointspair.size() != 2){
-        std::cout << "Each entry in \"points\" array must have two elemtns (a list of points in image N and a list of corresponding points on image N+1)" << std::endl;
+        std::cout << "Each entry in \"points\" array must have two elements (a list of points in image N and a list of corresponding points on image N+1)" << std::endl;
         return 1;
       }
       for(auto& point : pointspair[0]){
@@ -253,6 +257,8 @@ int main(int argc, char** argv){
   pipeline.setProgram(program);
   pipeline.setTarget({result});
   pipeline.setFaceCull(sga::FaceCullMode::None);
+  pipeline.setBlendModeColor(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
+  pipeline.setBlendModeAlpha(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
   pipeline.clear();
 
   std::cout << "Rendering" << std::endl;
@@ -265,11 +271,43 @@ int main(int argc, char** argv){
     std::cout << His[i] << std::endl;
     pipeline.drawVBO(vbo);
   }
-  renderdoc_capture_end();
 
+  // Prepare another pipeline, just for rendering image edges
+  if(render_lines){
+    auto linesFragShader = sga::FragmentShader::createFromSource(R"(
+      void main(){out_color = vec4(1,0,0,0.2);}
+    )");
+    linesFragShader.addOutput(sga::DataType::Float4, "out_color");
+    linesFragShader.addInput(sga::DataType::Float3, "imageUVW");
+    auto lines_program = sga::Program::createAndCompile(vertShader,linesFragShader);
+    sga::Pipeline lines_pipeline;
+    lines_pipeline.setPolygonMode(sga::PolygonMode::LineStrip);
+    lines_pipeline.setLineWidth(2.0);
+    lines_pipeline.setTarget(result);
+    lines_pipeline.setProgram(lines_program);
+    lines_pipeline.setBlendModeColor(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
+    lines_pipeline.setBlendModeAlpha(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
+  
+    // VBO for lines
+    std::vector<VertData> lines_vertices = {
+      {{0,0}},{{0,1}},{{1,1}},{{1,0}},{{0,0}}
+    };
+    sga::VBO lines_vbo({sga::DataType::Float2}, lines_vertices.size());
+    lines_vbo.write(lines_vertices);
+  
+    lines_pipeline.setUniform("offset", {offset(0), offset(1)});
+    for(unsigned int i = 0; i < N; i++){
+      lines_pipeline.setSampler("image", images[i]);
+      lines_pipeline.setUniform("H", His[i]);
+      lines_pipeline.drawVBO(lines_vbo);
+    }
+  }
+    
   // Save result
   std::cout << "Saving result to " << output_path << std::endl;
   result.savePNG(output_path);
-  
+
+  renderdoc_capture_end();
+
   sga::terminate();
 }

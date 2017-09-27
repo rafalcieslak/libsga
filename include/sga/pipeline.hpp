@@ -52,6 +52,24 @@ enum class RasterizerMode{
   Points,
 };
 
+enum class BlendFactor{
+  Zero,
+  One,
+  SrcAlpha,
+  DstAlpha,
+  OneMinusSrcAlpha,
+  OneMinusDstAlpha,
+  // TODO: Are any other factors generally useful?
+};
+
+enum class BlendOperation{
+  Add,
+  Subtract,
+  ReverseSubtract,
+  Min,
+  Max
+};
+
 /** This class represents the state and configuration of a rendering
     pipeline. Once it is configured, it may then be used for rendering onto a
     window or image surface.
@@ -90,6 +108,9 @@ public:
   SGA_API void setRasterizerMode(RasterizerMode r);
   
   SGA_API void setLineWidth(float w);
+
+  SGA_API void setBlendModeColor(BlendFactor src, BlendFactor dst, BlendOperation op = BlendOperation::Add);
+  SGA_API void setBlendModeAlpha(BlendFactor src, BlendFactor dst, BlendOperation op = BlendOperation::Add);
   
   SGA_API void resetViewport();
   SGA_API void setViewport(float left, float top, float right, float bottom);

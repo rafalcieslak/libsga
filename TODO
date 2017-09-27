@@ -4,8 +4,6 @@ Core features:
  - Configurable depth buffer properties
  - Indiced vertex mode
  - Non-resizable windows
- - Configurable alpha blending
- - Pipelining multiple draw calls to reduce gpu<->cpu sync overhead
  - More verbose error messages
  - An option to disable vsync
  - A user should be able to hint that an image will be used mostly for sampling (so it shoudl stay in shader optimal layout)

@@ -39,6 +39,9 @@ public:
   void setRasterizerMode(RasterizerMode r);
   void setLineWidth(float w);
 
+  void setBlendModeColor(BlendFactor src, BlendFactor dst, BlendOperation op);
+  void setBlendModeAlpha(BlendFactor src, BlendFactor dst, BlendOperation op);
+  
   void resetViewport();
   void setViewport(float left, float top, float right, float bottom);
   
@@ -56,6 +59,13 @@ protected:
   PolygonMode polygonMode = PolygonMode::Triangles;
   RasterizerMode rasterizerMode = RasterizerMode::Filled;
   float line_width = 1.0f;
+
+  BlendFactor blendFactorColorSrc = BlendFactor::One;
+  BlendFactor blendFactorColorDst = BlendFactor::Zero;
+  BlendFactor blendFactorAlphaSrc = BlendFactor::One;
+  BlendFactor blendFactorAlphaDst = BlendFactor::Zero;
+  BlendOperation blendOperationColor = BlendOperation::Add;
+  BlendOperation blendOperationAlpha = BlendOperation::Add;
   
   bool vp_set = false;
   float vp_top = 0.0f, vp_bottom = 0.0f, vp_left = 0.0f, vp_right = 0.0f;

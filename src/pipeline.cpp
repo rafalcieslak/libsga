@@ -50,6 +50,13 @@ void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl()->setRasterizerMod
 void Pipeline::setPolygonMode(sga::PolygonMode p){impl()->setPolygonMode(p);}
 void Pipeline::setLineWidth(float w){impl()->setLineWidth(w);}
 
+void Pipeline::setBlendModeColor(BlendFactor src, BlendFactor dst, BlendOperation op){
+  impl()->setBlendModeColor(src,dst,op);
+}
+void Pipeline::setBlendModeAlpha(BlendFactor src, BlendFactor dst, BlendOperation op){
+  impl()->setBlendModeAlpha(src,dst,op);
+}
+
 void Pipeline::resetViewport(){ impl()->resetViewport(); }
 void Pipeline::setViewport(float left, float top, float right, float bottom){ impl()->setViewport(left, top, right, bottom); }
 
@@ -126,6 +133,41 @@ void Pipeline::Impl::setLineWidth(float w){
   // TODO: Validate whether w makes sense.
   line_width = w;
   cooked = false;
+}
+
+void Pipeline::Impl::setBlendModeColor(BlendFactor src, BlendFactor dst, BlendOperation op){
+  blendFactorColorSrc = src;
+  blendFactorColorDst = dst;
+  blendOperationColor = op;
+}
+
+void Pipeline::Impl::setBlendModeAlpha(BlendFactor src, BlendFactor dst, BlendOperation op){
+  blendFactorAlphaSrc = src;
+  blendFactorAlphaDst = dst;
+  blendOperationAlpha = op;
+}
+
+static inline vk::BlendFactor blendModeSGA2VK(sga::BlendFactor m){
+  switch(m){
+    case sga::BlendFactor::Zero: return vk::BlendFactor::eZero;
+    case sga::BlendFactor::One:  return vk::BlendFactor::eOne;
+    case sga::BlendFactor::SrcAlpha: return vk::BlendFactor::eSrcAlpha;
+    case sga::BlendFactor::DstAlpha: return vk::BlendFactor::eDstAlpha;
+    case sga::BlendFactor::OneMinusSrcAlpha: return vk::BlendFactor::eOneMinusSrcAlpha;
+    case sga::BlendFactor::OneMinusDstAlpha: return vk::BlendFactor::eOneMinusDstAlpha;
+  default: return vk::BlendFactor::eZero;
+  }
+}
+
+static inline vk::BlendOp blendOpSGA2VK(sga::BlendOperation op){
+  switch(op){
+    case sga::BlendOperation::Add:      return vk::BlendOp::eAdd;
+    case sga::BlendOperation::Subtract: return vk::BlendOp::eSubtract;
+    case sga::BlendOperation::ReverseSubtract: return vk::BlendOp::eReverseSubtract;
+    case sga::BlendOperation::Min: return vk::BlendOp::eMin;
+    case sga::BlendOperation::Max: return vk::BlendOp::eMax;
+  default: return vk::BlendOp::eAdd;
+  }
 }
 
 void Pipeline::Impl::resetViewport(){
@@ -719,9 +761,13 @@ void Pipeline::Impl::cook(){
       {}, true, true, vk::CompareOp::eLessOrEqual, false, false, stencilOpState, stencilOpState, 0.0f, 0.0f);
 
     vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(
-      false,
-      vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-      vk::BlendFactor::eZero, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
+      true,
+      blendModeSGA2VK(blendFactorColorSrc),
+      blendModeSGA2VK(blendFactorColorDst),
+      blendOpSGA2VK(blendOperationColor),
+      blendModeSGA2VK(blendFactorAlphaSrc),
+      blendModeSGA2VK(blendFactorAlphaDst),
+      blendOpSGA2VK(blendOperationAlpha),
       vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
       vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
     std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;

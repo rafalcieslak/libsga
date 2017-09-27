@@ -89,6 +89,8 @@ public:
   SGA_API void setPolygonMode(PolygonMode p);
   SGA_API void setRasterizerMode(RasterizerMode r);
   
+  SGA_API void setLineWidth(float w);
+  
   SGA_API void resetViewport();
   SGA_API void setViewport(float left, float top, float right, float bottom);
   
@@ -126,6 +128,7 @@ public:
   SGA_API void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise) = delete;
   SGA_API void setPolygonMode(PolygonMode p) = delete;
   SGA_API void setRasterizerMode(RasterizerMode r) = delete;
+  SGA_API void setLineWidth(float w) = delete;
   
 protected:
   class Impl;

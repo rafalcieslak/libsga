@@ -48,6 +48,7 @@ void Pipeline::setFaceCull(FaceCullMode fcm, FaceDirection fd){
 }
 void Pipeline::setRasterizerMode(sga::RasterizerMode r){impl()->setRasterizerMode(r);}
 void Pipeline::setPolygonMode(sga::PolygonMode p){impl()->setPolygonMode(p);}
+void Pipeline::setLineWidth(float w){impl()->setLineWidth(w);}
 
 void Pipeline::resetViewport(){ impl()->resetViewport(); }
 void Pipeline::setViewport(float left, float top, float right, float bottom){ impl()->setViewport(left, top, right, bottom); }
@@ -119,6 +120,11 @@ void Pipeline::Impl::setPolygonMode(PolygonMode p) {
 }
 void Pipeline::Impl::setRasterizerMode(RasterizerMode r) {
   rasterizerMode = r;
+  cooked = false;
+}
+void Pipeline::Impl::setLineWidth(float w){
+  // TODO: Validate whether w makes sense.
+  line_width = w;
   cooked = false;
 }
 
@@ -702,7 +708,9 @@ void Pipeline::Impl::cook(){
         case FaceDirection::CounterClockwise: return vk::FrontFace::eCounterClockwise;
         default: return vk::FrontFace::eClockwise;
         }}(),
-      false, 0.0f, 0.0f, 0.0f, 1.0f);
+      false, 0.0f, 0.0f, 0.0f,
+      // TODO: Ensure the device supports ` wideLines`.
+      line_width);
     vkhlf::PipelineMultisampleStateCreateInfo multisample(
       vk::SampleCountFlagBits::e1, false, 0.0f, nullptr, false, false);
     vk::StencilOpState stencilOpState(

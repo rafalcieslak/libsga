@@ -24,6 +24,7 @@ jobs:
             make release -j2
       - add_ssh_keys
       - run:
+          # TODO: Move releases to a separate job and ensure they are only started for the master branch.
           name: 'Upload releases'
           command: |
             scp -oStrictHostKeyChecking=no ~/libsga/build/release-linux/*.tar.gz circleci-builds@cielak.org:/www/libsga-builds/.

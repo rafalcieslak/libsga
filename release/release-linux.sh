@@ -12,7 +12,7 @@ fi
 echo "Preparing Linux release for $1"
 
 BASEDIR=release-linux
-RELDIR=libsga-$1
+RELDIR=libsga-$1-linux
 SDKDIR=$BASEDIR/$RELDIR
 
 rm -rf $SDKDIR

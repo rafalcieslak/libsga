@@ -90,16 +90,16 @@ configure_file(
 
 # Release targets
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-windows.sh")
+  set(PACKAGING_SCRIPT "powershell ${PROJECT_SOURCE_DIR}/release/release-windows.ps -version")
 endif("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-linux.sh")
+  set(PACKAGING_SCRIPT "sh ${PROJECT_SOURCE_DIR}/release/release-linux.sh")
 endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 
 if(DOXYGEN_FOUND)
 add_custom_target(
   release
-  COMMAND sh ${PACKAGING_SCRIPT} ${PROJECT_VERSION_LONG}
+  COMMAND ${PACKAGING_SCRIPT} ${PROJECT_VERSION_LONG}
 )
 add_dependencies(
   release

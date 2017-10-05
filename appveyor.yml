@@ -40,6 +40,9 @@ build:
   parallel: true
   verbosity: minimal
 
+after_build:
+  - cmd: dir C:\libsga\build
+  
 notifications:
 - provider: Email
   to:

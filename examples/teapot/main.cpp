@@ -164,8 +164,8 @@ int main(){
   while(window.isOpen()){
     pipeline.clear();
     pipeline.setUniform("viewpos", viewpos);
-    pipeline.drawVBO(vbos[0]);
-    pipeline.drawVBO(vbos[1]);
+    pipeline.draw(vbos[0]);
+    pipeline.draw(vbos[1]);
     window.nextFrame();
   }
   

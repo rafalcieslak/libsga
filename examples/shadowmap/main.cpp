@@ -177,7 +177,7 @@ int main(int argc, char** argv){
     // Render shadowmap
     shadowmapPipeline.clear();
     for(const MeshData& mesh : scene.meshes)
-      shadowmapPipeline.drawVBO(mesh.vbo);
+      shadowmapPipeline.draw(mesh.vbo);
 
     // Render scene
     pipeline.clear();
@@ -193,7 +193,7 @@ int main(int argc, char** argv){
           pipeline.setUniform("use_texture", 0);
           pipeline.setUniform("color_diffuse", mesh.diffuse_color);
         }
-        pipeline.drawVBO(mesh.vbo);
+        pipeline.draw(mesh.vbo);
       }
     }
     if(window.isKeyPressed(sga::Key::Space))

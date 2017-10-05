@@ -21,8 +21,12 @@ void Pipeline::setTarget(std::vector<Image> images) {
   impl()->setTarget(images);
 }
 
-void Pipeline::drawVBO(const VBO& vbo) {
-  impl()->drawVBO(vbo);
+void Pipeline::draw(const VBO& vbo) {
+  impl()->draw(vbo);
+}
+
+void Pipeline::drawIndexed(const VBO& vbo, const IBO& ibo) {
+  impl()->drawIndexed(vbo, ibo);
 }
 
 void Pipeline::clear() {

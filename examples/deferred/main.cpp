@@ -248,7 +248,7 @@ int main(){
     pipeline_lighting.setUniform("viewpos", viewpos);
 
     pipeline_gbuffer.clear();
-    pipeline_gbuffer.drawVBO(modelVbo);
+    pipeline_gbuffer.draw(modelVbo);
     pipeline_lighting.clear();
     pipeline_lighting.drawFullQuad();
     pipeline_window.clear();

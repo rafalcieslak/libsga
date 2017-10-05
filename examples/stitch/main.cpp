@@ -269,7 +269,7 @@ int main(int argc, char** argv){
     pipeline.setSampler("image", images[i]);
     pipeline.setUniform("H", His[i]);
     std::cout << His[i] << std::endl;
-    pipeline.drawVBO(vbo);
+    pipeline.draw(vbo);
   }
 
   // Prepare another pipeline, just for rendering image edges
@@ -299,7 +299,7 @@ int main(int argc, char** argv){
     for(unsigned int i = 0; i < N; i++){
       lines_pipeline.setSampler("image", images[i]);
       lines_pipeline.setUniform("H", His[i]);
-      lines_pipeline.drawVBO(lines_vbo);
+      lines_pipeline.draw(lines_vbo);
     }
   }
     

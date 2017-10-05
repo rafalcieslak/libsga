@@ -10,6 +10,7 @@
 namespace sga{
 
 class VBO;
+class IBO;
 class VertexShader;
 class FragmentShader;
 class Program;
@@ -88,11 +89,12 @@ public:
   }
   SGA_API void setTarget(std::vector<Image> images);
   
-  /** Performs rendering using vertex data from the provided VBO. This method
-      blocks until rendering completes. Before rendering pipeline configuration
-      is valdiated, and you will be notified of any errors or
-      inconsistencies. */
-  SGA_API void drawVBO(const VBO&);
+  /** Performs rendering using vertex data from the provided VBO. Before
+      rendering pipeline configuration is valdiated, and you will be notified of
+      any errors or inconsistencies. Rendering is deferred and this function may
+      return before GPU is done. */
+  SGA_API void draw(const VBO&);
+  SGA_API void drawIndexed(const VBO&, const IBO&);
 
   SGA_API void clear();
   
@@ -145,7 +147,7 @@ public:
   SGA_API void setProgram(const Program&);
 
   // Forbid some functions from Pipeline which make no sense for FullQuadPipeline
-  SGA_API void drawVBO(const VBO&) = delete;
+  SGA_API void draw(const VBO&) = delete;
   SGA_API void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise) = delete;
   SGA_API void setPolygonMode(PolygonMode p) = delete;
   SGA_API void setRasterizerMode(RasterizerMode r) = delete;

@@ -288,7 +288,7 @@ void Pipeline::Impl::updateStandardUniforms(){
   setUniform(DataType::Float4, "sgaViewport", (char*)&vp, sizeof(vp), true);
 }
 
-void Pipeline::Impl::drawVBO(const VBO& vbo_){
+void Pipeline::Impl::draw(const VBO& vbo_){
   auto vbo = vbo_.impl;
   if(!ensureValidity()) return;
 
@@ -300,6 +300,21 @@ void Pipeline::Impl::drawVBO(const VBO& vbo_){
   cook();
   updateStandardUniforms();
   drawBuffer(vbo->buffer, vbo->getSize());
+}
+
+void Pipeline::Impl::drawIndexed(const VBO& vbo_, const IBO& ibo_){
+  auto vbo = vbo_.impl;
+  auto ibo = ibo_.impl;
+  if(!ensureValidity()) return;
+
+  // Extra VBO-specific validity check
+  if(vbo->layout != program->c_inputLayout){
+    PipelineConfigError("VertexLayoutMismatch", "VBO layout does not match pipeline input layout!").raise();
+  }
+
+  cook();
+  updateStandardUniforms();
+  drawBuffer(vbo->buffer, vbo->getSize(), ibo->buffer, ibo->getSize());
 }
 
 bool Pipeline::Impl::ensureValidity(){
@@ -333,7 +348,7 @@ bool Pipeline::Impl::ensureValidity(){
   return true;
 }
 
-void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned int n){
+void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned int n, std::shared_ptr<vkhlf::Buffer> indices, unsigned int indices_n){
   std::shared_ptr<vkhlf::Framebuffer> framebuffer;
   vk::Extent2D extent;
   if(target_is_window){
@@ -398,7 +413,12 @@ void Pipeline::Impl::drawBuffer(std::shared_ptr<vkhlf::Buffer> buffer, unsigned 
       cmdBuffer->setScissor(0, area);
       
       cmdBuffer->bindVertexBuffer(0, buffer, 0);
-      cmdBuffer->draw(uint32_t(n), 1, 0, 0);
+      if(!indices){
+        cmdBuffer->draw(uint32_t(n), 1, 0, 0);
+      }else{
+        cmdBuffer->bindIndexBuffer(indices, 0, vk::IndexType::eUint16);
+        cmdBuffer->drawIndexed(uint32_t(indices_n), 1, 0, 0, 0);
+      }
 
       cmdBuffer->endRenderPass();
     });
@@ -767,7 +787,7 @@ void FullQuadPipeline::Impl::setProgram(const Program& p_){
 }
 
 void FullQuadPipeline::Impl::drawFullQuad(){
-  drawVBO(vbo);
+  draw(vbo);
 }
 
 

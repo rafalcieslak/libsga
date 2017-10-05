@@ -157,7 +157,7 @@ int main(){
     for(auto& mesh : scene.meshes){
       pipeline.setUniform("Kd", mesh.diffuse_color);
       pipeline.setUniform("Ka", mesh.ambient_color);
-      pipeline.drawVBO(mesh.vbo);
+      pipeline.draw(mesh.vbo);
     }
     window.nextFrame();
   }

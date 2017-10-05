@@ -179,7 +179,7 @@ int main(){
     if(w % 2) pipeline.setSampler("tex", textureImage);
     else      pipeline.setSampler("tex", textureImage2);
     
-    pipeline.drawVBO(vbo);
+    pipeline.draw(vbo);
     window.nextFrame();
   }
   

@@ -45,8 +45,8 @@ struct ImageFormatError : public SGAException{
     : SGAException(name, information, description) {}
   virtual void raise_this() override { throw *this; }
 };
-struct VBOSizeError : public SGAException{
-  VBOSizeError(std::string name, std::string information, std::string description = "")
+struct SizeError : public SGAException{
+  SizeError(std::string name, std::string information, std::string description = "")
     : SGAException(name, information, description) {}
   virtual void raise_this() override { throw *this; }
 };

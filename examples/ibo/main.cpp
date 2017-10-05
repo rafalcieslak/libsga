@@ -8,9 +8,14 @@ struct CustomData{
 };
 
 std::vector<CustomData> vertices = {
-  { { 0.0,-0.5}, { 1, 0, 0}, },
-  { { 0.5, 0.5}, { 0, 1, 0}, },
-  { {-0.5, 0.5}, { 0, 0, 1}, },
+  { {-1.0,-1.0}, { 1, 0, 0}, },
+  { { 1.0,-1.0}, { 1, 1, 0}, },
+  { {-1.0, 1.0}, { 0, 0, 1}, },
+  { { 1.0, 1.0}, { 0, 1, 0}, },
+};
+
+std::vector<int> indices = {
+  0, 1, 2, 3, 2, 1
 };
 
 int main(){
@@ -21,10 +26,13 @@ int main(){
      sga::DataType::Float3},
     vertices.size());
   vbo.write(vertices);
-  
+
+  sga::IBO ibo(indices.size());
+  ibo.write(indices);
+
   sga::VertexShader vertShader = sga::VertexShader::createFromSource(R"(
     void main(){
-      gl_Position = vec4(inVertex, 0, 1);
+      gl_Position = vec4(inVertex * 0.8, 0, 1);
       outColor = vec4(inColor, 1);
     })");
   sga::FragmentShader fragShader = sga::FragmentShader::createFromSource(R"(
@@ -40,17 +48,17 @@ int main(){
   fragShader.addOutput(sga::DataType::Float4, "outColor");
 
   sga::Program program = sga::Program::createAndCompile(vertShader, fragShader);
-  
-  sga::Window window(800, 600, "Triangle");
+
+  sga::Window window(800, 600, "Index buffer demo");
   window.setFPSLimit(60);
-  
+
   sga::Pipeline pipeline;
   pipeline.setProgram(program);
   pipeline.setTarget(window);
-  
+
   while(window.isOpen()){
     pipeline.clear();
-    pipeline.draw(vbo);
+    pipeline.drawIndexed(vbo, ibo);
     window.nextFrame();
   }
   sga::terminate();

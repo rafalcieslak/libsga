@@ -20,8 +20,10 @@ public:
   void setTarget(const Window& tgt);
   void setTarget(std::vector<Image> images);
   
-  void drawVBO(const VBO&);
-  void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n);
+  void draw(const VBO&);
+  void drawIndexed(const VBO&, const IBO& ibo);
+  void drawBuffer(std::shared_ptr<vkhlf::Buffer>, unsigned int n,
+                  std::shared_ptr<vkhlf::Buffer> = nullptr, unsigned int = 0);
   void clear();
   
   virtual void setProgram(const Program&);

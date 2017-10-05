@@ -68,6 +68,7 @@ add_custom_target(
   )
 
 add_example(triangle)
+add_example(ibo)
 add_example(fragTest1)
 add_example(sampler)
 add_example(shadertoy)

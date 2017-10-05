@@ -6,6 +6,10 @@ Available example programs:
 
 Very simple program that only renders a flat triangle. Shows the most basic API features.
 
+### IBO
+
+Similar to triangle example, but uses an index buffer to draw an indexed mesh (flat rectangle).
+
 ### Cube
 
 Renders a simple 3D textured cube. Demonstrates texturing support and mouse input (mouse movement rotates the cube). 1/2/3 switches wiregrame/point modes.

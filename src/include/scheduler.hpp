@@ -5,6 +5,8 @@
 
 #include <sga/utils.hpp>
 
+#include <functional>
+
 namespace sga{
 
 class Scheduler{

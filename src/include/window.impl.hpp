@@ -8,6 +8,8 @@
 #include <GLFW/glfw3.h>
 #include <vkhlf/vkhlf.h>
 
+#include <functional>
+
 namespace sga{
 
 class Window::Impl{

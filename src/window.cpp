@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <thread>
+#include <functional>
 
 #include "global.hpp"
 #include "utils.hpp"

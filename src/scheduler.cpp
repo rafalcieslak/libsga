@@ -1,6 +1,7 @@
 #include "scheduler.hpp"
 
 #include <iostream>
+#include <functional>
 
 #include "global.hpp"
 

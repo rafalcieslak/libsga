@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include <functional>
 
 #include <sga/exceptions.hpp>
 #include "stbi.hpp"

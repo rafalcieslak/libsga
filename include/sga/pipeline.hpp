@@ -79,16 +79,16 @@ class Pipeline{
 public:
   SGA_API Pipeline();
   SGA_API ~Pipeline();
-  
+
   /** Configures the pipeline to render onto the provided window. */
   SGA_API void setTarget(const Window& window);
-  
+
   SGA_API void setTarget(const Image& image) {setTarget({image});}
   SGA_API void setTarget(std::initializer_list<Image> images) {
     setTarget(std::vector<Image>(images));
   }
   SGA_API void setTarget(std::vector<Image> images);
-  
+
   /** Performs rendering using vertex data from the provided VBO. Before
       rendering pipeline configuration is valdiated, and you will be notified of
       any errors or inconsistencies. Rendering is deferred and this function may
@@ -97,7 +97,7 @@ public:
   SGA_API void drawIndexed(const VBO&, const IBO&);
 
   SGA_API void clear();
-  
+
   SGA_API void setProgram(const Program&);
 
   SGA_API void setSampler(std::string, const Image&,
@@ -105,18 +105,18 @@ public:
                   SamplerWarpMode warp_mode = SamplerWarpMode::Clamp);
 
   SGA_API void setFaceCull(FaceCullMode fcm = FaceCullMode::None, FaceDirection fd = FaceDirection::Clockwise);
-  
+
   SGA_API void setPolygonMode(PolygonMode p);
   SGA_API void setRasterizerMode(RasterizerMode r);
-  
+
   SGA_API void setLineWidth(float w);
 
   SGA_API void setBlendModeColor(BlendFactor src, BlendFactor dst, BlendOperation op = BlendOperation::Add);
   SGA_API void setBlendModeAlpha(BlendFactor src, BlendFactor dst, BlendOperation op = BlendOperation::Add);
-  
+
   SGA_API void resetViewport();
   SGA_API void setViewport(float left, float top, float right, float bottom);
-  
+
   //@{
   /** Sets the value of a named uniform within this pipeline to the provided
       value. The uniform name must correspond to a uniform previously declared
@@ -126,9 +126,53 @@ public:
   #include "pipeline.uniforms.inc"
   SGA_API void setUniform(std::string name, std::initializer_list<float> floats);
   //@}
+
+private:
+  enum class UniformProxyMode{
+    Uniform,
+    Sampler
+  };
+
+  template <UniformProxyMode>
+  class UniformBank;
+
+  template <UniformProxyMode mode>
+  class UniformProxy{
+    UniformProxy& operator=(const UniformProxy& other) = delete;
+    template <UniformProxyMode m>
+    friend class Pipeline::UniformBank;
+    UniformProxy(Pipeline& p, std::string n)
+      : parent(p), name(n) {};
+    Pipeline& parent;
+    std::string name;
+  public:
+    template <typename T, typename std::enable_if<(sizeof(T),mode == UniformProxyMode::Uniform), int>::type = 0>
+    void operator=(T value){
+      parent.setUniform(name, value);
+    }
+    template <typename T, typename std::enable_if<(sizeof(T),mode == UniformProxyMode::Sampler), int>::type = 0>
+    void operator=(T value){
+      parent.setSampler(name, value);
+    }
+  };
+
+  template <UniformProxyMode mode>
+  class UniformBank{
+    UniformBank& operator=(const UniformBank& other) = delete;
+    friend class Pipeline;
+    UniformBank(Pipeline& p) : parent(p){}
+    Pipeline& parent;
+  public:
+    UniformProxy<mode> operator[](std::string name) {return UniformProxy<mode>(parent, name);}
+  };
+
+public:
+  UniformBank<UniformProxyMode::Uniform> uniform = UniformBank<UniformProxyMode::Uniform>(*this);
+  UniformBank<UniformProxyMode::Sampler> sampler = UniformBank<UniformProxyMode::Sampler>(*this);
+
 protected:
   SGA_API void setUniform(DataType dt, std::string name, char* pData, size_t size);
-  
+
   class Impl;
   pimpl_unique_ptr<Impl> impl_;
   SGA_API Impl* impl() {return impl_.get();}
@@ -141,9 +185,9 @@ class FullQuadPipeline : public Pipeline{
 public:
   SGA_API FullQuadPipeline();
   SGA_API ~FullQuadPipeline();
-  
+
   SGA_API void drawFullQuad();
-  
+
   SGA_API void setProgram(const Program&);
 
   // Forbid some functions from Pipeline which make no sense for FullQuadPipeline
@@ -152,7 +196,7 @@ public:
   SGA_API void setPolygonMode(PolygonMode p) = delete;
   SGA_API void setRasterizerMode(RasterizerMode r) = delete;
   SGA_API void setLineWidth(float w) = delete;
-  
+
 protected:
   class Impl;
   SGA_API Impl* impl();

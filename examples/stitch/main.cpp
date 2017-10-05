@@ -35,12 +35,12 @@ Eigen::Matrix3f find_homography(std::vector<Eigen::Vector2f> points1, std::vecto
       0 , 0 , 0, x1, y1, 1, -x1*y2, -y1*y2, -y2;
     A.block(i*2,0,2,9) = Q;
   }
-  
+
   Eigen::JacobiSVD<Eigen::MatrixXf> svd(A, Eigen::ComputeThinU | Eigen::ComputeFullV);
   unsigned int P = svd.matrixV().cols();
   Eigen::Map<const Eigen::Matrix3f> view(svd.matrixV().block(0,P-1,9,1).data(), 3, 3);
   Eigen::Matrix3f H = view.transpose() / view(2,2);
-  
+
   return H;
 }
 
@@ -53,12 +53,12 @@ int main(int argc, char** argv){
   size_t q = config_path.find_last_of("/\\");
   std::string config_dir = config_path.substr(0,q);
   std::string output_path = "output.png";
-  
+
   // Enable sga
   sga::init();
   renderdoc_tryenable();
   renderdoc_capture_start();
-  
+
   // Open and parse config file
   std::ifstream config_file(config_path);
   if(!config_file.good()){
@@ -123,7 +123,7 @@ int main(int argc, char** argv){
   }catch (json::exception& e){
     std::cout << "Error reading json config: " << e.what() << std::endl;
   }
-  
+
   // Print out configuration
   /*
   for(unsigned int i = 0; i < N; i++){
@@ -187,7 +187,7 @@ int main(int argc, char** argv){
   }
 
   std::cout << "Preparing render resources" << std::endl;
-  
+
   // Prepare image bounding boxes
   Eigen::ArrayXXf imgBBs(4*N,3);
   for(unsigned int i = 0; i < N; i++){
@@ -262,12 +262,12 @@ int main(int argc, char** argv){
   pipeline.clear();
 
   std::cout << "Rendering" << std::endl;
-  
+
   // Draw!
-  pipeline.setUniform("offset", {offset(0), offset(1)});
+  pipeline.uniform["offset"] = Eigen::Vector2f{offset(0), offset(1)};
   for(unsigned int i = 0; i < N; i++){
-    pipeline.setSampler("image", images[i]);
-    pipeline.setUniform("H", His[i]);
+    pipeline.sampler["image"] = images[i];
+    pipeline.uniform["H"] = His[i];
     std::cout << His[i] << std::endl;
     pipeline.draw(vbo);
   }
@@ -287,22 +287,22 @@ int main(int argc, char** argv){
     lines_pipeline.setProgram(lines_program);
     lines_pipeline.setBlendModeColor(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
     lines_pipeline.setBlendModeAlpha(sga::BlendFactor::One, sga::BlendFactor::OneMinusSrcAlpha);
-  
+
     // VBO for lines
     std::vector<VertData> lines_vertices = {
       {{0,0}},{{0,1}},{{1,1}},{{1,0}},{{0,0}}
     };
     sga::VBO lines_vbo({sga::DataType::Float2}, lines_vertices.size());
     lines_vbo.write(lines_vertices);
-  
-    lines_pipeline.setUniform("offset", {offset(0), offset(1)});
+
+    lines_pipeline.uniform["offset"] = Eigen::Vector2f{offset(0),offset(1)};
     for(unsigned int i = 0; i < N; i++){
-      lines_pipeline.setSampler("image", images[i]);
-      lines_pipeline.setUniform("H", His[i]);
+      lines_pipeline.sampler["image"] = images[i];
+      lines_pipeline.uniform["H"] = His[i];
       lines_pipeline.draw(lines_vbo);
     }
   }
-    
+
   // Save result
   std::cout << "Saving result to " << output_path << std::endl;
   result.savePNG(output_path);

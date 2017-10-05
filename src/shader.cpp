@@ -310,7 +310,7 @@ std::string Program::Impl::prepareErrorDescrip(std::string infoLog, const Shader
       if(std::regex_match(name, m2, std::regex("^'([^']*)'\\s*")))
         name = m2[1];
       
-      desc[0] = std::toupper(desc[0]);
+      desc[0] = ::toupper(desc[0]);
 
       if(lineno < userLineOffset){
         descrip += line;

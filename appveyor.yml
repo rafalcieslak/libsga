@@ -39,3 +39,12 @@ build:
   project: C:\libsga\build\libsga.sln
   parallel: true
   verbosity: minimal
+
+notifications:
+- provider: Email
+  to:
+  - rafalcieslak256+sgabuilds@gmail.com
+  subject: SGA appveyor build {{buildVersion}} - {{status}}
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true

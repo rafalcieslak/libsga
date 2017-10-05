@@ -42,10 +42,11 @@ build:
 
 after_build:
   - cmd: dir C:\libsga\build
+  - cmd: dir C:\libsga\build\Release
 
 
 artifacts:
-  - path: C:\libsga\build\libsga.sln
+  - path: build\libsga.sln
     
 notifications:
 - provider: Email

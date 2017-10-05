@@ -7,6 +7,7 @@ Core features:
  - More verbose error messages
  - An option to disable vsync
  - A user should be able to hint that an image will be used mostly for sampling (so it shoudl stay in shader optimal layout)
+ - Assignment operator for uniform assignment
 
 Build process:
  - Automatic release packaging on windows

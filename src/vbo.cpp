@@ -1,4 +1,3 @@
-#include <sga/vbo.hpp>
 #include "vbo.impl.hpp"
 
 #include <map>
@@ -14,23 +13,6 @@ DataLayout::DataLayout(std::initializer_list<DataType> l) :
   layout(l) {
 }
 DataLayout::~DataLayout() = default;
-
-VBO::VBO(DataLayout layout, unsigned int n)
-  : impl(std::make_unique<VBO::Impl>(layout, n))
-{}
-VBO::~VBO() = default;
-void VBO::putData(uint8_t* pData, size_t n){
-  impl->putData(pData, n);
-}
-void VBO::putData(uint8_t* pData, size_t n_elem, size_t elem_size){
-  impl->putData(pData, n_elem, elem_size);
-}
-DataLayout VBO::getLayout() const{
-  return impl->getLayout();
-}
-unsigned int VBO::getSize() const{
-  return impl->getSize();
-}
 
 VBO::Impl::Impl(DataLayout layout, unsigned int s)
   : layout(layout), size(s) {
@@ -59,6 +41,7 @@ void VBO::Impl::putData(uint8_t *pData, size_t n_elem, size_t elem_size){
   if(n_elem != size){
     VBOSizeError("VBOWriteSizeMismatch", "Error: VBO size does not match written data size!", "The current size of a VBO does not match the size of the object used to write data to the VBO. If your input data is correct, consider using VBO::resize()").raise();
     // TODO: Shouldn't VBO resize happen automatically?
+    // TODO: Is VBO::resize() even implemented?
   }
   putData(pData, n_elem * elem_size);
 }

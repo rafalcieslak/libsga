@@ -2,7 +2,6 @@ Core features:
  - Consider hardware antialiasing options
  - Data structure and arrays description (Array and struct uniforms)
  - Configurable depth buffer properties
- - Indiced vertex mode
  - Non-resizable windows
  - More verbose error messages
  - An option to disable vsync

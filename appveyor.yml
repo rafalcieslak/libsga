@@ -45,7 +45,7 @@ build:
 after_build:
   - cmd: dir C:\libsga\build
   - cmd: dir C:\libsga\build\Release
-
+  - cmd: msbuild "C:\libsga\build\release.vcxproj" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 artifacts:
   - path: build\libsga.sln

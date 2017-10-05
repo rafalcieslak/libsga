@@ -18,6 +18,7 @@ init:
   - cmd: msbuild /version
 
 install:
+  - choco install doxygen.portable
   - cmd: curl --silent --show-error --output VulkanSDK.exe https://vulkan.lunarg.com/sdk/download/1.0.61.1/windows/VulkanSDK-1.0.61.1-Installer.exe
   - cmd: .\VulkanSDK.exe /S
 

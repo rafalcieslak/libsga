@@ -38,4 +38,4 @@ before_build:
 build:
   project: C:\libsga\build\libsga.sln
   parallel: true
-  verbosity: normal
+  verbosity: minimal

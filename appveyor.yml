@@ -46,3 +46,13 @@ after_build:
 
 artifacts:
   - path: 'build\*.zip'
+
+deploy:
+  provider: FTP
+  protocol: sftp
+  host: cielak.org
+  username: appveyor-sga-builds
+  password:
+    secure: sfNLu8ukWAty0U7lH4cXQshxOtmDDtzakkbO9iZqXunXPHKh67palXeagY/sMJIw
+  folder: /www/sga-builds
+  artifact: 'build\*.zip'

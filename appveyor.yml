@@ -43,16 +43,19 @@ build:
 
 after_build:
   - cmd: msbuild "C:\libsga\build\release.vcxproj" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - cmd: mv "build\libsga-*.zip" "C:\libsga"
 
 artifacts:
-  - path: 'build\*.zip'
+  - path: 'libsga-*.zip'
 
 deploy:
-  provider: FTP
-  protocol: sftp
-  host: cielak.org
-  username: appveyor-sga-builds
-  password:
-    secure: sfNLu8ukWAty0U7lH4cXQshxOtmDDtzakkbO9iZqXunXPHKh67palXeagY/sMJIw
-  folder: /www/sga-builds
-  artifact: 'build\*.zip'
+  - provider: FTP
+    protocol: sftp
+    host: cielak.org
+    username: appveyor-sga-builds
+    password:
+      secure: sfNLu8ukWAty0U7lH4cXQshxOtmDDtzakkbO9iZqXunXPHKh67palXeagY/sMJIw
+    folder: /www/sga-builds
+    artifact: 'libsga-*.zip'
+    on:
+      branch: master

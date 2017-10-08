@@ -55,7 +55,7 @@ deploy:
     username: appveyor-sga-builds
     password:
       secure: sfNLu8ukWAty0U7lH4cXQshxOtmDDtzakkbO9iZqXunXPHKh67palXeagY/sMJIw
-    folder: /www/sga-builds
+    folder: /www/libsga-builds
     artifact: 'libsga-*.zip'
     on:
       branch: master

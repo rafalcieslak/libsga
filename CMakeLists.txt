@@ -90,9 +90,8 @@ configure_file(
 
 # Release targets
 if(WIN32)
-  message("This is windows!")
-  set(PACKAGING_COMMAND "powershell")
-  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-windows.ps -version")
+  set(PACKAGING_COMMAND "PowerShell")
+  set(PACKAGING_SCRIPT "-NoProfile -ExecutionPolicy Bypass -File ${PROJECT_SOURCE_DIR}/release/release-windows.ps -version")
 endif(WIN32)
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")

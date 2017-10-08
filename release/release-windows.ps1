@@ -42,9 +42,8 @@ function Zip-Files( $zipfilename, $sourcedir )
    [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir,
         $zipfilename, $compressionLevel, $false)
 }
-Push-Location -Path "$basedir"
-Zip-Files "$reldir.zip" "$sdkdir"
-Pop-Location
+Set-Location -Path "$basedir"
+Zip-Files "$reldir.zip" "$reldir"
 
 write-output "Done Windows release"
 write-host   "Done Windows release HOST"

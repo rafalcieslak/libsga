@@ -16,7 +16,7 @@ New-Item "$sdkdir\include" -ItemType Directory
 Copy-Item "Release\sga.dll" $sdkdir
 
 # Header files
-Copy-Item -Path "..\include" -Filter "*.txt" -Recurse -Destination "$sdkdir" -Container
+Copy-Item -Path "..\include" -Include "*.hpp","*.inc" -Recurse -Destination "$sdkdir" -Container
 
 # HTML docs
 Copy-Item -Path "doc\html" -Recurse -Destination "$sdkdir\doc" -Container

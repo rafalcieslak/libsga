@@ -47,7 +47,9 @@ function Zip-Files( $zipfilename, $sourcedir )
 
         [byte[]] GetBytes([string] $s)
         {
+            write-output $s
             $s = $s.Replace("\\", "/");
+            write-output $s
             return ([System.Text.UTF8Encoding]$this).GetBytes($s);
         }
     }

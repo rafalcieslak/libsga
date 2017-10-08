@@ -2,6 +2,8 @@ param (
     [Parameter(Mandatory=$true)][string]$version
 )
 
+write-output "Preparing Windows release"
+write-host   "Preparing Windows release HOST"
 write-output "Preparing Windows release for $version"
 
 $basedir = "release-windows"
@@ -43,3 +45,6 @@ function Zip-Files( $zipfilename, $sourcedir )
         $zipfilename, $compressionLevel, $false)
 }
 Zip-Files "$RELDIR.zip" "$RELDIR"
+
+write-output "Done Windows release"
+write-host   "Done Windows release HOST"

@@ -3,6 +3,7 @@ param (
 )
 
 write-output "Preparing Windows release for $version"
+write-output $PSVersionTable
 
 $basedir = "release-windows"
 $reldir = "libsga-$version-windows"
@@ -58,7 +59,9 @@ function Zip-Files( $zipfilename, $sourcedir )
     $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
     [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, [System.IO.Compression.CompressionLevel]::Optimal, $false, $Encoder)
 }
-Zip-Files "$reldir.zip" "$sdkdir"
+# Zip-Files "$reldir.zip" "$sdkdir"
+
+Compress-Archive -Path "$sdkdir" -DestinationPath "$reldir.zip"
 
 write-output "Done Windows release"
 write-host   "Done Windows release HOST"

@@ -56,8 +56,7 @@ function Zip-Files( $zipfilename, $sourcedir )
    $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
    [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, $compressionLevel, $false, [FixedEncoder]::new())
 }
-Set-Location -Path "$basedir"
-Zip-Files "$reldir.zip" "$reldir"
+Zip-Files "$reldir.zip" "$sdkdir"
 
 write-output "Done Windows release"
 write-host   "Done Windows release HOST"

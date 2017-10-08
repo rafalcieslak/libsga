@@ -143,7 +143,7 @@ void Image::Impl::withLayout(vk::ImageLayout il, std::function<void()> f){
   switchLayout(orig_layout);
 }
 
-void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
+void Image::Impl::putDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size){
   if(n != N_pixels() * format.pixelSize)
     ImageFormatError("InvalidPutDataSize", "Data for Image::putData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
   if(dtype != format.transferDataType || value_size * channels != format.pixelSize)
@@ -253,7 +253,7 @@ void Image::Impl::putDataRaw(unsigned char * data, unsigned int n, DataType dtyp
   regenerateMips();
 }
 
-void Image::Impl::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size){
+void Image::Impl::getDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size){
   if(n != N_pixels() * format.pixelSize )
     ImageFormatError("InvalidGetDataSize", "Data for Image::getData has " + std::to_string(n) + " values, expected " + std::to_string(N_pixels() * format.pixelSize) + ".").raise();
   if(dtype != format.transferDataType || value_size * channels != format.pixelSize)

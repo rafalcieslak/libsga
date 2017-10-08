@@ -157,8 +157,8 @@ public:
 private:
   SGA_API Image(std::string png_path, ImageFormat format, ImageFilterMode filtermode);
 
-  SGA_API void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
-  SGA_API void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  SGA_API void putDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size);
+  SGA_API void getDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size);
 
   class Impl;
   pimpl_unique_ptr<Impl> impl;

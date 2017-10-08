@@ -33,8 +33,8 @@ class Image::Impl{
 public:
   Impl(unsigned int width, unsigned int height, unsigned int channels, ImageFormat format, ImageFilterMode filtermode);
   
-  void putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
-  void getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size);
+  void putDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size);
+  void getDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size);
 
   void loadPNG(std::string filepath);
   void loadPNGInternal(uint8_t* stbi_data);

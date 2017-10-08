@@ -13,11 +13,11 @@ Image::Image(std::string png_path, ImageFormat format, ImageFilterMode filtermod
 
 Image::~Image() = default;
 
-void Image::putDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {
+void Image::putDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size) {
   impl->putDataRaw(data, n, dtype, value_size);
 }
 
-void Image::getDataRaw(unsigned char * data, unsigned int n, DataType dtype, size_t value_size) {
+void Image::getDataRaw(unsigned char * data, size_t n, DataType dtype, size_t value_size) {
   impl->getDataRaw(data, n, dtype, value_size);
 }
 

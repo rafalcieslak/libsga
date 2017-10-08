@@ -43,7 +43,7 @@ function Zip-Files( $zipfilename, $sourcedir )
         $zipfilename, $compressionLevel, $false)
 }
 Push-Location -Path "$basedir"
-Zip-Files "$reldir.zip" "$reldir"
+Zip-Files "$reldir.zip" "$sdkdir"
 Pop-Location
 
 write-output "Done Windows release"

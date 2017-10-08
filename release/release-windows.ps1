@@ -3,7 +3,6 @@ param (
 )
 
 write-output "Preparing Windows release for $version"
-write-output $PSVersionTable
 
 $basedir = "release-windows"
 $reldir = "libsga-$version-windows"
@@ -17,18 +16,7 @@ New-Item "$sdkdir\include" -ItemType Directory
 Copy-Item "Release\sga.dll" $sdkdir
 
 # Header files
-#$sourcePath = '..\include'
-#$destPath = '$sdkdir\include\'
-#Get-ChildItem $sourcePath -Recurse -Include '*.hpp', '*.inc' | Foreach-Object `
-#  {
-#      $destDir = Split-Path ($_.FullName -Replace [regex]::Escape($sourcePath), $destPath)
-#      if (!(Test-Path $destDir))
-#      {
-#          New-Item -ItemType directory $destDir | Out-Null
-#      }
-#      Copy-Item $_ -Destination $destDir
-#  }
-Copy-Item -Path "..\include" -Filter "*.txt" -Recurse -Destination "$sdkdir\include" -Container
+Copy-Item -Path "..\include" -Filter "*.txt" -Recurse -Destination "$sdkdir" -Container
 
 # HTML docs
 Copy-Item -Path "doc\html" -Recurse -Destination "$sdkdir\doc" -Container
@@ -43,7 +31,6 @@ function Zip-Files( $zipfilename, $sourcedir )
     # for details.
     Add-Type -AssemblyName System.Text.Encoding
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-
     $EncoderClass=@"
       public class FixedEncoder : System.Text.UTF8Encoding {
         public FixedEncoder() : base(true) { }
@@ -54,14 +41,8 @@ function Zip-Files( $zipfilename, $sourcedir )
     }
 "@
     Add-Type -TypeDefinition $EncoderClass
-
     $Encoder = New-Object FixedEncoder
     $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
     [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, [System.IO.Compression.CompressionLevel]::Optimal, $false, $Encoder)
 }
-# Zip-Files "$reldir.zip" "$sdkdir"
-
-Compress-Archive -Path "$sdkdir" -DestinationPath "$reldir.zip"
-
-write-output "Done Windows release"
-write-host   "Done Windows release HOST"
+Zip-Files "$reldir.zip" "$sdkdir"

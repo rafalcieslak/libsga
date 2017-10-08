@@ -43,7 +43,6 @@ build:
 
 after_build:
   - cmd: msbuild "C:\libsga\build\release.vcxproj" /m /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
-  - cmd: mv "build\libsga-*.zip" "C:\libsga"
 
 artifacts:
   - path: 'libsga-*.zip'

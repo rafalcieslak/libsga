@@ -46,3 +46,4 @@ function Zip-Files( $zipfilename, $sourcedir )
     [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, [System.IO.Compression.CompressionLevel]::Optimal, $false, $Encoder)
 }
 Zip-Files "$reldir.zip" "$sdkdir"
+Copy-Item -Path "$reldir.zip" -Destination "../$reldir.zip"

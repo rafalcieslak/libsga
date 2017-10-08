@@ -42,21 +42,21 @@ function Zip-Files( $zipfilename, $sourcedir )
     # for details.
     Add-Type -AssemblyName System.Text.Encoding
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    class FixedEncoder : System.Text.UTF8Encoding {
-        FixedEncoder() : base($true) { }
 
-        [byte[]] GetBytes([string] $s)
-        {
-            write-output $s
-            $s = $s.Replace("\\", "/");
-            write-output $s
-            return ([System.Text.UTF8Encoding]$this).GetBytes($s);
-        }
+    $EncoderClass=@"
+      public class FixedEncoder : System.Text.UTF8Encoding {
+        public FixedEncoder() : base(true) { }
+        public override byte[] GetBytes(string s) {
+        s = s.Replace("\\", "/");
+        return base.GetBytes(s);
+      }
     }
+"@
+    Add-Type -TypeDefinition $EncoderClass
 
-   Add-Type -Assembly System.IO.Compression.FileSystem
-   $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
-   [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, $compressionLevel, $false, [FixedEncoder]::new())
+    $Encoder = New-Object FixedEncoder
+    $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, [System.IO.Compression.CompressionLevel]::Optimal, $false, $Encoder)
 }
 Zip-Files "$reldir.zip" "$sdkdir"
 

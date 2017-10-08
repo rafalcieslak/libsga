@@ -30,20 +30,34 @@ Copy-Item "Release\sga.dll" $sdkdir
 Copy-Item -Path "..\include" -Filter "*.txt" -Recurse -Destination "$sdkdir\include" -Container
 
 # HTML docs
-Copy-Item -Path "doc/html" -Recurse -Destination "$sdkdir\doc" -Container
+Copy-Item -Path "doc\html" -Recurse -Destination "$sdkdir\doc" -Container
 
 # TODO: Example files
 
 # Create release archive
 function Zip-Files( $zipfilename, $sourcedir )
 {
+    # ZipFile.CreateFromDirectory is completely broken. See
+    # https://gist.github.com/rafalcieslak/034b47f63abf81fa7ffc5992f723f814
+    # for details.
+    Add-Type -AssemblyName System.Text.Encoding
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    class FixedEncoder : System.Text.UTF8Encoding {
+        FixedEncoder() : base($true) { }
+
+        [byte[]] GetBytes([string] $s)
+        {
+            $s = $s.Replace("\\", "/");
+            return ([System.Text.UTF8Encoding]$this).GetBytes($s);
+        }
+    }
+
    Add-Type -Assembly System.IO.Compression.FileSystem
    $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
-   [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir,
-        $zipfilename, $compressionLevel, $false)
+   [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir, $zipfilename, $compressionLevel, $false, [FixedEncoder]::new())
 }
 Set-Location -Path "$basedir"
-Zip-Files "$reldir.zip" "$sdkdir"
+Zip-Files "$reldir.zip" "$reldir"
 
 write-output "Done Windows release"
 write-host   "Done Windows release HOST"

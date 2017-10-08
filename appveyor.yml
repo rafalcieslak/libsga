@@ -54,7 +54,6 @@ after_build:
 artifacts:
   - path: build\libsga.sln
   - path: build\release.vcxproj
-  - path: 'build\release-windows\*.zip'
   - path: 'build\*.zip'
 
 #notifications:

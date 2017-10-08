@@ -88,29 +88,29 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/sga/config.hpp
   @ONLY)
 
+
 # Release targets
-if(WIN32)
-  set(PACKAGING_COMMAND "PowerShell")
-  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-windows.ps -version")
-endif(WIN32)
-
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-  set(PACKAGING_COMMAND "sh")
-  set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-linux.sh")
-endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-
 if(DOXYGEN_FOUND)
-add_custom_target(
-  release
-  COMMAND ${PACKAGING_COMMAND} ${PACKAGING_SCRIPT} ${PROJECT_VERSION_LONG}
-)
-add_dependencies(
-  release
-  sga
-  doc
-)
-endif(DOXYGEN_FOUND)
+  if(WIN32)
+    add_custom_target(
+      release
+      COMMAND "PowerShell" -NoProfile -NonInteractive -executionpolicy bypass . "\"${PROJECT_SOURCE_DIR}/release/release-windows.ps1\"" -version ${PROJECT_VERSION_LONG}
+    )
+  endif(WIN32)
 
+  if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    add_custom_target(
+      release
+      COMMAND "sh" "${PROJECT_SOURCE_DIR}/release/release-linux.sh" ${PROJECT_VERSION_LONG}
+      )
+  endif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+
+  add_dependencies(
+    release
+    sga
+    doc
+    )
+endif(DOXYGEN_FOUND)
 
 add_subdirectory(src)
 add_subdirectory(doc)

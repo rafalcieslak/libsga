@@ -89,10 +89,12 @@ configure_file(
   @ONLY)
 
 # Release targets
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+if(WIN32)
+  message("This is windows!")
   set(PACKAGING_COMMAND "powershell")
   set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-windows.ps -version")
-endif("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+endif(WIN32)
+
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
   set(PACKAGING_COMMAND "sh")
   set(PACKAGING_SCRIPT "${PROJECT_SOURCE_DIR}/release/release-linux.sh")

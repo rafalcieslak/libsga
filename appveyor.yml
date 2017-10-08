@@ -49,6 +49,7 @@ after_build:
   - cmd: dir C:\libsga\build
   - cmd: dir C:\libsga\build\Release
   - cmd: dir C:\libsga\
+  - cmd: dir C:\libsga\build\release-windows\
 
 artifacts:
   - path: build\libsga.sln

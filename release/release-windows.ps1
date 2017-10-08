@@ -2,8 +2,6 @@ param (
     [Parameter(Mandatory=$true)][string]$version
 )
 
-write-output "Preparing Windows release"
-write-host   "Preparing Windows release HOST"
 write-output "Preparing Windows release for $version"
 
 $basedir = "release-windows"
@@ -11,8 +9,8 @@ $reldir = "libsga-$version-windows"
 $sdkdir = "$basedir\$reldir"
 
 Remove-Item -Recurse -Force $sdkdir
-New-Item -ItemType Directory -Force -Path "$sdkdir"
-New-Item -ItemType Directory -Force -Path "$sdkdir\include"
+New-Item "$sdkdir" -ItemType Directory
+New-Item "$sdkdir\include" -ItemType Directory
 
 # Main library
 Copy-Item "Release\sga.dll" $sdkdir

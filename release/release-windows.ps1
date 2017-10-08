@@ -8,7 +8,7 @@ $basedir = "release-windows"
 $reldir = "libsga-$version-windows"
 $sdkdir = "$basedir\$reldir"
 
-Remove-Item -Recurse -Force $sdkdir
+Remove-Item $sdkdir -Recurse -ErrorAction Ignore
 New-Item "$sdkdir" -ItemType Directory
 New-Item "$sdkdir\include" -ItemType Directory
 
@@ -42,7 +42,9 @@ function Zip-Files( $zipfilename, $sourcedir )
    [System.IO.Compression.ZipFile]::CreateFromDirectory($sourcedir,
         $zipfilename, $compressionLevel, $false)
 }
-Zip-Files "$RELDIR.zip" "$RELDIR"
+Push-Location -Path "$basedir"
+Zip-Files "$reldir.zip" "$reldir"
+Pop-Location
 
 write-output "Done Windows release"
 write-host   "Done Windows release HOST"
